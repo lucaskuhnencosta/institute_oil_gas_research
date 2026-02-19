@@ -114,5 +114,5 @@ axes[-1].set_xlabel('Time [s]', fontsize=12)
 plt.xlim(0, total_time)
 
 plt.tight_layout()
-plt.savefig('well_simulation_comparison_final.pdf', dpi=300, bbox_inches='tight',facecolor='0.75')
+# plt.savefig('well_simulation_comparison_final.pdf', dpi=300, bbox_inches='tight',facecolor='0.75')
 plt.show()

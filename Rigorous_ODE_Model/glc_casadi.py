@@ -27,7 +27,6 @@ def glc_casadi(y,u):
             w_G_out,
             P_tb_t_bar]
     """
-
     def softplus_stable(x):
         # softplus(x) = max(x,0) + log(1+exp(-|x|)), stable for large x
         ax = sqrt(x * x + tiny)
@@ -36,7 +35,7 @@ def glc_casadi(y,u):
     def smooth_pos_scaled(dp_pa,scale=1):
         x=(k_pos*dp_pa)/scale
         # softplus(z) = (1/k) log(1+exp(k z))
-        return (scale/k_pos)*softplus_stable(x)
+        return (scale/k_pos)*(softplus_stable(x))
 
     def smooth_max_scaled(z,zmin,scale=1):
         # smooth approximation of max(z,zmin))
@@ -95,7 +94,7 @@ def glc_casadi(y,u):
     dP_gs_an=P_gs-P_an_t
 
     w_G_in_original = K_gs * u2 * sqrt(rho_G_in * fmax(dP_gs_an,0))
-    w_G_in=K_gs*u2*sqrt(rho_G_in*smooth_pos_scaled(dP_gs_an,scale=1e5)+eps)
+    w_G_in=K_gs*u2*sqrt(rho_G_in*smooth_pos_scaled(dP_gs_an,scale=1)+eps)
 
     # Equation 6 - Density of the gas at top of the tubing
     V_gas_tb_t=(V_tb+S_bh*L_bh)-(m_L_tb/rho_L)
@@ -156,7 +155,7 @@ def glc_casadi(y,u):
     dP_an_tb=P_an_b-P_tb_b
 
     # Equation 18 - Mass flow rate of gas injected into tubing
-    w_G_inj=K_inj*sqrt(rho_G_an_b * smooth_pos_scaled(dP_an_tb,scale=1e5)+eps)
+    w_G_inj=K_inj*sqrt(rho_G_an_b * smooth_pos_scaled(dP_an_tb,scale=1)+eps)
 
     # Equation 19 - Liquid velocity at bottom-hole
     U_avg_L_bh=w_avg_res/(rho_L*S_bh)
@@ -183,7 +182,7 @@ def glc_casadi(y,u):
 
     # Equation 24 - Mass flow rate from reservoir to tubing
     dP_res_bh=P_res-P_bh
-    w_res = PI * smooth_pos_scaled(dP_res_bh,scale=1e5)
+    w_res = PI * smooth_pos_scaled(dP_res_bh,scale=1)
 
     # Equation 25 - Mass flow rate of liquid from reservoir to tubing
     w_L_res=(1-alpha_G_tb_b)*w_res
@@ -197,11 +196,21 @@ def glc_casadi(y,u):
 
     denom_alpha_b=(w_L_res*rho_G_tb_b+(w_G_inj+w_G_res)*rho_L)
     denom_alpha_b_safe=smooth_max_scaled(denom_alpha_b, 1e-9)
+
     # Equation 28 - Liquid volume fraction at bottom of tubing
     alpha_L_tb_b=(w_L_res*rho_G_tb_b)/denom_alpha_b_safe
 
-    # Equation 29 - Liquid volume fraction at top of the tubing
+    # def smooth_clip_01(a):
+    #     a0=smooth_pos_scaled(a)
+    #     return 1.0-smooth_pos_scaled(1.0-a0)
+    #
+    # # Equation 29 - Liquid volume fraction at top of the tubing
     alpha_L_tb_t=2*alpha_avg_L_tb-alpha_L_tb_b
+    # alpha_L_tb_t=smooth_clip_01(alpha_L_tb_t_raw)
+
+    # alpha_L_tb_t=rho_avg_mix_tb-rho_G_tb_t/(rho_L-rho_G_tb_t)
+
+
 
     # Equation 30 - Mixture density at the top
     rho_mix_tb_t=alpha_L_tb_t*rho_L+(1-alpha_L_tb_t)*rho_G_tb_t
@@ -209,7 +218,7 @@ def glc_casadi(y,u):
 
     dP_tb_choke=P_tb_t-P_0
     # Equation 31 - Mass flow rate of mixture from choke
-    w_out=K_pr*u1*sqrt(rho_mix_tb_t_safe*smooth_pos_scaled(dP_tb_choke,scale=1e5)+eps)
+    w_out=K_pr*u1*sqrt(rho_mix_tb_t_safe*smooth_pos_scaled(dP_tb_choke,scale=1)+eps)
 
     # Equation 32 - Volumetric flow rate of production choke
     Q_out=w_out/rho_mix_tb_t_safe
@@ -252,24 +261,24 @@ def glc_casadi(y,u):
 
     z = vertcat(
         # --- Eq 1-4
-        P_an_t, P_an_t_bar,
-        P_an_b, P_an_b_bar,
+        P_an_t_bar, #0
+        P_an_b_bar,
         rho_G_an_b,
         rho_G_in,
 
         # --- Eq 5
-        dP_gs_an, dP_gs_an_bar,
+        dP_gs_an_bar, #4
         w_G_in_original,
         w_G_in,
 
         # --- Eq 6-7
-        V_gas_tb_t,
+        V_gas_tb_t, #7
         V_gas_tb_t_safe,
         rho_G_tb_t,
-        P_tb_t, P_tb_t_bar,
+        P_tb_t_bar,
 
         # --- Eq 8-13
-        rho_avg_mix_tb,
+        rho_avg_mix_tb, #11
         alpha_avg_L_tb,
         alpha_G_tb_b,
         U_avg_L_tb,
@@ -279,35 +288,35 @@ def glc_casadi(y,u):
         U_avg_mix_tb,
 
         # --- Eq 14-16
-        Re_tb,
+        Re_tb, #19
         Re_tb_safe,
         log_arg_tb,
         log_arg_tb_safe,
         lambda_tb,
-        F_t, F_t_bar,
+        F_t_bar,
 
         # --- Eq 17-18
-        P_tb_b, P_tb_b_bar,
-        dP_an_tb, dP_an_tb_bar,
+        P_tb_b_bar, #25
+        dP_an_tb_bar,
         w_G_inj,
 
         # --- Eq 19-23
-        U_avg_L_bh,
+        U_avg_L_bh, #28
         Re_bh,
         log_arg_bh,
         lambda_bh,
-        F_bh, F_bh_bar,
-        P_bh, P_bh_bar,
+        F_bh_bar,
+        P_bh_bar,
 
         # --- Eq 24-27
-        dP_res_bh, dP_res_bh_bar,
+        dP_res_bh_bar, #34
         w_res,
         w_L_res,
         w_G_res,
         rho_G_tb_b,
 
         # --- Eq 28-30
-        denom_alpha_b,
+        denom_alpha_b, #39
         denom_alpha_b_safe,
         alpha_L_tb_b,
         alpha_L_tb_t,
@@ -315,7 +324,7 @@ def glc_casadi(y,u):
         rho_mix_tb_t_safe,
 
         # --- Eq 31-35
-        dP_tb_choke, dP_tb_choke_bar,
+        dP_tb_choke_bar, #45
         w_out,
         Q_out,
         denom_alpha_t,
@@ -324,8 +333,6 @@ def glc_casadi(y,u):
         w_G_out,
         w_L_out,
 
-        # --- final dx for convenience
-        dx1, dx2, dx3
     )
 
     return dx, z
