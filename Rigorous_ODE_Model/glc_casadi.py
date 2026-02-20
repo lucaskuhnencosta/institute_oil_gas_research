@@ -60,7 +60,7 @@ def glc_casadi(y,u):
     D_bh = 2 * np.sqrt(S_bh / np.pi)
     L_bh = 75  #m is the length below the injection point
     T_tb = 369.4 #K is the tubing temperature
-    GOR = 0 #is the gas oil ratio
+    GOR = 0#is the gas oil ratio
     P_res = 160e5 #160bar, the constant reservoir pressure
     w_avg_res = 18 #kg/s is an average flow from reservoir to compute the friction terms and model bottomhole pressure to calculate the actual flow from reservoir
     D_tb = 0.134 #tubing diameter

@@ -72,35 +72,6 @@ def print_z_grouped(z_star, names, floatfmt="{: .6f}"):
             print(f"{name:25s} = {floatfmt.format(val)}")
 
 
-
-def print_z_by_name(z_star, names, floatfmt="{: .6e}", ncols=1):
-    z = np.array(z_star).astype(float).reshape(-1)
-    if len(z) != len(names):
-        raise ValueError(f"z length mismatch: got {len(z)} values but {len(names)} names")
-
-    # build pairs
-    pairs = list(zip(names, z))
-
-    # print in columns (optional)
-    if ncols <= 1:
-        for k, v in pairs:
-            print(f"{k:20s} = {floatfmt.format(v)}")
-    else:
-        # simple column layout
-        rows = int(np.ceil(len(pairs) / ncols))
-        for r in range(rows):
-            line = []
-            for c in range(ncols):
-                i = r + c * rows
-                if i < len(pairs):
-                    k, v = pairs[i]
-                    line.append(f"{k:20s} = {floatfmt.format(v)}")
-            print("   |   ".join(line))
-
-
-
-
-
 def solve_equilibrium_ipopt(
         model, # Ourput of a CasADi model (steady-state) that has been assembled
         u_val, #list/array shape (nu,)
@@ -136,17 +107,8 @@ def solve_equilibrium_ipopt(
     Zsym = {name: z_var[i] for i, name in enumerate(model["Z_names"])}
 
     # ---------------------
-    # 5) Objective: minimize ||dx||^2 (scaled)
+    # 5) Unpack variables
     # ---------------------
-    obj=0
-
-
-    p=u_par
-
-    # ---------------------
-    # 6) Unpack variables
-    # ---------------------
-    # Build name → index map automatically
 
     P_an_t_bar = Zsym["P_an_t_bar"]
     P_an_b_bar = Zsym["P_an_b_bar"]
@@ -212,6 +174,13 @@ def solve_equilibrium_ipopt(
     w_L_out = Zsym["w_L_out"]
 
     # ---------------------
+    # 5) Objective: minimize ||dx||^2 (scaled)
+    # ---------------------
+    obj=0
+    p=u_par
+
+
+    # ---------------------
     # 6) Constraints
     # ---------------------
 
@@ -219,6 +188,7 @@ def solve_equilibrium_ipopt(
     lbg=[]
     ubg=[]
 
+    # f(u,y)=0
     g_list.append(dx_var)
     lbg.extend([0] * nx)
     ubg.extend([0] * nx)
@@ -280,7 +250,7 @@ def solve_equilibrium_ipopt(
     # 7) Bounds on y
     # ---------------------
     y_lb=[0.0,0.0,0.0]
-    y_ub=[1e20,1e20,760*(25.03+0.0314*75) - 1e-3]
+    y_ub=[1e20,1e20,1e20]
 
     lbx=ca.DM(y_lb).reshape((nx,1))
     ubx=ca.DM(y_ub).reshape((nx,1))
@@ -368,7 +338,7 @@ def solve_equilibrium_ipopt(
 model = build_steady_state_model(glc_casadi, state_size=3, control_size=2, name="glc")
 
 # 2) solve one point
-u = [0.35, 0.10]
+u = [0.20, 0.05]
 # y_guess=[3582.4731,311.7586,8523.038]
 y_guess = [3919.7688, 437.16663, 7956.1206]
 
@@ -388,3 +358,4 @@ print("stable:", stable)
 print("\n--- z* (named) ---")
 Z_NAMES=model["Z_names"]
 print_z_grouped(z_star, Z_NAMES)  # set ncols=1 if you prefer
+
