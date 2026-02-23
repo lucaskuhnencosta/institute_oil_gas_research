@@ -4,7 +4,9 @@ import matplotlib.pyplot as plt
 from numpy.ma.core import arange
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 
-from Rigorous_ODE_Model.glc_casadi import glc_casadi
+from Surrogate_ODE_Model.glc_01_casadi import glc_casadi
+from Surrogate_ODE_Model.glc_02_bsw_casadi import glc_bsw_casadi
+
 from Solvers.solve_glc_ode_equilibrium import solve_equilibrium_ipopt
 from Utilities.block_builders import build_steady_state_model
 import matplotlib as mpl
@@ -88,13 +90,16 @@ W_G_TB_T= np.full((Nu, Nu), np.nan, dtype=float)
 W_G_OUT= np.full((Nu, Nu), np.nan, dtype=float)
 W_L_OUT= np.full((Nu, Nu), np.nan, dtype=float)
 
+W_L_W_OUT= np.full((Nu, Nu), np.nan, dtype=float)
+W_L_O_OUT= np.full((Nu, Nu), np.nan, dtype=float)
+
 RES= np.full((Nu, Nu), np.nan, dtype=float)
 
 STABLE = np.full((Nu, Nu), np.nan, dtype=float)  # 1 stable, 0 unstable, NaN unknown/fail
 
 y0_fixed = np.array([3919.7688, 437.16663, 7956.1206], dtype=float)
 
-model = build_steady_state_model(glc_casadi, state_size=3, control_size=2, name="glc")
+model = build_steady_state_model(glc_bsw_casadi, state_size=3, control_size=2, name="glc")
 
 RES_TOL = 1e-6
 min_dp_choke_pressure=500
@@ -194,6 +199,10 @@ for i, u1 in enumerate(u_grid):
             ALPHA_G_TB_T[i,j]  = z_np[50]
             W_G_OUT[i,j]  = z_np[51]
             W_L_OUT[i,j]  = z_np[52]
+
+            W_L_W_OUT[i,j] = z_np[53]
+            W_L_O_OUT[i,j] = z_np[54]
+
             # y0_fixed=y_star
             print("y*:", y_np, "res:", res, "stable:", stable)
             choke_dp=DP_TB_CHOKE_BAR[i,j]
@@ -458,6 +467,29 @@ plot_surface(fig7,axes[0], U1, U2, DP_GS_AN_BAR,  "DP_GS_AN(u1,u2)", "bar")
 plot_surface(fig7,axes[1], U1, U2, DP_AN_TB_BAR, "DP_AN_TB(u1,u2)", "bar")
 plot_surface(fig7,axes[2], U1, U2, DP_TB_CHOKE_BAR, "DP_TB_CHOKE(u1,u2)", "bar")
 plot_surface(fig7,axes[3], U1, U2, DP_RES_BH_BAR, "DP_RES_BH(u1,u2)", "bar")
+for ax in axes:
+    ax.view_init(elev=45, azim=45)   # opposite view
+
+plt.tight_layout()
+plt.show()
+
+
+#################################################################
+
+fig8 = plt.figure(figsize=(16, 18))
+fig8.suptitle("Production", fontsize=16)
+
+axes = [
+    fig8.add_subplot(2, 2, 1, projection="3d"),
+    fig8.add_subplot(2, 2, 2, projection="3d"),
+    fig8.add_subplot(2, 2, 3, projection="3d"),
+    fig8.add_subplot(2, 2, 4, projection="3d")
+]
+
+plot_surface(fig8,axes[0], U1, U2, W_OUT, "Total production", "kg/s")
+plot_surface(fig8,axes[1], U1, U2, W_L_OUT, "Production of liquid", "kg/s")
+plot_surface(fig8,axes[2], U1, U2, W_L_O_OUT, "Production of oil", "kg/s")
+plot_surface(fig8,axes[3], U1, U2, W_L_W_OUT, "Production of water`", "kg/s")
 for ax in axes:
     ax.view_init(elev=45, azim=45)   # opposite view
 

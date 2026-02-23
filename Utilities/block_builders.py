@@ -101,6 +101,9 @@ def build_steady_state_model(f_func, state_size=3, control_size=2, name="glc_ss"
         "alpha_G_tb_t",
         "w_G_out",
         "w_L_out",
+
+        "w_w_out",
+        "w_o_out"
     ]
 
     return {

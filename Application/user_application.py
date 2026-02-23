@@ -1,5 +1,5 @@
 import casadi as ca
-from Rigorous_ODE_Model.glc_casadi import glc_casadi
+from Formal_Surrogate_ODE_Model.glc_01_casadi import glc_casadi
 import numpy as np
 
 y0 = ca.DM([3919.7688, 437.16663, 7956.1206])

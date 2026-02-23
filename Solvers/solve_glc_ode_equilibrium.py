@@ -1,4 +1,5 @@
-from Rigorous_ODE_Model.glc_casadi import glc_casadi
+from Surrogate_ODE_Model.glc_01_casadi import glc_casadi
+from Surrogate_ODE_Model.glc_02_bsw_casadi import glc_bsw_casadi
 from Utilities.block_builders import build_steady_state_model
 import casadi as ca
 import numpy as np
@@ -292,7 +293,7 @@ def solve_equilibrium_ipopt(
         "ipopt.linear_solver": "mumps",
     }
 
-    solver = ca.nlpsol("eq_solver", "ipopt", nlp, opts)
+    solver = ca.nlpsol("eq_solver", "ipopt", nlp)
 
     # -------------------------
     # Pack numeric inputs
@@ -338,7 +339,7 @@ def solve_equilibrium_ipopt(
 model = build_steady_state_model(glc_casadi, state_size=3, control_size=2, name="glc")
 
 # 2) solve one point
-u = [0.20, 0.05]
+u = [0.55, 0.05]
 # y_guess=[3582.4731,311.7586,8523.038]
 y_guess = [3919.7688, 437.16663, 7956.1206]
 

@@ -2,8 +2,8 @@
 # import matplotlib.pyplot as plt
 # from Utilities.simulation_utils import simulate_full_range
 # # from OLGA_model.glc_OLGA import glc_rto_f_olga
-# from Rigorous_ODE_Model.glc_states import glc_rto_f
-# from Rigorous_ODE_Model.glc_algebraic import glc_f_alg
+# from Surrogate_ODE_Model.glc_states import glc_rto_f
+# from Surrogate_ODE_Model.glc_algebraic import glc_f_alg
 # import torch
 #
 #
