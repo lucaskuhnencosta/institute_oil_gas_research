@@ -52,7 +52,7 @@ def glc_casadi(y,u):
     R = 8.314 #J/(K*mol) is the universal gas constant
     g = 9.81 #m/s^2 is the gravity
     mu = 3.64e-3 # Pa.s is the viscosity
-    rho_L = 760 #kg/m^3 is the density of the liquid in the tubing
+    rho_L = 760 #kg/m^3 is the density of the liquid in the tubing is used as the density of oil
     M_G = 0.0167 #(kg/mol) is the gas molecular weight
     T_an = 348 #K is the annulus temperature
     V_an = 64.34  #m^3 is the annulus volume
@@ -266,7 +266,7 @@ def glc_casadi(y,u):
     w_w_out = w_L_out * BSW
     w_o_out = w_L_out * (1-BSW)
 
-    z = vertcat(
+    out = vertcat(
         # --- Eq 1-4
         P_an_t_bar, #0
         P_an_b_bar,
@@ -345,4 +345,4 @@ def glc_casadi(y,u):
 
     )
 
-    return dx, z
+    return dx, out

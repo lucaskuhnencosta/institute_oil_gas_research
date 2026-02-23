@@ -1,10 +1,8 @@
 from Surrogate_ODE_Model.glc_01_casadi import glc_casadi
 from Surrogate_ODE_Model.glc_02_bsw_casadi import glc_bsw_casadi
+from Rigorous_DAE_model.glc_rigorous_dae import glc_rigorous_casadi
 from Utilities.block_builders import build_steady_state_model
 import casadi as ca
-import numpy as np
-import matplotlib.pyplot as plt
-
 import numpy as np
 from collections import defaultdict
 
@@ -72,40 +70,93 @@ def print_z_grouped(z_star, names, floatfmt="{: .6f}"):
         for name, val in groups[group_name]:
             print(f"{name:25s} = {floatfmt.format(val)}")
 
-
 def solve_equilibrium_ipopt(
         model, # Ourput of a CasADi model (steady-state) that has been assembled
         u_val, #list/array shape (nu,)
-        y_guess#list/array shape (nx,)
+        y_guess, #list/array shape (nx,)
+        z_guess=None
         ):
+    """
+    Works for both:
+      - ODE surrogate model dict from build_steady_state_model_unified(..., alg_size=None)
+      - DAE rigorous model dict from build_steady_state_model_unified(..., alg_size=3)
+
+    Decision variables:
+      ODE: x = y
+      DAE: x = [y; z_alg]
+
+    Constraints:
+      ODE: dx(y,u)=0
+      DAE: dx(y,z,u)=0 and g(y,z,u)=0
+
+    Stability:
+      ODE: eig(A) where A = d(dx)/d(y)
+      DAE: eig(Ared) where Ared = fx - fz * (gz \\ gx)  (index-1 reduction)
+    """
+
     # ---------------------
     # 1) Unpack model pieces
     # ---------------------
-    y_sym=model["y"] #MX nx
-    u_sym=model["u"] #MX nu
-    dx_expr=model["dx"] #MX nx
-    z_expr=model["z"] # MX nz
     nx=model["nx"]
     nu=model["nu"]
+    is_dae=bool(model["is_dae"])
+
+    y_sym=model["y"]
+    u_sym = model["u"]
+    Z_NAMES = model["Z_names"]
 
     # ---------------------
-    # 2) Decision variable (unknown equilibrium state)
+    # 2) Decision variables
     # ---------------------
-    y_var=ca.MX.sym("y_var",nx)
+
+    y_var = ca.MX.sym("y_var", nx)
+
+    if is_dae:
+        nz = model["nz"]
+        z_sym = model["z_alg"]
+        z_var = ca.MX.sym("z_var", nz)
+        x_var = ca.vertcat(y_var, z_var)
+    else:
+        x_var=y_var
 
     # ---------------------
     # 3) Parameter (fixed control)
     # ---------------------
-    u_par=ca.MX.sym("u_par",nu)
+    u_par = ca.MX.sym("u_par", nu)
 
     # ---------------------
-    # 4) Create a function from original expressions, then re-call it
+    # 4) Model call (use model["F_all"] directly)
     # ---------------------
-    F_all=ca.Function("F_all_internal",[y_sym,u_sym],[dx_expr,z_expr])
-    F_A=model["F_A"]
-    dx_var,z_var=F_all(y_var,u_par) #Symbolic dx,z as functions of y_var, u_par
-    # Build dictionary: name -> symbolic expression
-    Zsym = {name: z_var[i] for i, name in enumerate(model["Z_names"])}
+    if is_dae:
+        dx_var, g_var, out_var = model["F_all"](y_var, z_var, u_par)
+    else:
+        dx_var, out_var = model["F_all"](y_var, u_par)
+
+    # if is_dae:
+    #     dx_expr=model["dx"]
+    #     g_expr=model["g"]
+    #     out_expr=model["out"]
+    #
+    #     F_all=ca.Function(
+    #         "F_all_internal",
+    #         [y_sym,z_sym,u_sym],
+    #         [dx_expr, g_expr, out_expr]
+    #     )
+    #
+    #     dx_var,g_var,out_var=F_all(y_var,z_var,u_par)
+    #
+    # else:
+    #     dx_expr=model["dx"]
+    #     out_expr=model["out"]
+    #     F_all=ca.Function(
+    #         "F_all_internal",
+    #         [y_sym,u_sym],
+    #         [dx_expr,out_expr]
+    #     )
+    #     F_A = model["F_A"]
+    #     dx_var,out_var=F_all(y_var,u_par)
+
+    Zsym = {name: out_var[i] for i, name in enumerate(Z_NAMES)}
 
     # ---------------------
     # 5) Unpack variables
@@ -127,7 +178,7 @@ def solve_equilibrium_ipopt(
 
     rho_avg_mix_tb = Zsym["rho_avg_mix_tb"]
     alpha_avg_L_tb = Zsym["alpha_avg_L_tb"]
-    alpha_G_tb_b = Zsym["alpha_G_tb_b"]
+    alpha_G_tb_b = Zsym["alpha_G_m_tb_b"]
     U_avg_L_tb = Zsym["U_avg_L_tb"]
     denom_G = Zsym["denom_G"]
     denom_G_safe = Zsym["denom_G_safe"]
@@ -175,24 +226,27 @@ def solve_equilibrium_ipopt(
     w_L_out = Zsym["w_L_out"]
 
     # ---------------------
-    # 5) Objective: minimize ||dx||^2 (scaled)
+    # 6) Objective: minimize ||dx||^2 (scaled)
     # ---------------------
-    obj=0
+    obj=ca.dot(dx_var,dx_var)
     p=u_par
 
-
     # ---------------------
-    # 6) Constraints
+    # 7) Constraints
     # ---------------------
-
     g_list=[]
     lbg=[]
     ubg=[]
 
-    # f(u,y)=0
+    # Equality constraints: dx = 0 (nx) and g = 0 (nz)
     g_list.append(dx_var)
     lbg.extend([0] * nx)
     ubg.extend([0] * nx)
+
+    if is_dae:
+        g_list.append(g_var)
+        lbg.extend([0] * nz)
+        ubg.extend([0] * nz)
 
     g_list.append(log_arg_tb_safe)
     lbg.append(1e-12)
@@ -202,7 +256,6 @@ def solve_equilibrium_ipopt(
     lbg.append(1e-12)
     ubg.append(1e20)
 
-    # alpha_L_tb_b, alpha_L_tb_t, alpha_G_tb_t in [0,1]
     for a in [alpha_L_tb_b, alpha_L_tb_t, alpha_G_tb_t, alpha_avg_L_tb]:
         g_list.append(a)
         lbg.append(0.0)
@@ -245,108 +298,166 @@ def solve_equilibrium_ipopt(
     lbg.append(0)
     ubg.append(1e20)
 
-    g=ca.vertcat(*g_list)
+    g_nlp=ca.vertcat(*g_list)
 
     # ---------------------
-    # 7) Bounds on y
+    # 8) Bounds on y
     # ---------------------
     y_lb=[0.0,0.0,0.0]
     y_ub=[1e20,1e20,1e20]
 
-    lbx=ca.DM(y_lb).reshape((nx,1))
-    ubx=ca.DM(y_ub).reshape((nx,1))
+    # ---------------------
+    # 9) Bounds on z
+    # ---------------------
+    if is_dae:
+        z_lb=[1e3,1e3,0.0]
+        z_ub=[1e9,1e9,1e6]
+        lbx=ca.DM(y_lb+z_lb).reshape((nx+nz,1))
+        ubx=ca.DM(y_ub+z_ub).reshape((nx+nz,1))
+    else:
+        lbx=ca.DM(y_lb).reshape((nx,1))
+        ubx=ca.DM(y_ub).reshape((nx,1))
 
     # ---------------------
-    # 8) NLP definition
+    # 10) NLP definition
     # ---------------------
-    nlp={"x":y_var,"p":p,"f":obj,"g":g}
+    nlp = {"x": x_var, "p": p, "f": obj, "g": g_nlp}
 
     opts = {
         "ipopt.print_level": 0,
         "print_time": 0,
         "ipopt.max_iter": 8000,
-
-        # scaling
         "ipopt.nlp_scaling_method": "gradient-based",
-
-        # main convergence tolerances
         "ipopt.tol": 1e-12,
         "ipopt.constr_viol_tol": 1e-10,
         "ipopt.dual_inf_tol": 1e-10,
         "ipopt.compl_inf_tol": 1e-10,
-
-        # kill "acceptable" early exit:
-        # - must be strictly positive
-        # - make them extremely tight
-        # - and set acceptable_iter=0 so it cannot terminate there anyway
         "ipopt.acceptable_tol": 1e-20,
         "ipopt.acceptable_constr_viol_tol": 1e-20,
         "ipopt.acceptable_dual_inf_tol": 1e-20,
         "ipopt.acceptable_compl_inf_tol": 1e-20,
         "ipopt.acceptable_iter": 0,
-
-        # barrier strategy (optional)
         "ipopt.mu_strategy": "adaptive",
-        # "ipopt.mu_strategy": "monotone",
-
-        # optional linear solver (often helps reproducibility)
         "ipopt.linear_solver": "mumps",
     }
 
-    solver = ca.nlpsol("eq_solver", "ipopt", nlp)
+    solver = ca.nlpsol("eq_solver", "ipopt", nlp, opts)
 
     # -------------------------
-    # Pack numeric inputs
+    # 11) Pack numeric inputs
     # -------------------------
-    u_val = ca.DM(u_val).reshape((nu, 1))
+    u_val_dm = ca.DM(u_val).reshape((nu, 1))
     y0 = ca.DM(y_guess).reshape((nx, 1))
-    p_val=u_val
+
+    if is_dae:
+        if z_guess is None:
+            raise ValueError("DAE model requires z_guess.(initial guess for algebraic variables).")
+        z0=ca.DM(z_guess).reshape((nz, 1))
+        x0=ca.vertcat(y0,z0)
+    else:
+        x0=y0
+
     # -------------------------
-    # Solve
+    # 12) Solve
     # -------------------------
+
     sol = solver(
-        x0=y0,
+        x0=x0,
         lbx=lbx,
         ubx=ubx,
         lbg=ca.DM(lbg) if len(lbg) else ca.DM([]),
         ubg=ca.DM(ubg) if len(ubg) else ca.DM([]),
-        p=p_val,
+        p=u_val_dm,
     )
 
-    y_star = sol["x"]
-
-    # -------------------------
-    # Evaluate dx,z at solution (numerically)
-    # -------------------------
-    # Reuse F_all we created (it maps y,u -> dx,z)
-    dx_star, z_star = F_all(y_star, u_val)
-
-    #Stability classification
-    A_star=F_A(y_star,u_val)
-    A_num=np.array(A_star,dtype=float)
-    eig=np.linalg.eigvals(A_num)
-
-    tol=1e-8
-    stable=bool(np.all(np.real(eig)<-tol))
-
+    x_star = sol["x"]
     stats=solver.stats()
 
-    return y_star, dx_star, z_star,eig,stable,stats
+    if not bool(stats.get("success", False)):
+        print("\n---- IPOPT FAILURE DIAGNOSTICS ----")
+        print("Status:", stats.get("return_status", ""))
+
+        x_last = sol["x"]
+
+        if is_dae:
+            y_last = x_last[0:nx]
+            z_last = x_last[nx:nx + nz]
+            dx_last, g_last, out_last = model["F_all"](y_last, z_last, u_val_dm)
+
+            dx_np = np.array(dx_last, dtype=float).reshape(-1)
+            g_np = np.array(g_last, dtype=float).reshape(-1)
+
+            print("||dx|| =", np.linalg.norm(dx_np))
+            print("||g||  =", np.linalg.norm(g_np))
+            print("dx =", dx_np)
+            print("g  =", g_np)
+
+        else:
+            y_last = x_last
+            dx_last, out_last = model["F_all"](y_last, u_val_dm)
+
+            dx_np = np.array(dx_last, dtype=float).reshape(-1)
+
+            print("||dx|| =", np.linalg.norm(dx_np))
+            print("dx =", dx_np)
+
+        print("------------------------------------\n")
+
+    # -------------------------
+    # 13) Post-eval
+    # -------------------------
+    tol=1e-8
+
+    if is_dae:
+        y_star=x_star[0:nx]
+        z_star=x_star[nx:nx+nz]
+        dx_star,g_star,out_star=model["F_all"](y_star,z_star,u_val_dm)
+
+        # Reduced Jacobian stability
+        A_star = model["F_A"](y_star, z_star, u_val_dm)  # Ared
+        A_num = np.array(A_star, dtype=float)
+        eig = np.linalg.eigvals(A_num)
+        stable = bool(np.all(np.real(eig) < -tol))
+
+        return y_star, z_star, dx_star, g_star, out_star, eig, stable, stats
+
+    else:
+        y_star=x_star
+        dx_star, out_star=model["F_all"](y_star,u_val_dm)
+
+        # Reduced Jacobian stability
+        A_star = model["F_A"](x_star, u_val_dm)
+        A_num = np.array(A_star, dtype=float)
+        eig = np.linalg.eigvals(A_num)
+        stable = bool(np.all(np.real(eig) < -tol))
+
+    return y_star, dx_star, out_star, eig, stable, stats
 
 
+# model_surrogate = build_steady_state_model(glc_casadi,
+#                                      state_size=3,
+#                                      control_size=2)
 
-# 1) assemble model
-model = build_steady_state_model(glc_casadi, state_size=3, control_size=2, name="glc")
+model_rigorous=build_steady_state_model(glc_rigorous_casadi,
+                                        state_size=3,
+                                        alg_size=3,
+                                        control_size=2)
 
-# 2) solve one point
-u = [0.55, 0.05]
-# y_guess=[3582.4731,311.7586,8523.038]
-y_guess = [3919.7688, 437.16663, 7956.1206]
+u = [0.20, 0.20]
+y_guess = [3309.01253915,252.30410395,7905.99065368]
+z_guess = [120e5, 140e5, 10.0]  # [P_tb, P_bh, w_res] initial guesses (example)
 
-y_star, dx_star, z_star, eig,stable,stats = solve_equilibrium_ipopt(
-    model=model,
+# y_star, dx_star, out_star, eig, stable, stats = solve_equilibrium_ipopt(
+#     model=model_surrogate,
+#     u_val=u,
+#     y_guess=y_guess,
+# )
+
+y_star, z_star, dx_star, g_star, out_star, eig, stable, stats = solve_equilibrium_ipopt(
+    model=model_rigorous,
     u_val=u,
     y_guess=y_guess,
+    z_guess=z_guess
 )
 
 print("status:", stats["return_status"], "success:", stats["success"])
@@ -354,9 +465,7 @@ print("y*:", np.array(y_star).squeeze())
 print("dx*:", np.array(dx_star).squeeze())
 print("||dx||:", np.linalg.norm(np.array(dx_star).squeeze()))
 # print("z*:", np.array(z_star).squeeze())
-print("eig:", eig)
-print("stable:", stable)
 print("\n--- z* (named) ---")
-Z_NAMES=model["Z_names"]
-print_z_grouped(z_star, Z_NAMES)  # set ncols=1 if you prefer
+Z_NAMES=model_rigorous["Z_names"]
+print_z_grouped(out_star, Z_NAMES)  # set ncols=1 if you prefer
 

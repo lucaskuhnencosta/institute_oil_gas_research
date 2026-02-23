@@ -28,33 +28,36 @@ def glc_bsw_casadi(y,u):
             P_tb_t_bar]
     """
     def softplus_stable(x):
+        # softplus(x) = max(x,0) + log(1+exp(-|x|)), stable for large x
         ax = sqrt(x * x + tiny)
         return 0.5 * (x + ax) + log(1 + exp(-ax))
 
-    def smooth_pos_scaled(dp_pa):
-        x=(k_pos*dp_pa)
-        return (1/k_pos)*(softplus_stable(x))
+    def smooth_pos_scaled(dp_pa,scale=1):
+        x=(k_pos*dp_pa)/scale
+        # softplus(z) = (1/k) log(1+exp(k z))
+        return (scale/k_pos)*(softplus_stable(x))
 
-    def smooth_max_scaled(z,zmin):
+    def smooth_max_scaled(z,zmin,scale=1):
         # smooth approximation of max(z,zmin))
-        return zmin + smooth_pos_scaled(z - zmin)
+        return zmin + smooth_pos_scaled(z - zmin,scale)
 
-    k_pos=1
+    k_pos=20
     eps=1e-12
     p_scale = 1e5  # Pa (≈ 1 bar). This is the ONLY change that matters.
     tiny=1e-12
 
-    BSW=0.10
     GOR = 0.01  # is the gas oil ratio
+    BSW=0.10
 
-    R = 8.314 #J/(K*mol) is the universal gas constant
-    g = 9.81 #m/s^2 is the gravity
-    mu_o = 3.64e-3 # Pa.s is the viscosity
-    mu_w=1.00e-3
-    rho_o = 760 #kg/m^3 is the density of the liquid in the tubing
-    rho_w= 1000
-    rho_L=(1-BSW)*rho_o+BSW*rho_w
-    mu = np.exp((1 - BSW)*np.log(mu_o) + BSW*np.log(mu_w))
+    R = 8.314  # J/(K*mol) is the universal gas constant
+    g = 9.81  # m/s^2 is the gravity
+    mu_o = 3.64e-3  # Pa.s is the viscosity
+    mu_w = 1.00e-3
+    rho_o = 760  # kg/m^3 is the density of the liquid in the tubing
+    rho_w = 1000
+    rho_L = 1.0 / (BSW / rho_w + (1.0 - BSW) / rho_o)
+    mu = np.exp((1 - BSW) * np.log(mu_o) + BSW * np.log(mu_w))
+
     M_G = 0.0167 #(kg/mol) is the gas molecular weight
     T_an = 348 #K is the annulus temperature
     V_an = 64.34  #m^3 is the annulus volume
@@ -65,6 +68,7 @@ def glc_bsw_casadi(y,u):
     D_bh = 2 * np.sqrt(S_bh / np.pi)
     L_bh = 75  #m is the length below the injection point
     T_tb = 369.4 #K is the tubing temperature
+
     P_res = 160e5 #160bar, the constant reservoir pressure
     w_avg_res = 18 #kg/s is an average flow from reservoir to compute the friction terms and model bottomhole pressure to calculate the actual flow from reservoir
     D_tb = 0.134 #tubing diameter
@@ -99,7 +103,7 @@ def glc_bsw_casadi(y,u):
     dP_gs_an=P_gs-P_an_t
 
     w_G_in_original = K_gs * u2 * sqrt(rho_G_in * fmax(dP_gs_an,0))
-    w_G_in=K_gs*u2*sqrt(rho_G_in*smooth_pos_scaled(dP_gs_an)+eps)
+    w_G_in=K_gs*u2*sqrt(rho_G_in*smooth_pos_scaled(dP_gs_an,scale=1)+eps)
 
     # Equation 6 - Density of the gas at top of the tubing
     V_gas_tb_t=(V_tb+S_bh*L_bh)-(m_L_tb/rho_L)
@@ -160,7 +164,7 @@ def glc_bsw_casadi(y,u):
     dP_an_tb=P_an_b-P_tb_b
 
     # Equation 18 - Mass flow rate of gas injected into tubing
-    w_G_inj=K_inj*sqrt(rho_G_an_b * smooth_pos_scaled(dP_an_tb)+eps)
+    w_G_inj=K_inj*sqrt(rho_G_an_b * smooth_pos_scaled(dP_an_tb,scale=1)+eps)
 
     # Equation 19 - Liquid velocity at bottom-hole
     U_avg_L_bh=w_avg_res/(rho_L*S_bh)
@@ -187,7 +191,7 @@ def glc_bsw_casadi(y,u):
 
     # Equation 24 - Mass flow rate from reservoir to tubing
     dP_res_bh=P_res-P_bh
-    w_res = PI * smooth_pos_scaled(dP_res_bh)
+    w_res = PI * smooth_pos_scaled(dP_res_bh,scale=1)
 
     # Equation 25 - Mass flow rate of liquid from reservoir to tubing
     w_L_res=(1-alpha_G_tb_b)*w_res
@@ -223,7 +227,7 @@ def glc_bsw_casadi(y,u):
 
     dP_tb_choke=P_tb_t-P_0
     # Equation 31 - Mass flow rate of mixture from choke
-    w_out=K_pr*u1*sqrt(rho_mix_tb_t_safe*smooth_pos_scaled(dP_tb_choke)+eps)
+    w_out=K_pr*u1*sqrt(rho_mix_tb_t_safe*smooth_pos_scaled(dP_tb_choke,scale=1)+eps)
 
     # Equation 32 - Volumetric flow rate of production choke
     Q_out=w_out/rho_mix_tb_t_safe
@@ -264,8 +268,8 @@ def glc_bsw_casadi(y,u):
     F_t_bar = F_t / 1e5
     F_bh_bar = F_bh / 1e5
 
-    w_w_out=w_L_out*BSW
-    w_o_out=w_L_out*(1-BSW)
+    w_w_out = w_L_out * BSW
+    w_o_out = w_L_out * (1-BSW)
 
     z = vertcat(
         # --- Eq 1-4
