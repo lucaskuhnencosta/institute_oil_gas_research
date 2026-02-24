@@ -266,6 +266,8 @@ def glc_casadi(y,u):
     w_w_out = w_L_out * BSW
     w_o_out = w_L_out * (1-BSW)
 
+    rho_mix_bh=rho_L
+
     out = vertcat(
         # --- Eq 1-4
         P_an_t_bar, #0
@@ -342,6 +344,8 @@ def glc_casadi(y,u):
 
         w_w_out,
         w_o_out,
+
+        rho_mix_bh
 
     )
 

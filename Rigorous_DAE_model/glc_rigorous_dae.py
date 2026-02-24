@@ -327,6 +327,8 @@ def glc_rigorous_casadi(y, z, u):
         w_w_out,
         w_o_out,
 
+        rho_mix_bh
+
     )
 
     return dx, alg, out

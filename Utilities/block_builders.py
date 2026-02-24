@@ -75,7 +75,9 @@ Z_NAMES = [
         "w_L_out",
 
         "w_w_out",
-        "w_o_out"
+        "w_o_out",
+    
+        "rho_mix_bh"
     ]
 
 
