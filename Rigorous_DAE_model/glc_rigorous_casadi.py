@@ -1,8 +1,9 @@
 from casadi import *
 import numpy as np
+import casadi as ca
 
 
-def glc_rigorous_casadi(y, z, u):
+def glc_well_01_rigorous_casadi(y, z, u):
     """
     Complete (true friction) gas-lift well model in CasADi with smooth positivity
     for IPOPT-friendliness
@@ -44,9 +45,10 @@ def glc_rigorous_casadi(y, z, u):
     eps = 1e-12
     tiny = 1e-12
 
-    BSW = 0.10
-    GOR = 0.01  # is the gas oil ratio
-
+    BSW = 0
+    GOR = 0 # is the gas oil ratio
+    PI = 3.00e-6  # is the productivity index in kg/(s.Pa)
+    #2.47
     R = 8.314  # J/(K*mol) is the universal gas constant
     g = 9.81  # m/s^2 is the gravity
     mu_o = 3.64e-3  # Pa.s is the viscosity
@@ -73,7 +75,7 @@ def glc_rigorous_casadi(y, z, u):
     epsilon_tubing = 3e-4
 
     P_res = 160e5  # 160bar, the constant reservoir pressure
-    PI = 2.47e-6  # is the productivity index in kg/(s.Pa)
+
     K_gs = 9.98e-5  # is the gas lift choke constant
     K_inj = 1.40e-4  # is the injection valve choke constant
     K_pr = 2.90e-3  # is the production choke constant
@@ -147,7 +149,7 @@ def glc_rigorous_casadi(y, z, u):
     Re_tb_safe = smooth_max_scaled(Re_tb, 1.0)  # keep >0 for 6.9/Re
 
     log_arg_tb = (epsilon_tubing / (D_tb * 3.7)) ** 1.11 + 6.9 / Re_tb_safe
-    log_arg_tb_safe = smooth_max_scaled(log_arg_tb, 1e-12)
+    log_arg_tb_safe = fmax(log_arg_tb, 1e-12)
     lambda_tb = (1 / (1.8 * log10(log_arg_tb_safe))) ** 2
 
     F_t = (alpha_avg_L_tb * lambda_tb * rho_avg_mix_tb * U_avg_mix_tb ** 2 * L_tb) / (2 * D_tb)
@@ -174,7 +176,7 @@ def glc_rigorous_casadi(y, z, u):
     Re_bh = rho_mix_bh*U_m_bh*D_bh/mu
     Re_bh_safe=smooth_max_scaled(Re_bh, 1.0)
     log_arg_bh=(epsilon_tubing/(D_bh*3.7))**1.11+6.9/Re_bh_safe
-    log_arg_bh_safe=smooth_max_scaled(log_arg_bh, 1e-9)
+    log_arg_bh_safe=fmax(log_arg_bh, 1e-9)
     lambda_bh=(1.0/(1.8*log10(log_arg_bh_safe)))**2
 
     F_bh=(alpha_L_bh*lambda_bh*rho_mix_bh*U_m_bh**2*L_bh)/(2.0*D_bh)
@@ -250,6 +252,7 @@ def glc_rigorous_casadi(y, z, u):
 
     U_avg_L_bh=0
     w_G_in_original=0
+
     out = vertcat(
         # --- Eq 1-4
         P_an_t_bar,  # 0
@@ -332,3 +335,122 @@ def glc_rigorous_casadi(y, z, u):
     )
 
     return dx, alg, out
+
+
+Z_NAMES = [
+    # --- Eq 1-4
+    "P_an_t_bar",
+    "P_an_b_bar",
+    "rho_G_an_b",
+    "rho_G_in",
+
+    # --- Eq 5
+    "dP_gs_an_bar",
+    "w_G_in_original",
+    "w_G_in",
+
+    # --- Eq 6-7
+    "V_gas_tb_t",
+    "V_gas_tb_t_safe",
+    "rho_G_tb_t",
+    "P_tb_t_bar",
+
+    # --- Eq 8-13
+    "rho_avg_mix_tb",
+    "alpha_avg_L_tb",
+    "alpha_G_m_tb_b",
+    "U_avg_L_tb",
+    "denom_G",
+    "denom_G_safe",
+    "U_avg_G_tb",
+    "U_avg_mix_tb",
+
+    # --- Eq 14-16
+    "Re_tb",
+    "Re_tb_safe",
+    "log_arg_tb",
+    "log_arg_tb_safe",
+    "lambda_tb",
+    "F_t_bar",
+
+    # --- Eq 17-18
+    "P_tb_b_bar",
+    "dP_an_tb_bar",
+    "w_G_inj",
+
+    # --- Eq 19-23
+    "U_avg_L_bh",
+    "Re_bh",
+    "log_arg_bh",
+    "lambda_bh",
+    "F_bh_bar",
+    "P_bh_bar",
+
+    # --- Eq 24-27
+    "dP_res_bh_bar",
+    "w_res",
+    "w_L_res",
+    "w_G_res",
+    "rho_G_tb_b",
+
+    # --- Eq 28-30
+    "denom_alpha_b",
+    "denom_alpha_b_safe",
+    "alpha_L_tb_b",
+    "alpha_L_tb_t",
+    "rho_mix_tb_t",
+    "rho_mix_tb_t_safe",
+
+    # --- Eq 31-35
+    "dP_tb_choke_bar",
+    "w_out",
+    "Q_out",
+    "denom_alpha_t",
+    "denom_alpha_t_safe",
+    "alpha_G_tb_t",
+    "w_G_out",
+    "w_L_out",
+
+    "w_w_out",
+    "w_o_out",
+
+    "rho_mix_bh"
+]
+
+def build_well_model(i: int, name_prefix="well"):
+    """
+    Returns a dict with explicit metadata + a compiled CasADi function:
+        F_all(y,z,u) -> (dx, g, out)
+    """
+    well_id = i + 1
+    fname = f"glc_well_{well_id:02d}_rigorous_casadi"
+    if fname not in globals():
+        raise AttributeError(f"No function '{fname}' in this module.")
+    well_func = globals()[fname]
+
+    nx = 3
+    nu = 2
+    nz = 3   # your algebraic vector length, e.g. [P_tb_b, P_bh, w_res]
+
+    y = ca.MX.sym(f"y_{name_prefix}_{well_id}", nx)
+    z = ca.MX.sym(f"z_{name_prefix}_{well_id}", nz)
+    u = ca.MX.sym(f"u_{name_prefix}_{well_id}", nu)
+
+    dx, g, out = well_func(y, z, u)
+
+    F_all = ca.Function(
+        f"F_all_{name_prefix}_{well_id}",
+        [y, z, u],
+        [dx, g, out],
+        ["y", "z", "u"],
+        ["dx", "g", "out"]
+    )
+
+    return {
+        "is_dae": True,
+        "nx": nx,
+        "nu": nu,
+        "nz": nz,
+        "Z_NAMES": Z_NAMES,
+        "F_all": F_all,
+    }

@@ -1,13 +1,14 @@
 import numpy as np
 import casadi as ca
 import matplotlib.pyplot as plt
+from mpmath.functions.rszeta import coef
 
-from Surrogate_ODE_Model.glc_01_casadi import glc_casadi
-from Surrogate_ODE_Model.glc_02_bsw_casadi import glc_bsw_casadi
-from Rigorous_DAE_model.glc_rigorous_dae import glc_rigorous_casadi
+# from Surrogate_ODE_Model.glc_01_casadi import glc_casadi
+from Surrogate_ODE_Model.glc_surrogate_casadi import glc_well_01_casadi
+from Rigorous_DAE_model.glc_rigorous_casadi import glc_well_01_rigorous_casadi
 
 from Utilities.block_builders import build_steady_state_model
-from Solvers.solve_glc_ode_equilibrium import solve_equilibrium_ipopt, model_rigorous
+from Solvers.solve_glc_ode_equilibrium import solve_equilibrium_ipopt
 from matplotlib.colors import Normalize
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 import matplotlib as mpl
@@ -15,13 +16,13 @@ import matplotlib as mpl
 # ---------------------------------------------------------------------
 # User Configuration
 # ---------------------------------------------------------------------
-SIM_KIND="surrogate" # <-- change to "surrogate" or "rigorous"
+SIM_KIND="rigorous" # <-- change to "surrogate" or "rigorous"
 
 u1_stable, u2_stable = [], []
 u1_unstab, u2_unstab = [], []
 
-u1_grid = np.linspace(0.05, 1.00001, 40)
-u2_grid=np.linspace(0.15,1.00001,40)
+u1_grid = np.linspace(0.05, 1.00001, 20)
+u2_grid=np.linspace(0.20,1.00001,20)
 
 RES_TOL_DX=1e-6
 RES_TOL_G=1e-6
@@ -40,7 +41,7 @@ def make_model(sim_kind:str):
     if sim_kind == "surrogate":
         # ODE: dx,out = glc_casadi(y,u)
         model=build_steady_state_model(
-            f_func=glc_casadi,
+            f_func=glc_well_01_casadi,
             state_size=3,
             control_size=2,
             alg_size=None,
@@ -50,7 +51,7 @@ def make_model(sim_kind:str):
     elif sim_kind == "rigorous":
         # DAE: dx,g,out=glc_rigorous_casadi(y,z,alg_u)
         model=build_steady_state_model(
-            f_func=glc_rigorous_casadi,
+            f_func=glc_well_01_rigorous_casadi,
             state_size=3,
             control_size=2,
             alg_size=3,
@@ -66,7 +67,7 @@ def make_model(sim_kind:str):
 
 y0_fixed = np.array([3919.7688, 437.16663, 7956.1206], dtype=float)
 z_guess = [120e5, 140e5, 10.0]  # [P_tb, P_bh, w_res] initial guesses (example)
-model = build_steady_state_model(glc_rigorous_casadi,
+model = build_steady_state_model(glc_well_01_rigorous_casadi,
                                  state_size=3,
                                  alg_size=3,
                                  control_size=2,
@@ -296,9 +297,9 @@ axes = [
 ]
 
 plot_surface(fig4,axes[0], U1, U2, results["OUT"]["F_t_bar"], "F_t(u1,u2)", "bar")
-plot_surface(fig4,axes[1], U1, U2, results["OUT"]["alpha_avg_L_tb"],  "alpha_avg(u1,u2)", "bar")
+plot_surface(fig4,axes[1], U1, U2, results["OUT"]["rho_avg_mix_tb"],  "alpha_avg(u1,u2)", "bar")
 plot_surface(fig4,axes[2], U1, U2, results["OUT"]["Re_tb"], "Re_tb(u1,u2)", "bar")
-plot_surface(fig4,axes[3], U1, U2, results["OUT"]["U_avg_G_tb"], "U_g(u1,u2)", "bar")
+plot_surface(fig4,axes[3], U1, U2, results["OUT"]["U_avg_mix_tb"], "U_g(u1,u2)", "bar")
 
 for ax in axes:
     ax.view_init(elev=45, azim=45)    # opposite view
@@ -474,21 +475,40 @@ def extract_stability_boundary_from_grid(
 
 # #################################################################
 
-def fit_boundary_polynomial
+def fit_boundary_polynomial(boundary_u1,
+                            boundary_u2,
+                            deg=2,
+                            delta=0.02):
+    boundary_u1=np.asarray(boundary_u1,dtype=float).reshape(-1)
+    boundary_u2=np.asarray(boundary_u2,dtype=float).reshape(-1)
 
-# def extract_stability_boundary_from_grid(u1_grid,u2_grid,STABLE):
-#     u1_grid=np.asarray(u1_grid,dtype=float).reshape(-1)
-#     u2_grid=np.asarray(u2_grid,dtype=float).reshape(-1)
-#     STABLE=np.asarray(STABLE,dtype=float)
-#
-#     Nu1=len(u1_grid)
-#     Nu2=len(u2_grid)
+    if boundary_u1.size < deg+1:
+        raise RuntimeError(f"Need at least {deg+1} boundary points, got {boundary_u1.size}")
+    idx=np.argsort(boundary_u1)
+    boundary_u1=boundary_u1[idx]
+    boundary_u2=boundary_u2[idx]
+
+    coef=np.polyfit(boundary_u1,boundary_u2,deg=deg)
+    b_hat=np.poly1d(coef)+float(delta)
+    return b_hat
+
+def overlay_boundary_and_fit(ax,
+                             b_hat,
+                             deg=2):
+    u1_dense=np.linspace(0.0,1.01,1000)
+    u2_fit=b_hat(u1_dense)
+    ax.plot(u1_dense, u2_fit, "k-", linewidth=2.2, label=f"poly fit deg={deg}")
+    ax.legend(loc="best")
+    return ax
 
 ax=plot_stability_map(U1,
                       U2,
                       STABLE=results["STABLE"],
                       title="Stability map + fitted stability constraint")
+boundary_u1, boundary_u2 = extract_stability_boundary_from_grid(u1_grid, u2_grid, results["STABLE"])
+b_hat=fit_boundary_polynomial(boundary_u1,boundary_u2)
+print(boundary_u1, boundary_u2)
+print (b_hat)
+overlay_boundary_and_fit(ax,b_hat,deg=2)
 plt.tight_layout()
 plt.show()
-boundary_u1, boundary_u2 = extract_stability_boundary_from_grid(u1_grid, u2_grid, results["STABLE"])
-print(boundary_u1, boundary_u2)

@@ -1,6 +1,6 @@
-from Surrogate_ODE_Model.glc_01_casadi import glc_casadi
-from Surrogate_ODE_Model.glc_02_bsw_casadi import glc_bsw_casadi
-from Rigorous_DAE_model.glc_rigorous_dae import glc_rigorous_casadi
+from Surrogate_ODE_Model.glc_coarse_casadi import glc_casadi
+from Surrogate_ODE_Model.glc_surrogate_casadi import glc_well_01_casadi
+from Rigorous_DAE_model.glc_rigorous_casadi import glc_well_01_rigorous_casadi
 from Utilities.block_builders import build_steady_state_model
 import casadi as ca
 import numpy as np
@@ -131,30 +131,6 @@ def solve_equilibrium_ipopt(
         dx_var, g_var, out_var = model["F_all"](y_var, z_var, u_par)
     else:
         dx_var, out_var = model["F_all"](y_var, u_par)
-
-    # if is_dae:
-    #     dx_expr=model["dx"]
-    #     g_expr=model["g"]
-    #     out_expr=model["out"]
-    #
-    #     F_all=ca.Function(
-    #         "F_all_internal",
-    #         [y_sym,z_sym,u_sym],
-    #         [dx_expr, g_expr, out_expr]
-    #     )
-    #
-    #     dx_var,g_var,out_var=F_all(y_var,z_var,u_par)
-    #
-    # else:
-    #     dx_expr=model["dx"]
-    #     out_expr=model["out"]
-    #     F_all=ca.Function(
-    #         "F_all_internal",
-    #         [y_sym,u_sym],
-    #         [dx_expr,out_expr]
-    #     )
-    #     F_A = model["F_A"]
-    #     dx_var,out_var=F_all(y_var,u_par)
 
     Zsym = {name: out_var[i] for i, name in enumerate(Z_NAMES)}
 
@@ -434,16 +410,16 @@ def solve_equilibrium_ipopt(
     return y_star, dx_star, out_star, eig, stable, stats
 
 
-# model_surrogate = build_steady_state_model(glc_casadi,
+# model_surrogate = build_steady_state_model(glc_well_01_casadi,
 #                                      state_size=3,
 #                                      control_size=2)
 
-model_rigorous=build_steady_state_model(glc_rigorous_casadi,
+model_rigorous=build_steady_state_model(glc_well_01_rigorous_casadi,
                                         state_size=3,
                                         alg_size=3,
                                         control_size=2)
 
-u = [0.20, 0.20]
+u = [0.90, 0.90]
 y_guess = [3309.01253915,252.30410395,7905.99065368]
 z_guess = [120e5, 140e5, 10.0]  # [P_tb, P_bh, w_res] initial guesses (example)
 

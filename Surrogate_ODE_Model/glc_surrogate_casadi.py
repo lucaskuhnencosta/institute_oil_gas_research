@@ -1,8 +1,8 @@
 from casadi import *
 import numpy as np
+import casadi as ca
 
-
-def glc_bsw_casadi(y,u):
+def glc_well_01_surrogate_casadi(y,u):
     """
     Complete (true friction) gas-lift well model in CasADi with smooth positivity
     for IPOPT-friendliness
@@ -43,11 +43,10 @@ def glc_bsw_casadi(y,u):
 
     k_pos=20
     eps=1e-12
-    p_scale = 1e5  # Pa (≈ 1 bar). This is the ONLY change that matters.
     tiny=1e-12
 
-    GOR = 0.01  # is the gas oil ratio
-    BSW=0.10
+    GOR = 0# is the gas oil ratio
+    BSW=0
 
     R = 8.314  # J/(K*mol) is the universal gas constant
     g = 9.81  # m/s^2 is the gravity
@@ -355,3 +354,123 @@ def glc_bsw_casadi(y,u):
     )
 
     return dx, z
+
+
+Z_NAMES = [
+    # --- Eq 1-4
+    "P_an_t_bar",
+    "P_an_b_bar",
+    "rho_G_an_b",
+    "rho_G_in",
+
+    # --- Eq 5
+    "dP_gs_an_bar",
+    "w_G_in_original",
+    "w_G_in",
+
+    # --- Eq 6-7
+    "V_gas_tb_t",
+    "V_gas_tb_t_safe",
+    "rho_G_tb_t",
+    "P_tb_t_bar",
+
+    # --- Eq 8-13
+    "rho_avg_mix_tb",
+    "alpha_avg_L_tb",
+    "alpha_G_m_tb_b",
+    "U_avg_L_tb",
+    "denom_G",
+    "denom_G_safe",
+    "U_avg_G_tb",
+    "U_avg_mix_tb",
+
+    # --- Eq 14-16
+    "Re_tb",
+    "Re_tb_safe",
+    "log_arg_tb",
+    "log_arg_tb_safe",
+    "lambda_tb",
+    "F_t_bar",
+
+    # --- Eq 17-18
+    "P_tb_b_bar",
+    "dP_an_tb_bar",
+    "w_G_inj",
+
+    # --- Eq 19-23
+    "U_avg_L_bh",
+    "Re_bh",
+    "log_arg_bh",
+    "lambda_bh",
+    "F_bh_bar",
+    "P_bh_bar",
+
+    # --- Eq 24-27
+    "dP_res_bh_bar",
+    "w_res",
+    "w_L_res",
+    "w_G_res",
+    "rho_G_tb_b",
+
+    # --- Eq 28-30
+    "denom_alpha_b",
+    "denom_alpha_b_safe",
+    "alpha_L_tb_b",
+    "alpha_L_tb_t",
+    "rho_mix_tb_t",
+    "rho_mix_tb_t_safe",
+
+    # --- Eq 31-35
+    "dP_tb_choke_bar",
+    "w_out",
+    "Q_out",
+    "denom_alpha_t",
+    "denom_alpha_t_safe",
+    "alpha_G_tb_t",
+    "w_G_out",
+    "w_L_out",
+
+    "w_w_out",
+    "w_o_out",
+
+    "rho_mix_bh"
+]
+
+
+def build_well_model(i: int, name_prefix="well"):
+    """
+    Returns a dict with explicit metadata + a compiled CasADi function:
+        F_all(y,u) -> (dx, out)
+    """
+    well_id = i + 1
+    fname = f"glc_well_{well_id:02d}_surrogate_casadi"
+    if fname not in globals():
+        raise AttributeError(f"No function '{fname}' in this module.")
+    well_func = globals()[fname]
+
+    # You KNOW your dimensions, so just define them once (or infer safely from a single call)
+    nx = 3
+    nu = 2
+
+    y = ca.MX.sym(f"y_{name_prefix}_{well_id}", nx)
+    u = ca.MX.sym(f"u_{name_prefix}_{well_id}", nu)
+
+    dx, out = well_func(y, u)
+
+    # compile once
+    F_all = ca.Function(
+        f"F_all_{name_prefix}_{well_id}",
+        [y, u],
+        [dx, out],
+        ["y", "u"],
+        ["dx", "out"]
+    )
+
+    return {
+        "is_dae": False,
+        "nx": nx,
+        "nu": nu,
+        "nz": 0,
+        "Z_NAMES": Z_NAMES,
+        "F_all": F_all,
+    }
