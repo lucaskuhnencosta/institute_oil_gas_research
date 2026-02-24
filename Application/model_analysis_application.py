@@ -20,8 +20,8 @@ SIM_KIND="surrogate" # <-- change to "surrogate" or "rigorous"
 u1_stable, u2_stable = [], []
 u1_unstab, u2_unstab = [], []
 
-u1_grid = np.linspace(0.05, 1.00001, 20)
-u2_grid=np.linspace(0.15,1.00001,20)
+u1_grid = np.linspace(0.05, 1.00001, 40)
+u2_grid=np.linspace(0.15,1.00001,40)
 
 RES_TOL_DX=1e-6
 RES_TOL_G=1e-6
@@ -390,13 +390,11 @@ plt.show()
 
 # #################################################################
 
-
-
 def plot_stability_map(U1,
                        U2,
                        STABLE,
                        title="Stability map in (u1,u2) plane",
-                       xlim=(0.0, 1.0), ylim=(0.2, 1.0)):
+                       xlim=(0.0, 1.05), ylim=(0.15, 1.05)):
     """
         U1, U2: meshgrid arrays (same shape)
         STABLE: same shape, with values:
@@ -418,7 +416,7 @@ def plot_stability_map(U1,
         ax.scatter(U1[stable_mask],
                    U2[stable_mask],
                    marker='o',
-                   s=90,
+                   s=150,
                    facecolors="none",
                    edgecolors="green",
                    linewidths=1.5,
@@ -427,7 +425,7 @@ def plot_stability_map(U1,
         ax.scatter(U1[unstab_mask],
                    U2[unstab_mask],
                    marker='x',
-                   s=90,
+                   s=150,
                    c="red",
                    linewidths=1.5,
                    label="unstable"
@@ -443,8 +441,40 @@ def plot_stability_map(U1,
     handles, labels = ax.get_legend_handles_labels()
     if handles:
         ax.legend(loc="best")
-
     return ax
+
+# #################################################################
+
+def extract_stability_boundary_from_grid(
+        u1_grid,
+        u2_grid,
+        STABLE
+):
+    u1_grid=np.asarray(u1_grid,dtype=float).reshape(-1)
+    u2_grid=np.asarray(u2_grid,dtype=float).reshape(-1)
+    STABLE=np.asarray(STABLE,dtype=float)
+
+    Nu1=len(u1_grid)
+    Nu2=len(u2_grid)
+
+    if STABLE.shape != (Nu1,Nu2):
+        raise ValueError(f"STABLE shape {STABLE.shape} does not match (Nu1,Nu2)=({Nu1,Nu2})")
+
+    boundary_u1=[]
+    boundary_u2=[]
+
+    for i,u1v in enumerate(u1_grid):
+        stable_js=np.where(STABLE[i,:]==1.0)[0]
+        if stable_js.size > 0:
+            jmin=stable_js.min()
+            boundary_u1.append(u1v)
+            boundary_u2.append(u2_grid[jmin])
+
+    return np.asarray(boundary_u1),np.asarray(boundary_u2)
+
+# #################################################################
+
+def fit_boundary_polynomial
 
 # def extract_stability_boundary_from_grid(u1_grid,u2_grid,STABLE):
 #     u1_grid=np.asarray(u1_grid,dtype=float).reshape(-1)
@@ -460,3 +490,5 @@ ax=plot_stability_map(U1,
                       title="Stability map + fitted stability constraint")
 plt.tight_layout()
 plt.show()
+boundary_u1, boundary_u2 = extract_stability_boundary_from_grid(u1_grid, u2_grid, results["STABLE"])
+print(boundary_u1, boundary_u2)
