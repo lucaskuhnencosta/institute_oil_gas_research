@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from mpmath.functions.rszeta import coef
 
 # from Surrogate_ODE_Model.glc_01_casadi import glc_casadi
-from Surrogate_ODE_Model.glc_surrogate_casadi import glc_well_01_casadi
+from Surrogate_ODE_Model.glc_surrogate_casadi import glc_well_01_surrogate_casadi
 from Rigorous_DAE_model.glc_rigorous_casadi import glc_well_01_rigorous_casadi
 
 from Utilities.block_builders import build_steady_state_model
@@ -41,7 +41,7 @@ def make_model(sim_kind:str):
     if sim_kind == "surrogate":
         # ODE: dx,out = glc_casadi(y,u)
         model=build_steady_state_model(
-            f_func=glc_well_01_casadi,
+            f_func=glc_well_01_surrogate_casadi,
             state_size=3,
             control_size=2,
             alg_size=None,

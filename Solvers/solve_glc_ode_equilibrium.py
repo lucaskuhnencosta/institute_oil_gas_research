@@ -1,5 +1,5 @@
 from Surrogate_ODE_Model.glc_coarse_casadi import glc_casadi
-from Surrogate_ODE_Model.glc_surrogate_casadi import glc_well_01_casadi
+from Surrogate_ODE_Model.glc_surrogate_casadi import glc_well_01_surrogate_casadi
 from Rigorous_DAE_model.glc_rigorous_casadi import glc_well_01_rigorous_casadi
 from Utilities.block_builders import build_steady_state_model
 import casadi as ca
@@ -410,31 +410,32 @@ def solve_equilibrium_ipopt(
     return y_star, dx_star, out_star, eig, stable, stats
 
 
-# model_surrogate = build_steady_state_model(glc_well_01_casadi,
-#                                      state_size=3,
-#                                      control_size=2)
+model_surrogate = build_steady_state_model(glc_well_01_surrogate_casadi,
+                                     state_size=3,
+                                     control_size=2)
 
-model_rigorous=build_steady_state_model(glc_well_01_rigorous_casadi,
-                                        state_size=3,
-                                        alg_size=3,
-                                        control_size=2)
+# model_rigorous=build_steady_state_model(glc_well_01_rigorous_casadi,
+#                                         state_size=3,
+#                                         alg_size=3,
+#                                         control_size=2)
 
 u = [0.90, 0.90]
-y_guess = [3309.01253915,252.30410395,7905.99065368]
+y_guess = [3611.50376343,253.76732476,6696.68639922]
 z_guess = [120e5, 140e5, 10.0]  # [P_tb, P_bh, w_res] initial guesses (example)
 
-# y_star, dx_star, out_star, eig, stable, stats = solve_equilibrium_ipopt(
-#     model=model_surrogate,
-#     u_val=u,
-#     y_guess=y_guess,
-# )
-
-y_star, z_star, dx_star, g_star, out_star, eig, stable, stats = solve_equilibrium_ipopt(
-    model=model_rigorous,
+y_star, dx_star, out_star, eig, stable, stats = solve_equilibrium_ipopt(
+    model=model_surrogate,
     u_val=u,
     y_guess=y_guess,
-    z_guess=z_guess
 )
+
+#
+# y_star, z_star, dx_star, g_star, out_star, eig, stable, stats = solve_equilibrium_ipopt(
+#     model=model_rigorous,
+#     u_val=u,
+#     y_guess=y_guess,
+#     z_guess=z_guess
+# )
 
 print("status:", stats["return_status"], "success:", stats["success"])
 print("y*:", np.array(y_star).squeeze())
@@ -442,6 +443,6 @@ print("dx*:", np.array(dx_star).squeeze())
 print("||dx||:", np.linalg.norm(np.array(dx_star).squeeze()))
 # print("z*:", np.array(z_star).squeeze())
 print("\n--- z* (named) ---")
-Z_NAMES=model_rigorous["Z_names"]
+Z_NAMES=model_surrogate["Z_names"]
 print_z_grouped(out_star, Z_NAMES)  # set ncols=1 if you prefer
 
