@@ -15,7 +15,7 @@ import matplotlib as mpl
 # ---------------------------------------------------------------------
 # User Configuration
 # ---------------------------------------------------------------------
-SIM_KIND="rigorous" # <-- change to "surrogate" or "rigorous"
+SIM_KIND="surrogate" # <-- change to "surrogate" or "rigorous"
 
 u1_stable, u2_stable = [], []
 u1_unstab, u2_unstab = [], []
@@ -362,8 +362,8 @@ axes = [
 
 plot_surface(fig7,axes[0], U1, U2, results["OUT"]["dP_gs_an_bar"],  "DP_GS_AN(u1,u2)", "bar")
 plot_surface(fig7,axes[1], U1, U2,results["OUT"]["dP_an_tb_bar"], "DP_AN_TB(u1,u2)", "bar")
-plot_surface(fig7,axes[2], U1, U2, results["OUT"]["dP_tb_choke"], "DP_TB_CHOKE(u1,u2)", "bar")
-plot_surface(fig7,axes[3], U1, U2, results["OUT"]["dP_res_bh"], "DP_RES_BH(u1,u2)", "bar")
+plot_surface(fig7,axes[2], U1, U2, results["OUT"]["dP_tb_choke_bar"], "DP_TB_CHOKE(u1,u2)", "bar")
+plot_surface(fig7,axes[3], U1, U2, results["OUT"]["dP_res_bh_bar"], "DP_RES_BH(u1,u2)", "bar")
 for ax in axes:
     ax.view_init(elev=45, azim=45)   # opposite view
 plt.tight_layout()
@@ -381,11 +381,82 @@ axes = [
 ]
 plot_surface(fig8,axes[0], U1, U2, results["OUT"]["w_out"], "Total production", "kg/s")
 plot_surface(fig8,axes[1], U1, U2, results["OUT"]["w_L_out"], "Production of liquid", "kg/s")
-plot_surface(fig8,axes[2], U1, U2, results["OUT"]["W_o_out"], "Production of oil", "kg/s")
+plot_surface(fig8,axes[2], U1, U2, results["OUT"]["w_o_out"], "Production of oil", "kg/s")
 plot_surface(fig8,axes[3], U1, U2, results["OUT"]["w_w_out"], "Production of water`", "kg/s")
 for ax in axes:
     ax.view_init(elev=45, azim=45)   # opposite view
 plt.tight_layout()
 plt.show()
-plt.figure()
 
+# #################################################################
+
+
+
+def plot_stability_map(U1,
+                       U2,
+                       STABLE,
+                       title="Stability map in (u1,u2) plane",
+                       xlim=(0.0, 1.0), ylim=(0.2, 1.0)):
+    """
+        U1, U2: meshgrid arrays (same shape)
+        STABLE: same shape, with values:
+            1.0  -> stable
+            0.0  -> unstable
+            NaN  -> failure/unknown
+        """
+    U1=np.asarray(U1,dtype=float)
+    U2=np.asarray(U2,dtype=float)
+    STABLE=np.asarray(STABLE,dtype=float)
+
+    fig,ax=plt.subplots(figsize=(8, 8))
+
+    stable_mask=(STABLE==1.0)
+    unstab_mask=(STABLE==0.0)
+
+
+    if np.any(stable_mask):
+        ax.scatter(U1[stable_mask],
+                   U2[stable_mask],
+                   marker='o',
+                   s=90,
+                   facecolors="none",
+                   edgecolors="green",
+                   linewidths=1.5,
+                   label="stable")
+    if np.any(unstab_mask):
+        ax.scatter(U1[unstab_mask],
+                   U2[unstab_mask],
+                   marker='x',
+                   s=90,
+                   c="red",
+                   linewidths=1.5,
+                   label="unstable"
+                   )
+    ax.set_xlabel("u1")
+    ax.set_ylabel("u2")
+    ax.set_xlim(*xlim)
+    ax.set_ylim(*ylim)
+    ax.grid(True, alpha=0.35)
+    ax.set_title(title)
+
+    # legend only if there are labeled items
+    handles, labels = ax.get_legend_handles_labels()
+    if handles:
+        ax.legend(loc="best")
+
+    return ax
+
+# def extract_stability_boundary_from_grid(u1_grid,u2_grid,STABLE):
+#     u1_grid=np.asarray(u1_grid,dtype=float).reshape(-1)
+#     u2_grid=np.asarray(u2_grid,dtype=float).reshape(-1)
+#     STABLE=np.asarray(STABLE,dtype=float)
+#
+#     Nu1=len(u1_grid)
+#     Nu2=len(u2_grid)
+
+ax=plot_stability_map(U1,
+                      U2,
+                      STABLE=results["STABLE"],
+                      title="Stability map + fitted stability constraint")
+plt.tight_layout()
+plt.show()
