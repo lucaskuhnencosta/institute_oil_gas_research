@@ -16,7 +16,7 @@ import matplotlib as mpl
 # ---------------------------------------------------------------------
 # User Configuration
 # ---------------------------------------------------------------------
-SIM_KIND="rigorous" # <-- change to "surrogate" or "rigorous"
+SIM_KIND="surrogate" # <-- change to "surrogate" or "rigorous"
 
 u1_stable, u2_stable = [], []
 u1_unstab, u2_unstab = [], []
