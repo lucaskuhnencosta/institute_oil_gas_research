@@ -3,9 +3,8 @@ import casadi as ca
 import matplotlib.pyplot as plt
 from mpmath.functions.rszeta import coef
 
-# from Surrogate_ODE_Model.glc_01_casadi import glc_casadi
-from Surrogate_ODE_Model.glc_surrogate_casadi import glc_well_01_surrogate_casadi
-from Rigorous_DAE_model.glc_rigorous_casadi import glc_well_01_rigorous_casadi
+from Rigorous_DAE_model.glc_truth_casadi import make_glc_well_rigorous, Z_NAMES
+from Surrogate_ODE_Model.glc_surrogate_casadi import make_glc_well_surrogate, Z_NAMES
 
 from Utilities.block_builders import build_steady_state_model
 from Solvers.solve_glc_ode_equilibrium import solve_equilibrium_ipopt
@@ -13,69 +12,35 @@ from matplotlib.colors import Normalize
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 import matplotlib as mpl
 
-# ---------------------------------------------------------------------
-# User Configuration
-# ---------------------------------------------------------------------
-SIM_KIND="surrogate" # <-- change to "surrogate" or "rigorous"
-
-u1_stable, u2_stable = [], []
-u1_unstab, u2_unstab = [], []
-
-u1_grid = np.linspace(0.05, 1.00001, 20)
-u2_grid=np.linspace(0.20,1.00001,20)
-
-RES_TOL_DX=1e-6
-RES_TOL_G=1e-6
-TOL_EIG=1e-8
-
-# Initial guesses (continuation will update them on success)
-y_guess_init = np.array([3919.7688, 437.16663, 7956.1206], dtype=float)
-z_guess_init = np.array([120e5, 140e5, 10.0], dtype=float)  # only for rigorous DAE: [P_tb, P_bh, w_res]
-
-
-# ---------------------------------------------------------------------
-# Model factory (switch surrogate/rigorous in one place)
-# ---------------------------------------------------------------------
-def make_model(sim_kind:str):
+def make_model(sim_kind:str,BSW=0,GOR=0,PI=3e-6):
+    well_func_rig=make_glc_well_rigorous(BSW=BSW,GOR=GOR,PI=PI)
+    well_func_sur=make_glc_well_surrogate(BSW=BSW,GOR=GOR,PI=PI)
     sim_kind = sim_kind.lower().strip()
     if sim_kind == "surrogate":
         # ODE: dx,out = glc_casadi(y,u)
         model=build_steady_state_model(
-            f_func=glc_well_01_surrogate_casadi,
+            f_func=well_func_sur,
             state_size=3,
             control_size=2,
             alg_size=None,
-            name="glc_surrogate_ss"
+            name="glc_surrogate_ss",
+            out_name=Z_NAMES
         )
         return model
     elif sim_kind == "rigorous":
         # DAE: dx,g,out=glc_rigorous_casadi(y,z,alg_u)
         model=build_steady_state_model(
-            f_func=glc_well_01_rigorous_casadi,
-            state_size=3,
+            f_func=well_func_rig,
+            state_size=7,
             control_size=2,
-            alg_size=3,
-            name="glc_rigorous_ss"
+            alg_size=4,
+            name="glc_rigorous_ss",
+            out_name=Z_NAMES
         )
         return model
     else:
         raise ValueError("sim_kind must be 'surrogate' or 'rigorous'")
 
-# ---------------------------------------------------------------------
-# Robust sweep runner
-# ---------------------------------------------------------------------
-
-y0_fixed = np.array([3919.7688, 437.16663, 7956.1206], dtype=float)
-z_guess = [120e5, 140e5, 10.0]  # [P_tb, P_bh, w_res] initial guesses (example)
-model = build_steady_state_model(glc_well_01_rigorous_casadi,
-                                 state_size=3,
-                                 alg_size=3,
-                                 control_size=2,
-                                 name="glc")
-
-U1, U2 = np.meshgrid(u1_grid, u2_grid,indexing='ij')
-RES_TOL = 1e-6
-min_dp_choke_pressure=500
 
 def run_sweep(model,u1_grid,u2_grid,y_guess_init,z_guess_init=None):
     nx=model["nx"]
@@ -90,7 +55,6 @@ def run_sweep(model,u1_grid,u2_grid,y_guess_init,z_guess_init=None):
 
     OUT = {name: np.full((Nu1, Nu2), np.nan, dtype=float) for name in Z_NAMES}
 
-
     RES_DX= np.full((Nu1, Nu2), np.nan, dtype=float)
     RES_G=np.full((Nu1, Nu2), np.nan, dtype=float) if is_dae else None
 
@@ -98,6 +62,10 @@ def run_sweep(model,u1_grid,u2_grid,y_guess_init,z_guess_init=None):
     SUCCESS = np.zeros((Nu1, Nu2), dtype=bool)
 
     y_guess=np.array(y_guess_init,dtype=float).reshape(-1)
+    if y_guess.size != nx:
+        raise ValueError(f"y_guess_init has size {y_guess.size} but model nx={nx}")
+
+
     z_guess=None if (not is_dae) else np.array(z_guess_init,dtype=float).reshape(-1)
 
     for i, u1 in enumerate(u1_grid):
@@ -174,6 +142,59 @@ def run_sweep(model,u1_grid,u2_grid,y_guess_init,z_guess_init=None):
         "is_dae": is_dae
     }
 
+def plot_overlay_surface(varname, U1, U2, results_all, title="", zlabel=""):
+    """
+    Plots rigorous (blue) and surrogate (red) surfaces
+    on the SAME 3D axis.
+    """
+
+    Zr = results_all["rigorous"]["OUT"][varname]
+    Zs = results_all["surrogate"]["OUT"][varname]
+
+    Zr_m = np.ma.masked_invalid(Zr)
+    Zs_m = np.ma.masked_invalid(Zs)
+
+    fig = plt.figure(figsize=(10, 8))
+    ax = fig.add_subplot(111, projection="3d")
+
+    # Rigorous (blue)
+    ax.plot_surface(
+        U2, U1, Zr_m,
+        color="blue",
+        alpha=0.6,
+        edgecolor="none",
+        label="Rigorous"
+    )
+
+    # Surrogate (red)
+    ax.plot_surface(
+        U2, U1, Zs_m,
+        color="red",
+        alpha=0.6,
+        edgecolor="none",
+        label="Surrogate"
+    )
+
+    ax.set_title(title or varname, fontsize=12)
+    ax.set_xlabel("u2")
+    ax.set_ylabel("u1")
+    ax.set_zlabel(zlabel)
+
+    ax.view_init(elev=25, azim=45)
+
+    # Manual legend (since plot_surface doesn't auto-legend)
+    from matplotlib.lines import Line2D
+    legend_elements = [
+        Line2D([0], [0], marker='s', color='w', label='Rigorous',
+               markerfacecolor='blue', markersize=10),
+        Line2D([0], [0], marker='s', color='w', label='Surrogate',
+               markerfacecolor='red', markersize=10),
+    ]
+    ax.legend(handles=legend_elements, loc="upper right")
+
+    plt.tight_layout()
+    plt.show()
+
 def plot_surface(fig, ax, U1, U2, Z, title, zlabel, cmap_name="viridis"):
     Zm = np.ma.masked_invalid(Z)
 
@@ -214,301 +235,440 @@ def plot_surface(fig, ax, U1, U2, Z, title, zlabel, cmap_name="viridis"):
     ax.set_yticks(np.round(np.linspace(float(U2.min()), float(U2.max()), 6), 2))
 
 
-model = make_model(SIM_KIND)
-results = run_sweep(
-    model=model,
-    u1_grid=u1_grid,
-    u2_grid=u2_grid,
-    y_guess_init=y_guess_init,
-    z_guess_init=z_guess_init
-)
+# model = make_model(SIM_KIND)
+# model["Z_names"] = Z_NAMES_LIST    # list of strings, in the same order as out = vertcat(...)
 
-################################################################
-fig1 = plt.figure(figsize=(16, 18))
-fig1.suptitle("MacroPressures surfaces vs Gas Lift Controls", fontsize=16)
+# ---------------------------------------------------------------------
+# User Configuration
+# ---------------------------------------------------------------------
+MODE="both" # <-- change to "surrogate" or "rigorous"
 
-axes = [
-    fig1.add_subplot(2, 2, 1, projection="3d"),
-    fig1.add_subplot(2, 2, 2, projection="3d"),
-    fig1.add_subplot(2, 2, 3, projection="3d"),
-    fig1.add_subplot(2, 2, 4, projection="3d")
+u1_stable, u2_stable = [], []
+u1_unstab, u2_unstab = [], []
+
+u1_grid = np.linspace(0.05, 1.00001, 20)
+u2_grid=np.linspace(0.20,1.00001,20)
+
+RES_TOL_DX=1e-6
+RES_TOL_G=1e-6
+TOL_EIG=1e-8
+
+y_guess_rig = [
+    50.0,     # m_G_an
+    500.0,     # m_G_t
+    500.0,   # m_o_t
+    0.0,   # m_w_t
+    0.0,     # m_G_b
+    1785,  # m_o_b
+    0.0,   # m_w_b
 ]
-plot_surface(fig1,axes[0], U1, U2, results["OUT"]["P_an_t_bar"], "p_an_t(u1,u2)", "bar")
-plot_surface(fig1,axes[1], U1, U2, results["OUT"]["P_an_b_bar"], "p_an_b(u1,u2)", "bar")
-plot_surface(fig1,axes[2], U1, U2, results["OUT"]["P_tb_b_bar"],  "p_tb_b(u1,u2)", "bar")
-plot_surface(fig1,axes[3], U1, U2, results["OUT"]["P_bh_bar"], "p_bh(u1,u2)", "bar")
-for ax in axes:
-    ax.view_init(elev=45, azim=45)
-plt.tight_layout()
-plt.show()
+z_guess_rig = [120e5, 140e5, 10.0, 10.0]  # [P_tb, P_bh, w_res,w_up] initial guesses (example)
+y_guess_sur = np.array([50.0, 500.0, 500.0], dtype=float)
 
-#################################################################
-fig2 = plt.figure(figsize=(16, 18))
-fig2.suptitle("History behind the bottom tubing pressure", fontsize=16)
-axes = [
-    fig2.add_subplot(2, 2, 1, projection="3d"),
-    fig2.add_subplot(2, 2, 2, projection="3d"),
-    fig2.add_subplot(2, 2, 3, projection="3d"),
-    fig2.add_subplot(2, 2, 4, projection="3d")
-]
-plot_surface(fig2,axes[0], U1, U2, results["OUT"]["P_tb_b_bar"],  "p_tb_b(u1,u2)", "bar")
-plot_surface(fig2,axes[1], U1, U2, results["OUT"]["P_tb_t_bar"], "p_tb_t(u1,u2)", "bar")
-plot_surface(fig2,axes[2], U1, U2, results["OUT"]["rho_avg_mix_tb"], "p_hidrostatic(u1,u2) ~ weight of column", "bar")
-plot_surface(fig2,axes[3], U1, U2, results["OUT"]["F_t_bar"], "F_tb(u1,u2)", "bar")
-axes[0].view_init(elev=25, azim=45)
-axes[1].view_init(elev=25,azim=45)# opposite view
-axes[2].view_init(elev=25,azim=45)# opposite view
-axes[3].view_init(elev=45,azim=45)# opposite view
-plt.tight_layout()
-plt.show()
+U1, U2 = np.meshgrid(u1_grid, u2_grid,indexing='ij')
+RES_TOL = 1e-6
+min_dp_choke_pressure=500
 
-# #################################################################
-fig3 = plt.figure(figsize=(16, 18))
-fig3.suptitle("History behind the bottom hole pressure", fontsize=16)
+results_all={}
 
-axes = [
-    fig3.add_subplot(2, 2, 1, projection="3d"),
-    fig3.add_subplot(2, 2, 2, projection="3d"),
-    fig3.add_subplot(2, 2, 3, projection="3d"),
-    fig3.add_subplot(2, 2, 4, projection="3d")
-]
+if MODE in ("rigorous", "both"):
+    model_rig = make_model("rigorous", BSW=0, GOR=0, PI=2.4e-6)
+    y_guess = np.array(y_guess_rig, dtype=float).reshape(-1)
+    if y_guess.size != model_rig["nx"]:
+        raise ValueError(f"y_guess_init has size {y_guess.size}, but model nx={model_rig["nx"]}")
+    results_all["rigorous"] = run_sweep(model_rig,
+                                        u1_grid,
+                                        u2_grid,
+                                        y_guess_init=y_guess_rig,
+                                        z_guess_init=z_guess_rig)
 
-plot_surface(fig3,axes[0], U1, U2, results["OUT"]["P_bh_bar"],  "p_bh(u1,u2)", "bar")
-plot_surface(fig3,axes[1], U1, U2, results["OUT"]["P_tb_b_bar"], "p_tb_b(u1,u2)", "bar")
-plot_surface(fig3,axes[2],U1,U2,results["OUT"]["rho_mix_bh"],"p_hidrostatic","bar")
-plot_surface(fig3,axes[3], U1, U2, results["OUT"]["F_bh_bar"], "F_bh(u1,u2)", "bar")
-axes[0].view_init(elev=25, azim=45)
-axes[1].view_init(elev=25,azim=45)# opposite view
-axes[2].view_init(elev=25,azim=45)# opposite view
-axes[3].view_init(elev=45,azim=45)# opposite view
-plt.tight_layout()
-plt.show()
+if MODE in ("surrogate", "both"):
+    model_sur = make_model("surrogate", BSW=0, GOR=0, PI=2.4e-6)
+    results_all["surrogate"] = run_sweep(model_sur,
+                                         u1_grid,
+                                         u2_grid,
+                                         y_guess_init=y_guess_sur,
+                                         z_guess_init=None)
 
-# #################################################################
+PLOT_VARS = [
 
-fig4 = plt.figure(figsize=(16, 18))
-fig4.suptitle("Zoom in the friction term", fontsize=16)
-
-axes = [
-    fig4.add_subplot(2, 2, 1, projection="3d"),
-    fig4.add_subplot(2, 2, 2, projection="3d"),
-    fig4.add_subplot(2, 2, 3, projection="3d"),
-    fig4.add_subplot(2, 2, 4, projection="3d")
-]
-
-plot_surface(fig4,axes[0], U1, U2, results["OUT"]["F_t_bar"], "F_t(u1,u2)", "bar")
-plot_surface(fig4,axes[1], U1, U2, results["OUT"]["rho_avg_mix_tb"],  "alpha_avg(u1,u2)", "bar")
-plot_surface(fig4,axes[2], U1, U2, results["OUT"]["Re_tb"], "Re_tb(u1,u2)", "bar")
-plot_surface(fig4,axes[3], U1, U2, results["OUT"]["U_avg_mix_tb"], "U_g(u1,u2)", "bar")
-
-for ax in axes:
-    ax.view_init(elev=45, azim=45)    # opposite view
-
-plt.tight_layout()
-plt.show()
-
-# #################################################################
-
-fig5 = plt.figure(figsize=(16, 18))
-fig5.suptitle("Reservoir Flows", fontsize=16)
-
-axes = [
-    fig5.add_subplot(2, 2, 1, projection="3d"),
-    fig5.add_subplot(2, 2, 2, projection="3d"),
-    fig5.add_subplot(2, 2, 3, projection="3d"),
-    fig5.add_subplot(2, 2, 4, projection="3d")
-]
-
-plot_surface(fig5,axes[0], U1, U2, results["OUT"]["w_res"],  "w_res(u1,u2)", "kg/s")
-plot_surface(fig5,axes[1], U1, U2, results["OUT"]["w_L_res"], "w_l_res(u1,u2)", "kg/s")
-plot_surface(fig5,axes[2], U1, U2, results["OUT"]["w_G_res"], "w_g_res(u1,u2)", "kg/s")
-plot_surface(fig5,axes[3], U1, U2, results["OUT"]["w_out"], "w_out(u1,u2)", "kg/s")
-for ax in axes:
-    ax.view_init(elev=45, azim=45)  # opposite view
-
-plt.tight_layout()
-plt.show()
-
-# #################################################################
-
-fig6 = plt.figure(figsize=(16, 18))
-fig6.suptitle("Flows", fontsize=16)
-axes = [
-    fig6.add_subplot(2, 2, 1, projection="3d"),
-    fig6.add_subplot(2, 2, 2, projection="3d"),
-    fig6.add_subplot(2, 2, 3, projection="3d"),
-    fig6.add_subplot(2, 2, 4, projection="3d")
-]
-plot_surface(fig6,axes[0], U1, U2, results["OUT"]["w_G_res"],  "w_g_res(u1,u2)", "kg/s")
-plot_surface(fig6,axes[1], U1, U2, results["OUT"]["w_G_inj"], "w_g_inj(u1,u2)", "kg/s")
-plot_surface(fig6,axes[2], U1, U2, results["OUT"]["w_L_res"], "w_g_out(u1,u2)", "kg/s")
-plot_surface(fig6,axes[3], U1, U2, results["OUT"]["Q_out"], "Q_out(u1,u2)", "kg/s")
-for ax in axes:
-    ax.view_init(elev=45, azim=45)   # opposite view
-plt.tight_layout()
-plt.show()
+    # =================================
+    # States (kg)
+    # =================================
+    ("m_G_an",        "m_G_an(u1,u2)",        "kg"),
+    ("m_G_t",         "m_G_t(u1,u2)",         "kg"),
 
 
-# #################################################################
+    # =================================
+    # Volume Fractions (-)
+    # =================================
+    ("alpha_L_tb",    "alpha_L_tb(u1,u2)",    "-"),
+    ("alpha_G_tb",    "alpha_G_tb(u1,u2)",    "-"),
+    ("alpha_L_tb_t",  "alpha_L_tb_t(u1,u2)",  "-"),
+    ("alpha_L_tb_b",  "alpha_L_tb_b(u1,u2)",  "-"),
+    ("alpha_L_bh",    "alpha_L_bh(u1,u2)",    "-"),
+    ("alpha_G_bh",    "alpha_G_bh(u1,u2)",    "-"),
 
-fig7 = plt.figure(figsize=(16, 18))
-fig7.suptitle("Delta pressure in the chokes", fontsize=16)
+    # =================================
+    # Pressures (bar)
+    # =================================
+    ("P_bh_bar",        "P_bh_bar(u1,u2)",        "bar"),
+    ("P_tb_t_bar",      "P_tb_t_bar(u1,u2)",      "bar"),
+    ("P_tb_b_bar",      "P_tb_b_bar(u1,u2)",      "bar"),
+    ("P_hidro_tb_bar",  "P_hidro_tb_bar(u1,u2)",  "bar"),
+    ("P_hidro_bh_bar",  "P_hidro_bh_bar(u1,u2)",  "bar"),
 
-axes = [
-    fig7.add_subplot(2, 2, 1, projection="3d"),
-    fig7.add_subplot(2, 2, 2, projection="3d"),
-    fig7.add_subplot(2, 2, 3, projection="3d"),
-    fig7.add_subplot(2, 2, 4, projection="3d")
+    # =================================
+    # Friction (bar)
+    # =================================
+    ("F_t_bar",       "F_t_bar(u1,u2)",       "bar"),
+    ("F_bh_bar",      "F_bh_bar(u1,u2)",      "bar"),
+
+    # =================================
+    # Delta Pressures (bar)
+    # =================================
+    ("dP_int_bar",        "dP_int_bar(u1,u2)",        "bar"),
+    ("dP_gs_an_bar",      "dP_gs_an_bar(u1,u2)",      "bar"),
+    ("dP_an_tb_bar",      "dP_an_tb_bar(u1,u2)",      "bar"),
+    ("dP_res_bh_bar",     "dP_res_bh_bar(u1,u2)",     "bar"),
+    ("dP_tb_choke_bar",   "dP_tb_choke_bar(u1,u2)",   "bar"),
+
+    # =================================
+    # Flows (kg/s)
+    # =================================
+    ("w_res",     "w_res(u1,u2)",     "kg/s"),
+    ("w_L_res",   "w_L_res(u1,u2)",   "kg/s"),
+    ("w_G_res",   "w_G_res(u1,u2)",   "kg/s"),
+
+    ("w_out",     "w_out(u1,u2)",     "kg/s"),
+    ("w_L_out",   "w_L_out(u1,u2)",   "kg/s"),
+    ("w_w_out",   "w_w_out(u1,u2)",   "kg/s"),
+    ("w_o_out",   "w_o_out(u1,u2)",   "kg/s"),
+
+    ("w_G_inj",   "w_G_inj(u1,u2)",   "kg/s"),
+    ("w_up",      "w_up(u1,u2)",      "kg/s"),
 ]
 
-plot_surface(fig7,axes[0], U1, U2, results["OUT"]["dP_gs_an_bar"],  "DP_GS_AN(u1,u2)", "bar")
-plot_surface(fig7,axes[1], U1, U2,results["OUT"]["dP_an_tb_bar"], "DP_AN_TB(u1,u2)", "bar")
-plot_surface(fig7,axes[2], U1, U2, results["OUT"]["dP_tb_choke_bar"], "DP_TB_CHOKE(u1,u2)", "bar")
-plot_surface(fig7,axes[3], U1, U2, results["OUT"]["dP_res_bh_bar"], "DP_RES_BH(u1,u2)", "bar")
-for ax in axes:
-    ax.view_init(elev=45, azim=45)   # opposite view
-plt.tight_layout()
-plt.show()
+if MODE == "rigorous":
+    for var, title, zlabel in PLOT_VARS:
+        fig = plt.figure(figsize=(8, 6))
+        ax = fig.add_subplot(1, 1, 1, projection="3d")
+        plot_surface(ax, U1, U2, results_all["rigorous"]["OUT"][var], title, zlabel)
+        ax.view_init(elev=25, azim=45)
+        plt.tight_layout()
+        plt.show()
 
+elif MODE == "surrogate":
+    for var, title, zlabel in PLOT_VARS:
+        fig = plt.figure(figsize=(8, 6))
+        ax = fig.add_subplot(1, 1, 1, projection="3d")
+        plot_surface(ax, U1, U2, results_all["surrogate"]["OUT"][var], title, zlabel)
+        ax.view_init(elev=25, azim=45)
+        plt.tight_layout()
+        plt.show()
+
+elif MODE == "both":
+    for var, title, zlabel in PLOT_VARS:
+        if (var in results_all["rigorous"]["OUT"]) and \
+           (var in results_all["surrogate"]["OUT"]):
+
+            plot_overlay_surface(
+                var,
+                U1,
+                U2,
+                results_all,
+                title=title,
+                zlabel=zlabel
+            )
+
+#
+#
+# ################################################################
+# fig1 = plt.figure(figsize=(16, 18))
+# fig1.suptitle("MacroPressures surfaces vs Gas Lift Controls", fontsize=16)
+#
+# axes = [
+#     fig1.add_subplot(2, 2, 1, projection="3d"),
+#     fig1.add_subplot(2, 2, 2, projection="3d"),
+#     fig1.add_subplot(2, 2, 3, projection="3d"),
+#     fig1.add_subplot(2, 2, 4, projection="3d")
+# ]
+# plot_surface(fig1,axes[0], U1, U2, results["OUT"]["P_bh_bar"], "P_bh_bar(u1,u2)", "bar")
+# plot_surface(fig1,axes[1], U1, U2, results["OUT"]["P_tb_t_bar"], "P_tb_t_bar(u1,u2)", "bar")
+# plot_surface(fig1,axes[2], U1, U2, results["OUT"]["P_tb_b_bar"],  "P_tb_b_bar(u1,u2)", "bar")
+# plot_surface(fig1,axes[3], U1, U2, results["OUT"]["dP_int_bar"], "dP_int_bar(u1,u2)", "bar")
+# for ax in axes:
+#     ax.view_init(elev=45, azim=45)
+# plt.tight_layout()
+# plt.show()
+# #
 # #################################################################
-
-fig8 = plt.figure(figsize=(16, 18))
-fig8.suptitle("Production", fontsize=16)
-axes = [
-    fig8.add_subplot(2, 2, 1, projection="3d"),
-    fig8.add_subplot(2, 2, 2, projection="3d"),
-    fig8.add_subplot(2, 2, 3, projection="3d"),
-    fig8.add_subplot(2, 2, 4, projection="3d")
-]
-plot_surface(fig8,axes[0], U1, U2, results["OUT"]["w_out"], "Total production", "kg/s")
-plot_surface(fig8,axes[1], U1, U2, results["OUT"]["w_L_out"], "Production of liquid", "kg/s")
-plot_surface(fig8,axes[2], U1, U2, results["OUT"]["w_o_out"], "Production of oil", "kg/s")
-plot_surface(fig8,axes[3], U1, U2, results["OUT"]["w_w_out"], "Production of water`", "kg/s")
-for ax in axes:
-    ax.view_init(elev=45, azim=45)   # opposite view
-plt.tight_layout()
-plt.show()
-
-# #################################################################
-
-def plot_stability_map(U1,
-                       U2,
-                       STABLE,
-                       title="Stability map in (u1,u2) plane",
-                       xlim=(0.0, 1.05), ylim=(0.15, 1.05)):
-    """
-        U1, U2: meshgrid arrays (same shape)
-        STABLE: same shape, with values:
-            1.0  -> stable
-            0.0  -> unstable
-            NaN  -> failure/unknown
-        """
-    U1=np.asarray(U1,dtype=float)
-    U2=np.asarray(U2,dtype=float)
-    STABLE=np.asarray(STABLE,dtype=float)
-
-    fig,ax=plt.subplots(figsize=(8, 8))
-
-    stable_mask=(STABLE==1.0)
-    unstab_mask=(STABLE==0.0)
-
-
-    if np.any(stable_mask):
-        ax.scatter(U1[stable_mask],
-                   U2[stable_mask],
-                   marker='o',
-                   s=150,
-                   facecolors="none",
-                   edgecolors="green",
-                   linewidths=1.5,
-                   label="stable")
-    if np.any(unstab_mask):
-        ax.scatter(U1[unstab_mask],
-                   U2[unstab_mask],
-                   marker='x',
-                   s=150,
-                   c="red",
-                   linewidths=1.5,
-                   label="unstable"
-                   )
-    ax.set_xlabel("u1")
-    ax.set_ylabel("u2")
-    ax.set_xlim(*xlim)
-    ax.set_ylim(*ylim)
-    ax.grid(True, alpha=0.35)
-    ax.set_title(title)
-
-    # legend only if there are labeled items
-    handles, labels = ax.get_legend_handles_labels()
-    if handles:
-        ax.legend(loc="best")
-    return ax
-
-# #################################################################
-
-def extract_stability_boundary_from_grid(
-        u1_grid,
-        u2_grid,
-        STABLE
-):
-    u1_grid=np.asarray(u1_grid,dtype=float).reshape(-1)
-    u2_grid=np.asarray(u2_grid,dtype=float).reshape(-1)
-    STABLE=np.asarray(STABLE,dtype=float)
-
-    Nu1=len(u1_grid)
-    Nu2=len(u2_grid)
-
-    if STABLE.shape != (Nu1,Nu2):
-        raise ValueError(f"STABLE shape {STABLE.shape} does not match (Nu1,Nu2)=({Nu1,Nu2})")
-
-    boundary_u1=[]
-    boundary_u2=[]
-
-    for i,u1v in enumerate(u1_grid):
-        stable_js=np.where(STABLE[i,:]==1.0)[0]
-        if stable_js.size > 0:
-            jmin=stable_js.min()
-            boundary_u1.append(u1v)
-            boundary_u2.append(u2_grid[jmin])
-
-    return np.asarray(boundary_u1),np.asarray(boundary_u2)
-
-# #################################################################
-
-def fit_boundary_polynomial(boundary_u1,
-                            boundary_u2,
-                            deg=2,
-                            delta=0.02):
-    boundary_u1=np.asarray(boundary_u1,dtype=float).reshape(-1)
-    boundary_u2=np.asarray(boundary_u2,dtype=float).reshape(-1)
-
-    if boundary_u1.size < deg+1:
-        raise RuntimeError(f"Need at least {deg+1} boundary points, got {boundary_u1.size}")
-    idx=np.argsort(boundary_u1)
-    boundary_u1=boundary_u1[idx]
-    boundary_u2=boundary_u2[idx]
-
-    coef=np.polyfit(boundary_u1,boundary_u2,deg=deg)
-    b_hat=np.poly1d(coef)+float(delta)
-    return b_hat
-
-def overlay_boundary_and_fit(ax,
-                             b_hat,
-                             deg=2):
-    u1_dense=np.linspace(0.0,1.01,1000)
-    u2_fit=b_hat(u1_dense)
-    ax.plot(u1_dense, u2_fit, "k-", linewidth=2.2, label=f"poly fit deg={deg}")
-    ax.legend(loc="best")
-    return ax
-
-ax=plot_stability_map(U1,
-                      U2,
-                      STABLE=results["STABLE"],
-                      title="Stability map + fitted stability constraint")
-boundary_u1, boundary_u2 = extract_stability_boundary_from_grid(u1_grid, u2_grid, results["STABLE"])
-b_hat=fit_boundary_polynomial(boundary_u1,boundary_u2)
-print(boundary_u1, boundary_u2)
-print (b_hat)
-overlay_boundary_and_fit(ax,b_hat,deg=2)
-plt.tight_layout()
-plt.show()
+# fig2 = plt.figure(figsize=(16, 18))
+# fig2.suptitle("History behind the bottom tubing pressure", fontsize=16)
+# axes = [
+#     fig2.add_subplot(2, 2, 1, projection="3d"),
+#     fig2.add_subplot(2, 2, 2, projection="3d"),
+#     fig2.add_subplot(2, 2, 3, projection="3d"),
+#     fig2.add_subplot(2, 2, 4, projection="3d")
+# ]
+# plot_surface(fig2,axes[0], U1, U2, results["OUT"]["P_tb_b_bar"],  "p_tb_b(u1,u2)", "bar")
+# plot_surface(fig2,axes[1], U1, U2, results["OUT"]["P_tb_t_bar"], "p_tb_t(u1,u2)", "bar")
+# plot_surface(fig2,axes[2], U1, U2, results["OUT"]["P_hidro_tb_bar"], "p_hidrostatic(u1,u2) ~ weight of column", "bar")
+# plot_surface(fig2,axes[3], U1, U2, results["OUT"]["F_t_bar"], "F_tb(u1,u2)", "bar")
+# axes[0].view_init(elev=25, azim=45)
+# axes[1].view_init(elev=25,azim=45)# opposite view
+# axes[2].view_init(elev=25,azim=45)# opposite view
+# axes[3].view_init(elev=45,azim=45)# opposite view
+# plt.tight_layout()
+# plt.show()
+#
+# # #################################################################
+# fig3 = plt.figure(figsize=(16, 18))
+# fig3.suptitle("History behind the bottom hole pressure", fontsize=16)
+#
+# axes = [
+#     fig3.add_subplot(2, 2, 1, projection="3d"),
+#     fig3.add_subplot(2, 2, 2, projection="3d"),
+#     fig3.add_subplot(2, 2, 3, projection="3d"),
+#     fig3.add_subplot(2, 2, 4, projection="3d")
+# ]
+#
+# plot_surface(fig3,axes[0], U1, U2, results["OUT"]["P_bh_bar"],  "p_bh(u1,u2)", "bar")
+# plot_surface(fig3,axes[1], U1, U2, results["OUT"]["P_tb_b_bar"], "p_tb_b(u1,u2)", "bar")
+# plot_surface(fig3,axes[2],U1,U2,results["OUT"]["P_hidro_bh_bar"],"p_hidrostatic","bar")
+# plot_surface(fig3,axes[3], U1, U2, results["OUT"]["F_bh_bar"], "F_bh(u1,u2)", "bar")
+# axes[0].view_init(elev=25, azim=45)
+# axes[1].view_init(elev=25,azim=45)# opposite view
+# axes[2].view_init(elev=25,azim=45)# opposite view
+# axes[3].view_init(elev=45,azim=45)# opposite view
+# plt.tight_layout()
+# plt.show()
+# #
+# # # #################################################################
+# #
+# # fig4 = plt.figure(figsize=(16, 18))
+# # fig4.suptitle("Zoom in the friction term", fontsize=16)
+# #
+# # axes = [
+# #     fig4.add_subplot(2, 2, 1, projection="3d"),
+# #     fig4.add_subplot(2, 2, 2, projection="3d"),
+# #     fig4.add_subplot(2, 2, 3, projection="3d"),
+# #     fig4.add_subplot(2, 2, 4, projection="3d")
+# # ]
+# #
+# # plot_surface(fig4,axes[0], U1, U2, results["OUT"]["F_t_bar"], "F_t(u1,u2)", "bar")
+# # plot_surface(fig4,axes[1], U1, U2, results["OUT"]["rho_avg_mix_tb"],  "alpha_avg(u1,u2)", "bar")
+# # plot_surface(fig4,axes[2], U1, U2, results["OUT"]["Re_tb"], "Re_tb(u1,u2)", "bar")
+# # plot_surface(fig4,axes[3], U1, U2, results["OUT"]["U_avg_mix_tb"], "U_g(u1,u2)", "bar")
+# #
+# # for ax in axes:
+# #     ax.view_init(elev=45, azim=45)    # opposite view
+# #
+# # plt.tight_layout()
+# # plt.show()
+# #
+# # # #################################################################
+# #
+# fig5 = plt.figure(figsize=(16, 18))
+# fig5.suptitle("Reservoir Flows", fontsize=16)
+#
+# axes = [
+#     fig5.add_subplot(2, 2, 1, projection="3d"),
+#     fig5.add_subplot(2, 2, 2, projection="3d"),
+#     fig5.add_subplot(2, 2, 3, projection="3d"),
+#     fig5.add_subplot(2, 2, 4, projection="3d")
+# ]
+#
+# plot_surface(fig5,axes[0], U1, U2, results["OUT"]["w_res"],  "w_res(u1,u2)", "kg/s")
+# plot_surface(fig5,axes[1], U1, U2, results["OUT"]["w_L_res"], "w_l_res(u1,u2)", "kg/s")
+# plot_surface(fig5,axes[2], U1, U2, results["OUT"]["w_G_res"], "w_g_res(u1,u2)", "kg/s")
+# plot_surface(fig5,axes[3], U1, U2, results["OUT"]["w_out"], "w_out(u1,u2)", "kg/s")
+# for ax in axes:
+#     ax.view_init(elev=45, azim=45)  # opposite view
+#
+# plt.tight_layout()
+# plt.show()
+#
+# # # #################################################################
+# #
+# fig6 = plt.figure(figsize=(16, 18))
+# fig6.suptitle("Flows", fontsize=16)
+# axes = [
+#     fig6.add_subplot(2, 2, 1, projection="3d"),
+#     fig6.add_subplot(2, 2, 2, projection="3d"),
+#     fig6.add_subplot(2, 2, 3, projection="3d"),
+#     fig6.add_subplot(2, 2, 4, projection="3d")
+# ]
+# plot_surface(fig6,axes[0], U1, U2, results["OUT"]["w_G_res"],  "w_g_res(u1,u2)", "kg/s")
+# plot_surface(fig6,axes[1], U1, U2, results["OUT"]["w_G_inj"], "w_g_inj(u1,u2)", "kg/s")
+# plot_surface(fig6,axes[2], U1, U2, results["OUT"]["w_L_res"], "w_g_out(u1,u2)", "kg/s")
+# # plot_surface(fig6,axes[3], U1, U2, results["OUT"]["Q_out"], "Q_out(u1,u2)", "kg/s")
+# for ax in axes:
+#     ax.view_init(elev=45, azim=45)   # opposite view
+# plt.tight_layout()
+# plt.show()
+#
+# #
+# # # #################################################################
+# #
+# fig7 = plt.figure(figsize=(16, 18))
+# fig7.suptitle("Delta pressure in the chokes", fontsize=16)
+#
+# axes = [
+#     fig7.add_subplot(2, 2, 1, projection="3d"),
+#     fig7.add_subplot(2, 2, 2, projection="3d"),
+#     fig7.add_subplot(2, 2, 3, projection="3d"),
+#     fig7.add_subplot(2, 2, 4, projection="3d")
+# ]
+#
+# plot_surface(fig7,axes[0], U1, U2, results["OUT"]["dP_gs_an_bar"],  "DP_GS_AN(u1,u2)", "bar")
+# plot_surface(fig7,axes[1], U1, U2,results["OUT"]["dP_an_tb_bar"], "DP_AN_TB(u1,u2)", "bar")
+# plot_surface(fig7,axes[2], U1, U2, results["OUT"]["dP_tb_choke_bar"], "DP_TB_CHOKE(u1,u2)", "bar")
+# plot_surface(fig7,axes[3], U1, U2, results["OUT"]["dP_res_bh_bar"], "DP_RES_BH(u1,u2)", "bar")
+# for ax in axes:
+#     ax.view_init(elev=45, azim=45)   # opposite view
+# plt.tight_layout()
+# plt.show()
+# #
+# # # #################################################################
+# #
+# fig8 = plt.figure(figsize=(16, 18))
+# fig8.suptitle("Production", fontsize=16)
+# axes = [
+#     fig8.add_subplot(2, 2, 1, projection="3d"),
+#     fig8.add_subplot(2, 2, 2, projection="3d"),
+#     fig8.add_subplot(2, 2, 3, projection="3d"),
+#     fig8.add_subplot(2, 2, 4, projection="3d")
+# ]
+# plot_surface(fig8,axes[0], U1, U2, results["OUT"]["w_out"], "Total production", "kg/s")
+# plot_surface(fig8,axes[1], U1, U2, results["OUT"]["w_L_out"], "Production of liquid", "kg/s")
+# plot_surface(fig8,axes[2], U1, U2, results["OUT"]["w_o_out"], "Production of oil", "kg/s")
+# plot_surface(fig8,axes[3], U1, U2, results["OUT"]["w_w_out"], "Production of water`", "kg/s")
+# for ax in axes:
+#     ax.view_init(elev=45, azim=45)   # opposite view
+# plt.tight_layout()
+# plt.show()
+# #
+# # # #################################################################
+#
+# def plot_stability_map(U1,
+#                        U2,
+#                        STABLE,
+#                        title="Stability map in (u1,u2) plane",
+#                        xlim=(0.0, 1.05), ylim=(0.15, 1.05)):
+#     """
+#         U1, U2: meshgrid arrays (same shape)
+#         STABLE: same shape, with values:
+#             1.0  -> stable
+#             0.0  -> unstable
+#             NaN  -> failure/unknown
+#         """
+#     U1=np.asarray(U1,dtype=float)
+#     U2=np.asarray(U2,dtype=float)
+#     STABLE=np.asarray(STABLE,dtype=float)
+#
+#     fig,ax=plt.subplots(figsize=(8, 8))
+#
+#     stable_mask=(STABLE==1.0)
+#     unstab_mask=(STABLE==0.0)
+#
+#
+#     if np.any(stable_mask):
+#         ax.scatter(U1[stable_mask],
+#                    U2[stable_mask],
+#                    marker='o',
+#                    s=150,
+#                    facecolors="none",
+#                    edgecolors="green",
+#                    linewidths=1.5,
+#                    label="stable")
+#     if np.any(unstab_mask):
+#         ax.scatter(U1[unstab_mask],
+#                    U2[unstab_mask],
+#                    marker='x',
+#                    s=150,
+#                    c="red",
+#                    linewidths=1.5,
+#                    label="unstable"
+#                    )
+#     ax.set_xlabel("u1")
+#     ax.set_ylabel("u2")
+#     ax.set_xlim(*xlim)
+#     ax.set_ylim(*ylim)
+#     ax.grid(True, alpha=0.35)
+#     ax.set_title(title)
+#
+#     # legend only if there are labeled items
+#     handles, labels = ax.get_legend_handles_labels()
+#     if handles:
+#         ax.legend(loc="best")
+#     return ax
+#
+# # #################################################################
+#
+# def extract_stability_boundary_from_grid(
+#         u1_grid,
+#         u2_grid,
+#         STABLE
+# ):
+#     u1_grid=np.asarray(u1_grid,dtype=float).reshape(-1)
+#     u2_grid=np.asarray(u2_grid,dtype=float).reshape(-1)
+#     STABLE=np.asarray(STABLE,dtype=float)
+#
+#     Nu1=len(u1_grid)
+#     Nu2=len(u2_grid)
+#
+#     if STABLE.shape != (Nu1,Nu2):
+#         raise ValueError(f"STABLE shape {STABLE.shape} does not match (Nu1,Nu2)=({Nu1,Nu2})")
+#
+#     boundary_u1=[]
+#     boundary_u2=[]
+#
+#     for i,u1v in enumerate(u1_grid):
+#         stable_js=np.where(STABLE[i,:]==1.0)[0]
+#         if stable_js.size > 0:
+#             jmin=stable_js.min()
+#             boundary_u1.append(u1v)
+#             boundary_u2.append(u2_grid[jmin])
+#
+#     return np.asarray(boundary_u1),np.asarray(boundary_u2)
+#
+# # #################################################################
+#
+# def fit_boundary_polynomial(boundary_u1,
+#                             boundary_u2,
+#                             deg=2,
+#                             delta=0.02):
+#     boundary_u1=np.asarray(boundary_u1,dtype=float).reshape(-1)
+#     boundary_u2=np.asarray(boundary_u2,dtype=float).reshape(-1)
+#
+#     if boundary_u1.size < deg+1:
+#         raise RuntimeError(f"Need at least {deg+1} boundary points, got {boundary_u1.size}")
+#     idx=np.argsort(boundary_u1)
+#     boundary_u1=boundary_u1[idx]
+#     boundary_u2=boundary_u2[idx]
+#
+#     coef=np.polyfit(boundary_u1,boundary_u2,deg=deg)
+#     b_hat=np.poly1d(coef)+float(delta)
+#     return b_hat
+#
+# def overlay_boundary_and_fit(ax,
+#                              b_hat,
+#                              deg=2):
+#     u1_dense=np.linspace(0.0,1.01,1000)
+#     u2_fit=b_hat(u1_dense)
+#     ax.plot(u1_dense, u2_fit, "k-", linewidth=2.2, label=f"poly fit deg={deg}")
+#     ax.legend(loc="best")
+#     return ax
+#
+# ax=plot_stability_map(U1,
+#                       U2,
+#                       STABLE=results["STABLE"],
+#                       title="Stability map + fitted stability constraint")
+# boundary_u1, boundary_u2 = extract_stability_boundary_from_grid(u1_grid, u2_grid, results["STABLE"])
+# b_hat=fit_boundary_polynomial(boundary_u1,boundary_u2)
+# print(boundary_u1, boundary_u2)
+# print (b_hat)
+# overlay_boundary_and_fit(ax,b_hat,deg=2)
+# plt.tight_layout()
+# plt.show()

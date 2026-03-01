@@ -1,91 +1,16 @@
 import casadi as ca
 
-Z_NAMES = [
-        # --- Eq 1-4
-        "P_an_t_bar",
-        "P_an_b_bar",
-        "rho_G_an_b",
-        "rho_G_in",
-
-        # --- Eq 5
-        "dP_gs_an_bar",
-        "w_G_in_original",
-        "w_G_in",
-
-        # --- Eq 6-7
-        "V_gas_tb_t",
-        "V_gas_tb_t_safe",
-        "rho_G_tb_t",
-        "P_tb_t_bar",
-
-        # --- Eq 8-13
-        "rho_avg_mix_tb",
-        "alpha_avg_L_tb",
-        "alpha_G_m_tb_b",
-        "U_avg_L_tb",
-        "denom_G",
-        "denom_G_safe",
-        "U_avg_G_tb",
-        "U_avg_mix_tb",
-
-        # --- Eq 14-16
-        "Re_tb",
-        "Re_tb_safe",
-        "log_arg_tb",
-        "log_arg_tb_safe",
-        "lambda_tb",
-        "F_t_bar",
-
-        # --- Eq 17-18
-        "P_tb_b_bar",
-        "dP_an_tb_bar",
-        "w_G_inj",
-
-        # --- Eq 19-23
-        "U_avg_L_bh",
-        "Re_bh",
-        "log_arg_bh",
-        "lambda_bh",
-        "F_bh_bar",
-        "P_bh_bar",
-
-        # --- Eq 24-27
-        "dP_res_bh_bar",
-        "w_res",
-        "w_L_res",
-        "w_G_res",
-        "rho_G_tb_b",
-
-        # --- Eq 28-30
-        "denom_alpha_b",
-        "denom_alpha_b_safe",
-        "alpha_L_tb_b",
-        "alpha_L_tb_t",
-        "rho_mix_tb_t",
-        "rho_mix_tb_t_safe",
-
-        # --- Eq 31-35
-        "dP_tb_choke_bar",
-        "w_out",
-        "Q_out",
-        "denom_alpha_t",
-        "denom_alpha_t_safe",
-        "alpha_G_tb_t",
-        "w_G_out",
-        "w_L_out",
-
-        "w_w_out",
-        "w_o_out",
-    
-        "rho_mix_bh"
-    ]
 
 
 def build_steady_state_model(f_func,
-                            state_size=3,
+                            state_size,
                             control_size=2,
                             alg_size=None,
-                            name="glc_ss"):
+                            name="glc_ss",
+                            out_name=None,
+                            regularize_gz=True,
+                            gz_reg=1e-8
+                            ):
     """
         Build symbolic CasADi blocks for steady-state models.
 
@@ -98,20 +23,23 @@ def build_steady_state_model(f_func,
         Returns a dict. Check model ["is DAE"]
 
     """
-    Z_names=Z_NAMES
     is_dae=alg_size is not None
 
     # ---------------------
     # 1) Symbols
     # ---------------------
+
     y = ca.MX.sym("y", state_size)
     u = ca.MX.sym("u", control_size)
+
     if is_dae:
         z_alg=ca.MX.sym("z_alg", alg_size)
         z_alg_names=[f"z_alg{i}" for i in range(alg_size)]
+
         # ---------------------
         # 2) Model evaluation
         # ---------------------
+
         dx,g,out=f_func(y, z_alg, u)
         # Residual for steady-state solve
         res=ca.vertcat(dx,g)
@@ -119,6 +47,7 @@ def build_steady_state_model(f_func,
         # ---------------------
         # 3) Jacobians
         # ---------------------
+
         yz = ca.vertcat(y, z_alg)
         J_yz = ca.jacobian(res, yz)
         J_u = ca.jacobian(res, u)
@@ -129,11 +58,27 @@ def build_steady_state_model(f_func,
         gx = ca.jacobian(g,  y)
         gz = ca.jacobian(g,  z_alg)
 
-        Ared=fx-fz@ca.solve(gz,gx)
+        ng = int(g.size1())  # number of algebraic equations
+        nz = int(z_alg.size1())
+
+        Ared = ca.MX.nan(fx.size1(), fx.size2())  # default placeholder
+
+        if ng == nz:
+            if regularize_gz:
+                I = ca.MX.eye(nz)
+                X = ca.solve(gz + gz_reg * I, gx)
+            else:
+                X = ca.solve(gz, gx)
+            Ared = fx - fz @ X
+        else:
+        # Optional: still allow partial "Ared" only if gz is square
+            pass
+
 
         # ---------------------
         # 4) CasADi Functions
         # ---------------------
+
         F_all = ca.Function(
             f"{name}_all",
             [y, z_alg, u],
@@ -174,6 +119,8 @@ def build_steady_state_model(f_func,
             ["A"],
         )
 
+
+
         F_dx_out = ca.Function(
             f"{name}_dx_out",
             [y, z_alg, u],
@@ -191,7 +138,7 @@ def build_steady_state_model(f_func,
             "dx": dx,
             "out": out,
             "F_all": F_all,
-            "Z_names": Z_names,
+            "Z_names": out_name,
             "nx": state_size,
             "nu": control_size,
             "F_A":F_A,
@@ -206,6 +153,7 @@ def build_steady_state_model(f_func,
             "F_J_yz": F_J_yz,
             "F_J_u": F_J_u,
             "F_dx_out": F_dx_out,
+            "Ared": Ared,
         }
     else:
         # ---------------------
@@ -239,7 +187,7 @@ def build_steady_state_model(f_func,
             "dx": dx,
             "out": out,
             "F_all": F_all,
-            "Z_names": Z_names,
+            "Z_names": out_name,
             "nx": state_size,
             "nu": control_size,
             "F_A": F_A,
@@ -249,48 +197,48 @@ def build_steady_state_model(f_func,
 
         }
 
-import numpy as np
-
-"""
-Build symbolic CasADi functions for steady-state (equilibrium) solving of ODE or DAE.
-Actually builds symbolic blocks:
-- dx(y,u), z(y,u)
-- A(y,u) = d(dx)/d(y)
-
-f_func(y,u) must return either:
-  - dx
-  - or (dx, z)
-
-Returns a dict with:
-  y_sym, u_sym
-  dx_expr, z_expr
-  F_dx(y,u), F_all(y,u)
-"""
-
-"""
-
-        You will solve for (y,z_alg) such that:
-            dx(y,z_alg,u) = 0
-            g (y,z_alg,u) = 0
-
-        where:
-            y      : differential states (nx)
-            z_alg  : algebraic unknowns (nz_alg), e.g. [P_tb, P_bh, w_res]
-            u      : controls/inputs (nu)
-
-        f_dae_func must have signature:
-            dx, g, out = f_dae_func(y, z_alg, u)
-        returning:
-            dx  : (nx x 1)
-            g   : (nz_alg x 1)
-            out : (nout x 1) any extra algebraic outputs/logging (can be empty)
-
-        Returns dict with:
-            y_sym, z_sym, u_sym
-            dx_expr, g_expr, out_expr
-            F_all(y,z,u) -> (dx,g,out)
-            F_res(y,z,u) -> stacked residual [dx; g]
-            J_yz(y,z,u)  -> Jacobian d([dx;g]) / d([y;z])
-            (optionally) J_u(y,z,u) -> d([dx;g]) / d(u)
-
-"""
+# import numpy as np
+#
+# """
+# Build symbolic CasADi functions for steady-state (equilibrium) solving of ODE or DAE.
+# Actually builds symbolic blocks:
+# - dx(y,u), z(y,u)
+# - A(y,u) = d(dx)/d(y)
+#
+# f_func(y,u) must return either:
+#   - dx
+#   - or (dx, z)
+#
+# Returns a dict with:
+#   y_sym, u_sym
+#   dx_expr, z_expr
+#   F_dx(y,u), F_all(y,u)
+# """
+#
+# """
+#
+#         You will solve for (y,z_alg) such that:
+#             dx(y,z_alg,u) = 0
+#             g (y,z_alg,u) = 0
+#
+#         where:
+#             y      : differential states (nx)
+#             z_alg  : algebraic unknowns (nz_alg), e.g. [P_tb, P_bh, w_res]
+#             u      : controls/inputs (nu)
+#
+#         f_dae_func must have signature:
+#             dx, g, out = f_dae_func(y, z_alg, u)
+#         returning:
+#             dx  : (nx x 1)
+#             g   : (nz_alg x 1)
+#             out : (nout x 1) any extra algebraic outputs/logging (can be empty)
+#
+#         Returns dict with:
+#             y_sym, z_sym, u_sym
+#             dx_expr, g_expr, out_expr
+#             F_all(y,z,u) -> (dx,g,out)
+#             F_res(y,z,u) -> stacked residual [dx; g]
+#             J_yz(y,z,u)  -> Jacobian d([dx;g]) / d([y;z])
+#             (optionally) J_u(y,z,u) -> d([dx;g]) / d(u)
+#
+# """
