@@ -1,5 +1,4 @@
-from Surrogate_ODE_Model.glc_coarse_casadi import glc_casadi
-from Surrogate_ODE_Model.glc_surrogate_casadi import make_glc_well_surrogate, Z_NAMES
+from Surrogate_ODE_Model.glc_surrogate_casadi import make_glc_well_surrogate
 from Rigorous_DAE_model.glc_truth_casadi import make_glc_well_rigorous, Z_NAMES
 from Utilities.block_builders import build_steady_state_model
 import casadi as ca
@@ -76,24 +75,6 @@ def solve_equilibrium_ipopt(
         y_guess, #list/array shape (nx,)
         z_guess=None
         ):
-    """
-    Works for both:
-      - ODE surrogate model dict from build_steady_state_model_unified(..., alg_size=None)
-      - DAE rigorous model dict from build_steady_state_model_unified(..., alg_size=3)
-
-    Decision variables:
-      ODE: x = y
-      DAE: x = [y; z_alg]
-
-    Constraints:
-      ODE: dx(y,u)=0
-      DAE: dx(y,z,u)=0 and g(y,z,u)=0
-
-    Stability:
-      ODE: eig(A) where A = d(dx)/d(y)
-      DAE: eig(Ared) where Ared = fx - fz * (gz \\ gx)  (index-1 reduction)
-    """
-
     # ---------------------
     # 1) Unpack model pieces
     # ---------------------
@@ -424,69 +405,82 @@ def solve_equilibrium_ipopt(
 # ------------------------------------------------------------
 # Build rigorous steady-state model (DAE)
 # ------------------------------------------------------------
-well_func=make_glc_well_rigorous(BSW=0,GOR=0,PI=2.4e-6)
-model_rigorous = build_steady_state_model(
-    f_func=well_func,
-    state_size=7,
-    control_size=2,
-    alg_size=4,
-    name="glc_ss_rigorous",
-    out_name=Z_NAMES
-)
+
+
+
 
 #
 # ------------------------------------------------------------
 # Choose a test point (u, y_guess, z_guess)
 # ------------------------------------------------------------
-u = [0.30, 0.25]
-# # y = [m_G_an, m_G_t, m_o_t, m_w_t, m_G_b, m_o_b, m_w_b]
-# print(f"Initial guess is:{y_guess}")
-# print(f"z is (in the guess:){z_guess}")
-# P0=20e5
-#
-#
+u = [1.00,1.00]
 
-y_guess = [
-    50.0,     # m_G_an
-    500.0,     # m_G_t
-    500.0,   # m_o_t
-    0.0,   # m_w_t
-    0.0,     # m_G_b
-    1785,  # m_o_b
-    0.0,   # m_w_b
-]
-#
-# z = [P_bh, P_bh_t, P_tb_b, P_tb_t, w_res, w_up, H_g_bh, H_g_tb]
-z_guess = [
-    150e5,  # P_bh_guessed
-    120e5,  # P_tb_b_guessed
-    20.0,   # w_res_guessed
-    20.0,   # w_up_guessed
-]
-# # z_guess = [..., P_tb_t_guessed, ...]
-# z_guess[3] = float(P0 + 2e5)  # e.g. P0 + 2 bar
-# z_guess[2] = z_guess[3] + 1.0e7  # crude: add ~100 bar so g5 has room
+surrogate=False
 
-# ------------------------------------------------------------
-# Solve equilibrium (dx=0, g=0)
-# ------------------------------------------------------------
-y_star, z_star, dx_star, g_star, out_star, eig, stable, stats = solve_equilibrium_ipopt(
-    model=model_rigorous,
-    u_val=u,
-    y_guess=y_guess,
-    z_guess=z_guess
+if not surrogate:
+    well_func = make_glc_well_rigorous( BSW=0.20, GOR=0.05, PI=3.0e-6)
+    model_rigorous = build_steady_state_model(
+        f_func=well_func,
+        state_size=7,
+        control_size=2,
+        alg_size=4,
+        name="glc_ss_rigorous",
+        out_name=Z_NAMES
+    )
+
+    y_guess=[3679.08033973,
+            289.73390193,
+            3167.56224658,
+            1041.96126532,
+            50.46858403,
+            759.52720527,
+            249.84447542]
+
+    z_guess = [8.75897957e+06,
+               8.42155186e+06,
+               2.17230613e+01,
+               2.17230613e+01]
+    y_star, z_star, dx_star, g_star, out_star, eig, stable, stats = solve_equilibrium_ipopt(
+        model=model_rigorous,
+        u_val=u,
+        y_guess=y_guess,
+        z_guess=z_guess)
+else:
+    well_func = make_glc_well_surrogate(BSW=0, GOR=0, PI=2.4e-6)
+    model_surrogate = build_steady_state_model(
+        f_func=well_func,
+        state_size=3,
+        control_size=2,
+        alg_size=None,
+        name="glc_ss_rigorous",
+        out_name=Z_NAMES
+    )
+
+    y_guess = [50,500,500]
+
+    y_star,dx_star, out_star, eig, stable, stats = solve_equilibrium_ipopt(
+        model=model_surrogate,
+        u_val=u,
+        y_guess=y_guess
 )
+
 
 print("status:", stats.get("return_status", ""), "success:", stats.get("success", False))
 print("y*:", np.array(y_star).reshape(-1))
-print("z*:", np.array(z_star).reshape(-1))
+if not surrogate:
+    print("z*:", np.array(z_star).reshape(-1))
+    print("||g|| :", np.linalg.norm(np.array(g_star).reshape(-1)))
 print("||dx||:", np.linalg.norm(np.array(dx_star).reshape(-1)))
-print("||g|| :", np.linalg.norm(np.array(g_star).reshape(-1)))
+
 print("stable?:", stable)
 
+if surrogate:
 # Pretty-print the OUT vector by name (uses model["Z_names"])
-print("\n--- out* (named) ---")
-print_z_grouped(out_star, model_rigorous["Z_names"])
+    print("\n--- out* (named) ---")
+    print_z_grouped(out_star, model_surrogate["Z_names"])
+else:
+    print("\n--- out* (named) ---")
+    print_z_grouped(out_star, model_rigorous["Z_names"])
 
 
 # model_surrogate = build_steady_state_model(glc_well_01_surrogate_casadi,

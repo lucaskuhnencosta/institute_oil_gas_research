@@ -1,11 +1,6 @@
 import importlib
 
-from Surrogate_ODE_Model.glc_surrogate_casadi import *
-from Rigorous_DAE_model.glc_rigorous_casadi import glc_well_01_rigorous_casadi
-
-from Utilities.block_builders import build_steady_state_model
 import casadi as ca
-import matplotlib.pyplot as plt
 import numpy as np
 from collections import defaultdict
 

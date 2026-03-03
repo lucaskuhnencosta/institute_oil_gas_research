@@ -46,6 +46,8 @@ def make_glc_well_rigorous(BSW,GOR,PI):
         V_tb = S_tb * L_tb
         T_tb = 369.4  # K is the tubing temperature
 
+        V_tb=V_tb-V_bh
+
         # Constants (general)
         R = 8.314  # J/(K*mol) is the universal gas constant
         g = 9.81  # m/s^2 is the gravity
@@ -66,10 +68,10 @@ def make_glc_well_rigorous(BSW,GOR,PI):
         K_gs = 9.98e-5  # is the gas lift choke constant
         K_inj = 1.40e-4  # is the injection valve choke constant
         K_pr = 2.90e-3  # is the production choke constant
-        K0_int=0.20
+        K0_int=2.50
 
         # Friction
-        epsilon_tubing = 3e-4
+        epsilon_tubing = 1e-3
 
         # ---------- unpack ----------
         m_G_an=y[0]
@@ -163,8 +165,8 @@ def make_glc_well_rigorous(BSW,GOR,PI):
         rho_L_bh = rho_L
 
         # Mixture density in each CV (volume averaged)
-        rho_mix_tb = alpha_L_tb * rho_L_tb + alpha_G_tb * rho_G_tb
-        rho_mix_bh = alpha_L_bh * rho_L_bh + alpha_G_bh * rho_G_bh
+        rho_mix_tb = (m_o_t+m_w_t+m_G_t)/V_tb
+        rho_mix_bh = (m_o_b+m_w_b+m_G_b)/V_bh
         rho_mix_tb_safe = smooth_max_scaled(rho_mix_tb, 1e-9)
         rho_mix_bh_safe = smooth_max_scaled(rho_mix_bh, 1e-9)
 
@@ -187,7 +189,7 @@ def make_glc_well_rigorous(BSW,GOR,PI):
 
         # Superficial velocities bottom
         U_sg_b=w_G_res/(rho_G_bh*S_bh) # 4.1
-        U_sl_b=w_L_up/(rho_L_bh*S_bh) # 4.2
+        U_sl_b=w_L_res/(rho_L_bh*S_bh) # 4.2
 
         # Superficial velocities top
         U_sg_t=(w_G_up+w_G_inj)/(rho_G_tb*S_tb) # 4.3
@@ -208,7 +210,7 @@ def make_glc_well_rigorous(BSW,GOR,PI):
         log_arg_tb_safe = fmax(log_arg_tb, 1e-12)
         lambda_tb = (1 / (1.8 * log10(log_arg_tb_safe))) ** 2
 
-        F_t = (lambda_tb*rho_mix_tb*U_avg_t**2*L_tb)/(2*D_tb)
+        F_t = (alpha_L_tb*lambda_tb*rho_mix_tb*U_avg_t**2*L_tb)/(2*D_tb)
 
         dP_t=rho_mix_tb*g*L_tb+F_t
         P_tb_b=P_tb_t+dP_t
@@ -343,7 +345,6 @@ def make_glc_well_rigorous(BSW,GOR,PI):
             # Hold-ups / Phase volumes (m³)
             # =================================
             V_L_tb_states,
-
             V_L_bh_states,
 
             alpha_L_tb,
@@ -376,6 +377,11 @@ def make_glc_well_rigorous(BSW,GOR,PI):
             dP_res_bh_bar,
             dP_tb_choke_bar,
 
+            Re_tb,
+            Re_bh,
+            U_avg_t,
+            U_avg_b,
+
             # =================================
             # Flows (kg/s)
             # =================================
@@ -389,7 +395,8 @@ def make_glc_well_rigorous(BSW,GOR,PI):
             w_o_out,
 
             w_G_inj,
-            w_up_g
+            w_up_g,
+            rho_mix_tb,
         )
         return dx, alg, out
 
@@ -412,7 +419,6 @@ Z_NAMES = [
     # Hold-ups / Volumes (m³)
     # =================================
     "V_L_tb_states",
-
     "V_L_bh_states",
     # Volume fractions
     "alpha_L_tb",
@@ -444,6 +450,10 @@ Z_NAMES = [
     "dP_an_tb_bar",
     "dP_res_bh_bar",
     "dP_tb_choke_bar",
+    "Re_tb",
+    "Re_bh",
+    "U_avg_mix_tb",
+    "U_avg_b",
 
     # =================================
     # Flows (kg/s)
@@ -459,7 +469,8 @@ Z_NAMES = [
 
     "w_G_inj",
 
-    "w_up"
+    "w_up",
+    "rho_avg_mix_tb"
 ]
 
 

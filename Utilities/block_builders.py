@@ -1,7 +1,5 @@
 import casadi as ca
 
-
-
 def build_steady_state_model(f_func,
                             state_size,
                             control_size=2,

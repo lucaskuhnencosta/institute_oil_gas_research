@@ -76,7 +76,7 @@ def make_glc_well_surrogate(BSW,GOR,PI):
         mu_w = 1.00e-3
         rho_o = 760  # kg/m^3 is the density of the liquid in the tubing
         rho_w = 1000
-        rho_L = 1.0 / (BSW / rho_w + (1.0 - BSW) / rho_o)
+        rho_L = BSW*rho_w+(1-BSW)*rho_o
         mu = np.exp((1 - BSW) * np.log(mu_o) + BSW * np.log(mu_w))
         M_G = 0.0167  # (kg/mol) is the gas molecular weight
 
@@ -89,10 +89,9 @@ def make_glc_well_surrogate(BSW,GOR,PI):
         K_gs = 9.98e-5  # is the gas lift choke constant
         K_inj = 1.40e-4  # is the injection valve choke constant
         K_pr = 2.90e-3  # is the production choke constant
-        K0_int=0.01
 
         # Friction
-        epsilon_tubing = 3e-4
+        epsilon_tubing = 1e-3
 
         # ---------- unpack ----------
         m_G_an = y[0]
@@ -307,8 +306,8 @@ def make_glc_well_surrogate(BSW,GOR,PI):
         c=0
         d=0
 
-        P_hidro_tb_bar=rho_avg_mix_tb*g*L_tb
-        P_hidro_bh_bar=rho_avg_mix_tb*g*L_tb
+        P_hidro_tb_bar=rho_avg_mix_tb*g*L_tb/1e5
+        P_hidro_bh_bar=rho_L*g*L_bh/1e5
         dP_int_bar=0
         w_up=w_res
 
@@ -357,6 +356,11 @@ def make_glc_well_surrogate(BSW,GOR,PI):
             dP_res_bh_bar,
             dP_tb_choke_bar,
 
+            Re_tb,
+            Re_bh,
+            U_avg_mix_tb,
+            U_avg_L_bh,
+
             # =================================
             # Flows (kg/s)
             # =================================
@@ -371,7 +375,8 @@ def make_glc_well_surrogate(BSW,GOR,PI):
 
             w_G_inj,
 
-            w_up
+            w_up,
+            rho_avg_mix_tb
 
         )
 
@@ -429,6 +434,11 @@ Z_NAMES = [
     "dP_res_bh_bar",
     "dP_tb_choke_bar",
 
+    "Re_tb",
+    "Re_bh",
+    "U_avg_mix_tb",
+    "U_avg_b",
+
     # =================================
     # Flows (kg/s)
     # =================================
@@ -443,7 +453,8 @@ Z_NAMES = [
 
     "w_G_inj",
 
-    "w_up"
+    "w_up",
+    "rho_avg_mix_tb"
 ]
 
 
