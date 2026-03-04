@@ -5,30 +5,6 @@ import casadi as ca
 def make_glc_well_surrogate(BSW,GOR,PI):
 
     def glc_well(y,u):
-        """
-        Complete (true friction) gas-lift well model in CasADi with smooth positivity
-        for IPOPT-friendliness
-
-        Inputs:
-             y: CasADi SX/MX (3,)  [m_G_an, m_G_tb, m_L_tb]
-            u: CasADi SX/MX (2,)  [u1, u2]
-
-        Gas-lift well ODE RHS + selected algebraic outputs (single-source-of-truth).
-
-        Inputs:
-          y: CasADi MX/SX (3x1)  -> [m_G_an, m_G_tb, m_L_tb]
-          u: CasADi MX/SX (2x1)  -> [u1, u2]
-
-        Returns:
-          dx: (3x1) ODE RHS
-          z : (6x1) algebraic outputs:
-               [P_bh_bar,
-                w_L_out,
-                w_G_inj,
-                w_G_in,
-                w_G_out,
-                P_tb_t_bar]
-        """
         def softplus_stable(x):
             # softplus(x) = max(x,0) + log(1+exp(-|x|)), stable for large x
             ax = sqrt(x * x + eps)
@@ -99,14 +75,6 @@ def make_glc_well_surrogate(BSW,GOR,PI):
         m_L_tb = y[2]
         u1 = u[0]
         u2 = u[1]
-
-        # -----------------------
-        # PART 1 - RESERVOIR INFLOW
-        # -----------------------
-
-        # -----------------------
-        # PART 2 - ANNULUS (from state)
-        # -----------------------
 
         P_an_t=R*T_an*m_G_an/(M_G*V_an)
         P_an_b=P_an_t+(m_G_an*g*L_an/V_an)

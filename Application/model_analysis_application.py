@@ -12,7 +12,7 @@ from matplotlib.colors import Normalize
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 import matplotlib as mpl
 
-def make_model(sim_kind:str,BSW=0.20,GOR=0.15,PI=3.0e-6):
+def make_model(sim_kind:str,BSW=0.20,GOR=0.05,PI=3.0e-6):
     well_func_rig=make_glc_well_rigorous(BSW=BSW,GOR=GOR,PI=PI)
     well_func_sur=make_glc_well_surrogate(BSW=BSW,GOR=GOR,PI=PI)
     sim_kind = sim_kind.lower().strip()
@@ -47,7 +47,7 @@ def run_sweep(model,u1_grid,u2_grid,y_guess_init,z_guess_init=None):
     nu=model["nu"]
     is_dae=bool(model["is_dae"])
 
-    Z_NAMES=model["Z_names"]
+    Z_NAMES=model["Z_NAMES"]
     n_out=len(Z_NAMES)
 
     Nu1=len(u1_grid)
@@ -60,6 +60,7 @@ def run_sweep(model,u1_grid,u2_grid,y_guess_init,z_guess_init=None):
 
     STABLE = np.full((Nu1, Nu2), np.nan, dtype=float)  # 1 stable, 0 unstable, NaN unknown/fail
     SUCCESS = np.zeros((Nu1, Nu2), dtype=bool)
+    P_max=np.zeros((Nu1,Nu2),dtype=float)
 
     # y_guess=np.array(y_guess_init,dtype=float).reshape(-1)
     # if y_guess.size != nx:
@@ -137,6 +138,7 @@ def run_sweep(model,u1_grid,u2_grid,y_guess_init,z_guess_init=None):
 
                 STABLE[i, j] = 1.0 if stable else 0.0
                 SUCCESS[i, j] = True
+                P_max[i,j]=90
 
                 if stable:
                     y_guess=np.array(y_star,dtype=float).reshape(-1)
@@ -160,7 +162,8 @@ def run_sweep(model,u1_grid,u2_grid,y_guess_init,z_guess_init=None):
         "u1_grid": u1_grid,
         "u2_grid": u2_grid,
         "Z_NAMES": Z_NAMES,
-        "is_dae": is_dae
+        "is_dae": is_dae,
+        "P_max": P_max
     }
 
 def plot_overlay_surface(varname, U1, U2, results_all, title="", zlabel=""):
@@ -269,6 +272,7 @@ def plot_figures(results,title):
         fig1.add_subplot(2, 2, 4, projection="3d")
     ]
     plot_surface(fig1,axes[0], U1, U2, results["OUT"]["P_bh_bar"], "P_bh_bar(u1,u2)", "bar")
+    plot_surface(fig1,axes[0],U1,U2,results["P_max"],"Bottomhole pressure restriction","bar")
     plot_surface(fig1,axes[1], U1, U2, results["OUT"]["P_tb_t_bar"], "P_tb_t_bar(u1,u2)", "bar")
     plot_surface(fig1,axes[2], U1, U2, results["OUT"]["P_tb_b_bar"],  "P_tb_b_bar(u1,u2)", "bar")
     plot_surface(fig1,axes[3], U1, U2, results["OUT"]["dP_int_bar"], "dP_int_bar(u1,u2)", "bar")
@@ -377,7 +381,7 @@ def plot_figures(results,title):
     plot_surface(fig6,axes[0], U1, U2, results["OUT"]["w_G_res"],  "w_g_res(u1,u2)", "kg/s")
     plot_surface(fig6,axes[1], U1, U2, results["OUT"]["w_G_inj"], "w_g_inj(u1,u2)", "kg/s")
     plot_surface(fig6,axes[2], U1, U2, results["OUT"]["w_L_res"], "w_g_out(u1,u2)", "kg/s")
-    # plot_surface(fig6,axes[3], U1, U2, results["OUT"]["Q_out"], "Q_out(u1,u2)", "kg/s")
+    plot_surface(fig6,axes[3], U1, U2, results["OUT"]["w_L_out"], "Q_out(u1,u2)", "kg/s")
     for ax in axes:
         ax.view_init(elev=45, azim=45)   # opposite view
     plt.tight_layout()
@@ -545,8 +549,8 @@ if __name__ == "__main__":
     u1_stable, u2_stable = [], []
     u1_unstab, u2_unstab = [], []
 
-    u1_grid = np.linspace(0.05, 1.00001, 100)
-    u2_grid=np.linspace(0.05,1.00001,100)
+    u1_grid = np.linspace(0.05, 1.00001, 10)
+    u2_grid=np.linspace(0.10,1.00001,10)
 
     RES_TOL_DX=1e-6
     RES_TOL_G=1e-6
@@ -595,58 +599,82 @@ if __name__ == "__main__":
         # =================================
         # States (kg)
         # =================================
-        ("m_G_an",        "m_G_an(u1,u2)",        "kg"),
-        ("m_G_t",         "m_G_t(u1,u2)",         "kg"),
+        ("m_G_an", "m_G_an(u1,u2)", "kg"),
+        ("m_G_t", "m_G_t(u1,u2)", "kg"),
+        ("m_o_t", "m_o_t(u1,u2)", "kg"),
+        ("m_w_t", "m_w_t(u1,u2)", "kg"),
+        ("m_G_b", "m_G_b(u1,u2)", "kg"),
+        ("m_o_b", "m_o_b(u1,u2)", "kg"),
+        ("m_w_b", "m_w_b(u1,u2)", "kg"),
 
+        # =================================
+        # Hold-ups / Volumes (m³)
+        # =================================
+        ("V_L_tb_states", "V_L_tb_states(u1,u2)", "m³"),
+        ("V_L_bh_states", "V_L_bh_states(u1,u2)", "m³"),
 
         # =================================
         # Volume Fractions (-)
         # =================================
-        ("alpha_L_tb",    "alpha_L_tb(u1,u2)",    "-"),
-        ("alpha_G_tb",    "alpha_G_tb(u1,u2)",    "-"),
-        ("alpha_L_tb_t",  "alpha_L_tb_t(u1,u2)",  "-"),
-        ("alpha_L_tb_b",  "alpha_L_tb_b(u1,u2)",  "-"),
-        ("alpha_L_bh",    "alpha_L_bh(u1,u2)",    "-"),
-        ("alpha_G_bh",    "alpha_G_bh(u1,u2)",    "-"),
+        ("alpha_L_tb", "alpha_L_tb(u1,u2)", "-"),
+        ("alpha_G_tb", "alpha_G_tb(u1,u2)", "-"),
+        ("alpha_L_tb_t", "alpha_L_tb_t(u1,u2)", "-"),
+        ("alpha_L_tb_b", "alpha_L_tb_b(u1,u2)", "-"),
+        ("alpha_L_bh", "alpha_L_bh(u1,u2)", "-"),
+        ("alpha_G_bh", "alpha_G_bh(u1,u2)", "-"),
 
         # =================================
         # Pressures (bar)
         # =================================
-        ("P_bh_bar",        "P_bh_bar(u1,u2)",        "bar"),
-        ("P_tb_t_bar",      "P_tb_t_bar(u1,u2)",      "bar"),
-        ("P_tb_b_bar",      "P_tb_b_bar(u1,u2)",      "bar"),
-        ("P_hidro_tb_bar",  "P_hidro_tb_bar(u1,u2)",  "bar"),
-        ("P_hidro_bh_bar",  "P_hidro_bh_bar(u1,u2)",  "bar"),
+        ("P_bh_bar", "P_bh_bar(u1,u2)", "bar"),
+        ("P_tb_t_bar", "P_tb_t_bar(u1,u2)", "bar"),
+        ("P_tb_b_bar", "P_tb_b_bar(u1,u2)", "bar"),
+        ("P_hidro_tb_bar", "P_hidro_tb_bar(u1,u2)", "bar"),
+        ("P_hidro_bh_bar", "P_hidro_bh_bar(u1,u2)", "bar"),
 
         # =================================
-        # Friction (bar)
+        # Friction Losses (bar)
         # =================================
-        ("F_t_bar",       "F_t_bar(u1,u2)",       "bar"),
-        ("F_bh_bar",      "F_bh_bar(u1,u2)",      "bar"),
+        ("F_t_bar", "F_t_bar(u1,u2)", "bar"),
+        ("F_bh_bar", "F_bh_bar(u1,u2)", "bar"),
 
         # =================================
         # Delta Pressures (bar)
         # =================================
-        ("dP_int_bar",        "dP_int_bar(u1,u2)",        "bar"),
-        ("dP_gs_an_bar",      "dP_gs_an_bar(u1,u2)",      "bar"),
-        ("dP_an_tb_bar",      "dP_an_tb_bar(u1,u2)",      "bar"),
-        ("dP_res_bh_bar",     "dP_res_bh_bar(u1,u2)",     "bar"),
-        ("dP_tb_choke_bar",   "dP_tb_choke_bar(u1,u2)",   "bar"),
+        ("dP_int_bar", "dP_int_bar(u1,u2)", "bar"),
+        ("dP_gs_an_bar", "dP_gs_an_bar(u1,u2)", "bar"),
+        ("dP_an_tb_bar", "dP_an_tb_bar(u1,u2)", "bar"),
+        ("dP_res_bh_bar", "dP_res_bh_bar(u1,u2)", "bar"),
+        ("dP_tb_choke_bar", "dP_tb_choke_bar(u1,u2)", "bar"),
 
         # =================================
-        # Flows (kg/s)
+        # Hydrodynamics
         # =================================
-        ("w_res",     "w_res(u1,u2)",     "kg/s"),
-        ("w_L_res",   "w_L_res(u1,u2)",   "kg/s"),
-        ("w_G_res",   "w_G_res(u1,u2)",   "kg/s"),
+        ("Re_tb", "Re_tb(u1,u2)", "-"),
+        ("Re_bh", "Re_bh(u1,u2)", "-"),
+        ("U_avg_mix_tb", "U_avg_mix_tb(u1,u2)", "m/s"),
+        ("U_avg_b", "U_avg_b(u1,u2)", "m/s"),
 
-        ("w_out",     "w_out(u1,u2)",     "kg/s"),
-        ("w_L_out",   "w_L_out(u1,u2)",   "kg/s"),
-        ("w_w_out",   "w_w_out(u1,u2)",   "kg/s"),
-        ("w_o_out",   "w_o_out(u1,u2)",   "kg/s"),
+        # =================================
+        # Flow Rates (kg/s)
+        # =================================
+        ("w_res", "w_res(u1,u2)", "kg/s"),
+        ("w_L_res", "w_L_res(u1,u2)", "kg/s"),
+        ("w_G_res", "w_G_res(u1,u2)", "kg/s"),
 
-        ("w_G_inj",   "w_G_inj(u1,u2)",   "kg/s"),
-        ("w_up",      "w_up(u1,u2)",      "kg/s"),
+        ("w_out", "w_out(u1,u2)", "kg/s"),
+        ("w_G_out", "w_G_out(u1,u2)", "kg/s"),
+        ("w_L_out", "w_L_out(u1,u2)", "kg/s"),
+        ("w_w_out", "w_w_out(u1,u2)", "kg/s"),
+        ("w_o_out", "w_o_out(u1,u2)", "kg/s"),
+
+        ("w_G_inj", "w_G_inj(u1,u2)", "kg/s"),
+        ("w_up", "w_up(u1,u2)", "kg/s"),
+
+        # =================================
+        # Mixture Properties
+        # =================================
+        ("rho_avg_mix_tb", "rho_avg_mix_tb(u1,u2)", "kg/m³"),
     ]
 
     if MODE == "rigorous":

@@ -1,9 +1,11 @@
 from Surrogate_ODE_Model.glc_surrogate_casadi import make_glc_well_surrogate
-from Rigorous_DAE_model.glc_truth_casadi import make_glc_well_rigorous
+from Rigorous_DAE_model.glc_truth_casadi import make_glc_well_rigorous, Z_NAMES_RIG
 from Utilities.block_builders import build_steady_state_model
 import casadi as ca
 import numpy as np
 from collections import defaultdict
+
+Z_NAMES=Z_NAMES_RIG
 
 def print_z_grouped(z_star, names, floatfmt="{: .6f}"):
     z = np.array(z_star).astype(float).reshape(-1)
@@ -84,7 +86,7 @@ def solve_equilibrium_ipopt(
 
     y_sym=model["y"]
     u_sym = model["u"]
-    Z_NAMES = model["Z_names"]
+    Z_NAMES = model["Z_NAMES"]
 
     # ---------------------
     # 2) Decision variables
@@ -479,10 +481,10 @@ if __name__ == "__main__":
     if surrogate:
     # Pretty-print the OUT vector by name (uses model["Z_names"])
         print("\n--- out* (named) ---")
-        print_z_grouped(out_star, model_surrogate["Z_names"])
+        print_z_grouped(out_star, model_surrogate["Z_NAMES"])
     else:
         print("\n--- out* (named) ---")
-        print_z_grouped(out_star, model_rigorous["Z_names"])
+        print_z_grouped(out_star, model_rigorous["Z_NAMES"])
 
 
     # model_surrogate = build_steady_state_model(glc_well_01_surrogate_casadi,
