@@ -20,7 +20,7 @@ def smooth_max_scaled(z: torch.Tensor,
     zmin_t = torch.as_tensor(zmin, dtype=z.dtype, device=z.device)
     return zmin_t + smooth_pos_scaled(z - zmin_t, k_pos=k_pos, scale=scale)
 
-def glc_surrogate_dx_torch(y: torch.Tensor,
+def glc_check_feasibility(y: torch.Tensor,
                            u: torch.Tensor,
                            BSW: float=0.20,
                            GOR: float=0.05,
@@ -171,4 +171,4 @@ def glc_surrogate_dx_torch(y: torch.Tensor,
     dx2 = w_G_inj + w_G_res - w_G_out
     dx3 = w_L_res - w_L_out
 
-    return torch.stack((dx1, dx2, dx3), dim=-1)
+    return alpha_L_tb_t>=0

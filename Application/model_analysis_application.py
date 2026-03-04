@@ -218,7 +218,6 @@ def plot_overlay_surface(varname, U1, U2, results_all, title="", zlabel=""):
 
     plt.tight_layout()
     plt.show()
-
 def plot_surface(fig, ax, U1, U2, Z, title, zlabel, cmap_name="viridis"):
     Zm = np.ma.masked_invalid(Z)
 
@@ -544,7 +543,7 @@ if __name__ == "__main__":
 
 
 
-    MODE="both" # <-- change to "surrogate" or "rigorous"
+    MODE="surrogate" # <-- change to "surrogate" or "rigorous"
 
     u1_stable, u2_stable = [], []
     u1_unstab, u2_unstab = [], []
@@ -681,11 +680,11 @@ if __name__ == "__main__":
         for var, title, zlabel in PLOT_VARS:
             fig = plt.figure(figsize=(8, 6))
             ax = fig.add_subplot(1, 1, 1, projection="3d")
-            plot_surface(ax, U1, U2, results_all["rigorous"]["OUT"][var], title, zlabel)
+            plot_surface(fig,ax, U1, U2, results_all["rigorous"]["OUT"][var], title, zlabel)
             ax.view_init(elev=25, azim=45)
             plt.tight_layout()
             plt.show()
-        plot_figures(results_all["rigorous"])
+        plot_figures(results_all["rigorous"],title="rigorous")
         ax=plot_stability_map(U1,
                               U2,
                               STABLE=results_all["rigorous"]["STABLE"],
@@ -702,22 +701,30 @@ if __name__ == "__main__":
         for var, title, zlabel in PLOT_VARS:
             fig = plt.figure(figsize=(8, 6))
             ax = fig.add_subplot(1, 1, 1, projection="3d")
-            plot_surface(ax, U1, U2, results_all["surrogate"]["OUT"][var], title, zlabel)
+            plot_surface(fig,ax, U1, U2, results_all["surrogate"]["OUT"][var], title, zlabel)
             ax.view_init(elev=25, azim=45)
             plt.tight_layout()
             plt.show()
-        plot_figures(results_all["surrogate"])
+        plot_figures(results_all["surrogate"],title="surrogate")
         ax=plot_stability_map(U1,
                               U2,
                               STABLE=results_all["surrogate"]["STABLE"],
                               title="Stability map + fitted stability constraint")
-        boundary_u1, boundary_u2 = extract_stability_boundary_from_grid(u1_grid, u2_grid, results["STABLE"])
+        boundary_u1, boundary_u2 = extract_stability_boundary_from_grid(u1_grid, u2_grid, results_all["surrogate"]["STABLE"])
         b_hat=fit_boundary_polynomial(boundary_u1,boundary_u2)
         print(boundary_u1, boundary_u2)
         print (b_hat)
         overlay_boundary_and_fit(ax,b_hat,deg=2)
         plt.tight_layout()
         plt.show()
+
+        print(f"Minimum m_G_an is {np.min(results_all["surrogate"]["OUT"]["m_G_an"])}")
+        print(f"Minimum m_G_tb is {np.min(results_all["surrogate"]["OUT"]["m_G_t"])}")
+        print(f"Minimum m_L_tb is {np.min(results_all["surrogate"]["OUT"]["m_o_t"])}")
+
+        print(f"Maximum m_G_an is {np.max(results_all["surrogate"]["OUT"]["m_G_an"])}")
+        print(f"Maximum m_G_tb is {np.max(results_all["surrogate"]["OUT"]["m_G_t"])}")
+        print(f"Maximum m_L_tb is {np.max(results_all["surrogate"]["OUT"]["m_o_t"])}")
 
     elif MODE == "both":
         for var, title, zlabel in PLOT_VARS:

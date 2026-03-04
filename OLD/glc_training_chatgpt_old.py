@@ -33,12 +33,10 @@ class PINCWellStaticTrainer(Trainer):
                  lr: float = 3e-3,
                  lambda_phys: float = 1.0,
                  mse_f_scale_factors: list = [1.0e3, 1.0e3, 1.0e2],
-                 y_min: list = [3550.0, 180.0, 7000.0],
-                 y_max: list = [4500.0, 400.0, 9000.0],
+                 y_min: list = [3000.0, 220.0, 6340.0],
+                 y_max: list = [4800.0, 1095.0, 11995.0],
                  u_min: list = [0.0, 0.0],
                  u_max: list = [1.0, 1.0],
-                 data_rk4_dt: float = 10.0,
-                 data_rk4_num_steps: int = 10,
                  mixed_precision=True,
                  device=None,
                  wandb_project="PINC-GasLift-Static",
@@ -76,8 +74,6 @@ class PINCWellStaticTrainer(Trainer):
         self.N_data = N_data
         self.N_col = N_col
         self.N_val = N_val
-        self.data_rk4_dt = data_rk4_dt
-        self.data_rk4_num_steps = data_rk4_num_steps
 
         # Loss weights
         self.lambda_phys = lambda_phys

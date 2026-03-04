@@ -461,6 +461,7 @@ if __name__ == "__main__":
         )
 
         y_guess = [50,500,500]
+        u = [1.00, 1.00]
 
         y_star,dx_star, out_star, eig, stable, stats = solve_equilibrium_ipopt(
             model=model_surrogate,
