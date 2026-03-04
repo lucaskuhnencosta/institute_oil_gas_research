@@ -369,6 +369,7 @@ def make_glc_well_surrogate(BSW,GOR,PI):
             w_G_res,
 
             w_out,
+            w_G_out,
             w_L_out,
             w_w_out,
             w_o_out,
@@ -384,7 +385,7 @@ def make_glc_well_surrogate(BSW,GOR,PI):
 
     return glc_well
 
-Z_NAMES = [
+Z_NAMES_SUR = [
 
     # =================================
     # States (kg)
@@ -447,6 +448,7 @@ Z_NAMES = [
     "w_G_res",
 
     "w_out",
+    "w_G_out",
     "w_L_out",
     "w_w_out",
     "w_o_out",

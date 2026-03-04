@@ -3,8 +3,8 @@ import casadi as ca
 import matplotlib.pyplot as plt
 from mpmath.functions.rszeta import coef
 
-from Rigorous_DAE_model.glc_truth_casadi import make_glc_well_rigorous, Z_NAMES
-from Surrogate_ODE_Model.glc_surrogate_casadi import make_glc_well_surrogate, Z_NAMES
+from Rigorous_DAE_model.glc_truth_casadi import make_glc_well_rigorous, Z_NAMES_RIG
+from Surrogate_ODE_Model.glc_surrogate_casadi import make_glc_well_surrogate, Z_NAMES_SUR
 
 from Utilities.block_builders import build_steady_state_model
 from Solvers.solve_glc_ode_equilibrium import solve_equilibrium_ipopt
@@ -24,7 +24,7 @@ def make_model(sim_kind:str,BSW=0.20,GOR=0.15,PI=3.0e-6):
             control_size=2,
             alg_size=None,
             name="glc_surrogate_ss",
-            out_name=Z_NAMES
+            out_name=Z_NAMES_SUR
         )
         return model
     elif sim_kind == "rigorous":
@@ -35,7 +35,7 @@ def make_model(sim_kind:str,BSW=0.20,GOR=0.15,PI=3.0e-6):
             control_size=2,
             alg_size=4,
             name="glc_rigorous_ss",
-            out_name=Z_NAMES
+            out_name=Z_NAMES_RIG
         )
         return model
     else:
@@ -536,198 +536,198 @@ def overlay_boundary_and_fit(ax,
     ax.legend(loc="best")
     return ax
 
+if __name__ == "__main__":
 
 
 
+    MODE="both" # <-- change to "surrogate" or "rigorous"
 
-MODE="both" # <-- change to "surrogate" or "rigorous"
+    u1_stable, u2_stable = [], []
+    u1_unstab, u2_unstab = [], []
 
-u1_stable, u2_stable = [], []
-u1_unstab, u2_unstab = [], []
+    u1_grid = np.linspace(0.05, 1.00001, 100)
+    u2_grid=np.linspace(0.05,1.00001,100)
 
-u1_grid = np.linspace(0.05, 1.00001, 10)
-u2_grid=np.linspace(0.05,1.00001,10)
+    RES_TOL_DX=1e-6
+    RES_TOL_G=1e-6
+    TOL_EIG=1e-8
 
-RES_TOL_DX=1e-6
-RES_TOL_G=1e-6
-TOL_EIG=1e-8
+    y_guess_rig = [3679.08033973,
+               289.73390193,
+               3167.56224658,
+               1041.96126532,
+               50.46858403,
+               759.52720527,
+               249.84447542]
 
-y_guess_rig = [3679.08033973,
-           289.73390193,
-           3167.56224658,
-           1041.96126532,
-           50.46858403,
-           759.52720527,
-           249.84447542]
+    z_guess_rig = [8.75897957e+06,
+               8.42155186e+06,
+               2.17230613e+01,
+               2.17230613e+01]
+    y_guess_sur = np.array([3285.42, 300.822, 6910.91], dtype=float)
 
-z_guess_rig = [8.75897957e+06,
-           8.42155186e+06,
-           2.17230613e+01,
-           2.17230613e+01]
-y_guess_sur = np.array([3285.42, 300.822, 6910.91], dtype=float)
+    U1, U2 = np.meshgrid(u1_grid, u2_grid,indexing='ij')
+    RES_TOL = 1e-6
+    min_dp_choke_pressure=500
 
-U1, U2 = np.meshgrid(u1_grid, u2_grid,indexing='ij')
-RES_TOL = 1e-6
-min_dp_choke_pressure=500
+    results_all={}
 
-results_all={}
+    if MODE in ("rigorous", "both"):
+        model_rig = make_model("rigorous", BSW=0.20, GOR=0.05, PI=3.0e-6)
+        y_guess = np.array(y_guess_rig, dtype=float).reshape(-1)
+        if y_guess.size != model_rig["nx"]:
+            raise ValueError(f"y_guess_init has size {y_guess.size}, but model nx={model_rig["nx"]}")
+        results_all["rigorous"] = run_sweep(model_rig,
+                                            u1_grid,
+                                            u2_grid,
+                                            y_guess_init=y_guess_rig,
+                                            z_guess_init=z_guess_rig)
 
-if MODE in ("rigorous", "both"):
-    model_rig = make_model("rigorous", BSW=0.20, GOR=0.05, PI=3.0e-6)
-    y_guess = np.array(y_guess_rig, dtype=float).reshape(-1)
-    if y_guess.size != model_rig["nx"]:
-        raise ValueError(f"y_guess_init has size {y_guess.size}, but model nx={model_rig["nx"]}")
-    results_all["rigorous"] = run_sweep(model_rig,
-                                        u1_grid,
-                                        u2_grid,
-                                        y_guess_init=y_guess_rig,
-                                        z_guess_init=z_guess_rig)
+    if MODE in ("surrogate", "both"):
+        model_sur = make_model("surrogate", BSW=0.20, GOR=0.05, PI=3.0e-6)
+        results_all["surrogate"] = run_sweep(model_sur,
+                                             u1_grid,
+                                             u2_grid,
+                                             y_guess_init=y_guess_sur,
+                                             z_guess_init=None)
+    PLOT_VARS = [
 
-if MODE in ("surrogate", "both"):
-    model_sur = make_model("surrogate", BSW=0.20, GOR=0.05, PI=3.0e-6)
-    results_all["surrogate"] = run_sweep(model_sur,
-                                         u1_grid,
-                                         u2_grid,
-                                         y_guess_init=y_guess_sur,
-                                         z_guess_init=None)
-PLOT_VARS = [
-
-    # =================================
-    # States (kg)
-    # =================================
-    ("m_G_an",        "m_G_an(u1,u2)",        "kg"),
-    ("m_G_t",         "m_G_t(u1,u2)",         "kg"),
+        # =================================
+        # States (kg)
+        # =================================
+        ("m_G_an",        "m_G_an(u1,u2)",        "kg"),
+        ("m_G_t",         "m_G_t(u1,u2)",         "kg"),
 
 
-    # =================================
-    # Volume Fractions (-)
-    # =================================
-    ("alpha_L_tb",    "alpha_L_tb(u1,u2)",    "-"),
-    ("alpha_G_tb",    "alpha_G_tb(u1,u2)",    "-"),
-    ("alpha_L_tb_t",  "alpha_L_tb_t(u1,u2)",  "-"),
-    ("alpha_L_tb_b",  "alpha_L_tb_b(u1,u2)",  "-"),
-    ("alpha_L_bh",    "alpha_L_bh(u1,u2)",    "-"),
-    ("alpha_G_bh",    "alpha_G_bh(u1,u2)",    "-"),
+        # =================================
+        # Volume Fractions (-)
+        # =================================
+        ("alpha_L_tb",    "alpha_L_tb(u1,u2)",    "-"),
+        ("alpha_G_tb",    "alpha_G_tb(u1,u2)",    "-"),
+        ("alpha_L_tb_t",  "alpha_L_tb_t(u1,u2)",  "-"),
+        ("alpha_L_tb_b",  "alpha_L_tb_b(u1,u2)",  "-"),
+        ("alpha_L_bh",    "alpha_L_bh(u1,u2)",    "-"),
+        ("alpha_G_bh",    "alpha_G_bh(u1,u2)",    "-"),
 
-    # =================================
-    # Pressures (bar)
-    # =================================
-    ("P_bh_bar",        "P_bh_bar(u1,u2)",        "bar"),
-    ("P_tb_t_bar",      "P_tb_t_bar(u1,u2)",      "bar"),
-    ("P_tb_b_bar",      "P_tb_b_bar(u1,u2)",      "bar"),
-    ("P_hidro_tb_bar",  "P_hidro_tb_bar(u1,u2)",  "bar"),
-    ("P_hidro_bh_bar",  "P_hidro_bh_bar(u1,u2)",  "bar"),
+        # =================================
+        # Pressures (bar)
+        # =================================
+        ("P_bh_bar",        "P_bh_bar(u1,u2)",        "bar"),
+        ("P_tb_t_bar",      "P_tb_t_bar(u1,u2)",      "bar"),
+        ("P_tb_b_bar",      "P_tb_b_bar(u1,u2)",      "bar"),
+        ("P_hidro_tb_bar",  "P_hidro_tb_bar(u1,u2)",  "bar"),
+        ("P_hidro_bh_bar",  "P_hidro_bh_bar(u1,u2)",  "bar"),
 
-    # =================================
-    # Friction (bar)
-    # =================================
-    ("F_t_bar",       "F_t_bar(u1,u2)",       "bar"),
-    ("F_bh_bar",      "F_bh_bar(u1,u2)",      "bar"),
+        # =================================
+        # Friction (bar)
+        # =================================
+        ("F_t_bar",       "F_t_bar(u1,u2)",       "bar"),
+        ("F_bh_bar",      "F_bh_bar(u1,u2)",      "bar"),
 
-    # =================================
-    # Delta Pressures (bar)
-    # =================================
-    ("dP_int_bar",        "dP_int_bar(u1,u2)",        "bar"),
-    ("dP_gs_an_bar",      "dP_gs_an_bar(u1,u2)",      "bar"),
-    ("dP_an_tb_bar",      "dP_an_tb_bar(u1,u2)",      "bar"),
-    ("dP_res_bh_bar",     "dP_res_bh_bar(u1,u2)",     "bar"),
-    ("dP_tb_choke_bar",   "dP_tb_choke_bar(u1,u2)",   "bar"),
+        # =================================
+        # Delta Pressures (bar)
+        # =================================
+        ("dP_int_bar",        "dP_int_bar(u1,u2)",        "bar"),
+        ("dP_gs_an_bar",      "dP_gs_an_bar(u1,u2)",      "bar"),
+        ("dP_an_tb_bar",      "dP_an_tb_bar(u1,u2)",      "bar"),
+        ("dP_res_bh_bar",     "dP_res_bh_bar(u1,u2)",     "bar"),
+        ("dP_tb_choke_bar",   "dP_tb_choke_bar(u1,u2)",   "bar"),
 
-    # =================================
-    # Flows (kg/s)
-    # =================================
-    ("w_res",     "w_res(u1,u2)",     "kg/s"),
-    ("w_L_res",   "w_L_res(u1,u2)",   "kg/s"),
-    ("w_G_res",   "w_G_res(u1,u2)",   "kg/s"),
+        # =================================
+        # Flows (kg/s)
+        # =================================
+        ("w_res",     "w_res(u1,u2)",     "kg/s"),
+        ("w_L_res",   "w_L_res(u1,u2)",   "kg/s"),
+        ("w_G_res",   "w_G_res(u1,u2)",   "kg/s"),
 
-    ("w_out",     "w_out(u1,u2)",     "kg/s"),
-    ("w_L_out",   "w_L_out(u1,u2)",   "kg/s"),
-    ("w_w_out",   "w_w_out(u1,u2)",   "kg/s"),
-    ("w_o_out",   "w_o_out(u1,u2)",   "kg/s"),
+        ("w_out",     "w_out(u1,u2)",     "kg/s"),
+        ("w_L_out",   "w_L_out(u1,u2)",   "kg/s"),
+        ("w_w_out",   "w_w_out(u1,u2)",   "kg/s"),
+        ("w_o_out",   "w_o_out(u1,u2)",   "kg/s"),
 
-    ("w_G_inj",   "w_G_inj(u1,u2)",   "kg/s"),
-    ("w_up",      "w_up(u1,u2)",      "kg/s"),
-]
+        ("w_G_inj",   "w_G_inj(u1,u2)",   "kg/s"),
+        ("w_up",      "w_up(u1,u2)",      "kg/s"),
+    ]
 
-if MODE == "rigorous":
-    for var, title, zlabel in PLOT_VARS:
-        fig = plt.figure(figsize=(8, 6))
-        ax = fig.add_subplot(1, 1, 1, projection="3d")
-        plot_surface(ax, U1, U2, results_all["rigorous"]["OUT"][var], title, zlabel)
-        ax.view_init(elev=25, azim=45)
+    if MODE == "rigorous":
+        for var, title, zlabel in PLOT_VARS:
+            fig = plt.figure(figsize=(8, 6))
+            ax = fig.add_subplot(1, 1, 1, projection="3d")
+            plot_surface(ax, U1, U2, results_all["rigorous"]["OUT"][var], title, zlabel)
+            ax.view_init(elev=25, azim=45)
+            plt.tight_layout()
+            plt.show()
+        plot_figures(results_all["rigorous"])
+        ax=plot_stability_map(U1,
+                              U2,
+                              STABLE=results_all["rigorous"]["STABLE"],
+                              title="Stability map + fitted stability constraint")
+        boundary_u1, boundary_u2 = extract_stability_boundary_from_grid(u1_grid, u2_grid, results["STABLE"])
+        b_hat=fit_boundary_polynomial(boundary_u1,boundary_u2)
+        print(boundary_u1, boundary_u2)
+        print (b_hat)
+        overlay_boundary_and_fit(ax,b_hat,deg=2)
         plt.tight_layout()
         plt.show()
-    plot_figures(results_all["rigorous"])
-    ax=plot_stability_map(U1,
-                          U2,
-                          STABLE=results_all["rigorous"]["STABLE"],
-                          title="Stability map + fitted stability constraint")
-    boundary_u1, boundary_u2 = extract_stability_boundary_from_grid(u1_grid, u2_grid, results["STABLE"])
-    b_hat=fit_boundary_polynomial(boundary_u1,boundary_u2)
-    print(boundary_u1, boundary_u2)
-    print (b_hat)
-    overlay_boundary_and_fit(ax,b_hat,deg=2)
-    plt.tight_layout()
-    plt.show()
 
-elif MODE == "surrogate":
-    for var, title, zlabel in PLOT_VARS:
-        fig = plt.figure(figsize=(8, 6))
-        ax = fig.add_subplot(1, 1, 1, projection="3d")
-        plot_surface(ax, U1, U2, results_all["surrogate"]["OUT"][var], title, zlabel)
-        ax.view_init(elev=25, azim=45)
+    elif MODE == "surrogate":
+        for var, title, zlabel in PLOT_VARS:
+            fig = plt.figure(figsize=(8, 6))
+            ax = fig.add_subplot(1, 1, 1, projection="3d")
+            plot_surface(ax, U1, U2, results_all["surrogate"]["OUT"][var], title, zlabel)
+            ax.view_init(elev=25, azim=45)
+            plt.tight_layout()
+            plt.show()
+        plot_figures(results_all["surrogate"])
+        ax=plot_stability_map(U1,
+                              U2,
+                              STABLE=results_all["surrogate"]["STABLE"],
+                              title="Stability map + fitted stability constraint")
+        boundary_u1, boundary_u2 = extract_stability_boundary_from_grid(u1_grid, u2_grid, results["STABLE"])
+        b_hat=fit_boundary_polynomial(boundary_u1,boundary_u2)
+        print(boundary_u1, boundary_u2)
+        print (b_hat)
+        overlay_boundary_and_fit(ax,b_hat,deg=2)
         plt.tight_layout()
         plt.show()
-    plot_figures(results_all["surrogate"])
-    ax=plot_stability_map(U1,
-                          U2,
-                          STABLE=results_all["surrogate"]["STABLE"],
-                          title="Stability map + fitted stability constraint")
-    boundary_u1, boundary_u2 = extract_stability_boundary_from_grid(u1_grid, u2_grid, results["STABLE"])
-    b_hat=fit_boundary_polynomial(boundary_u1,boundary_u2)
-    print(boundary_u1, boundary_u2)
-    print (b_hat)
-    overlay_boundary_and_fit(ax,b_hat,deg=2)
-    plt.tight_layout()
-    plt.show()
 
-elif MODE == "both":
-    for var, title, zlabel in PLOT_VARS:
-        if (var in results_all["rigorous"]["OUT"]) and \
-           (var in results_all["surrogate"]["OUT"]):
+    elif MODE == "both":
+        for var, title, zlabel in PLOT_VARS:
+            if (var in results_all["rigorous"]["OUT"]) and \
+               (var in results_all["surrogate"]["OUT"]):
 
-            plot_overlay_surface(
-                var,
-                U1,
-                U2,
-                results_all,
-                title=title,
-                zlabel=zlabel
-            )
-    plot_figures(results_all["rigorous"],title="Rigorous Model")
-    plot_figures(results_all["surrogate"],title="Surrogate Model")
+                plot_overlay_surface(
+                    var,
+                    U1,
+                    U2,
+                    results_all,
+                    title=title,
+                    zlabel=zlabel
+                )
+        plot_figures(results_all["rigorous"],title="Rigorous Model")
+        plot_figures(results_all["surrogate"],title="Surrogate Model")
 
 
-    ax=plot_stability_map(U1,
-                          U2,
-                          STABLE=results_all["rigorous"]["STABLE"],
-                          title="Stability map + fitted stability constraint")
-    boundary_u1, boundary_u2 = extract_stability_boundary_from_grid(u1_grid, u2_grid, results_all["rigorous"]["STABLE"])
-    b_hat=fit_boundary_polynomial(boundary_u1,boundary_u2)
-    print(boundary_u1, boundary_u2)
-    print (b_hat)
-    overlay_boundary_and_fit(ax,b_hat,deg=2)
-    plt.tight_layout()
-    plt.show()
+        ax=plot_stability_map(U1,
+                              U2,
+                              STABLE=results_all["rigorous"]["STABLE"],
+                              title="Stability map + fitted stability constraint")
+        boundary_u1, boundary_u2 = extract_stability_boundary_from_grid(u1_grid, u2_grid, results_all["rigorous"]["STABLE"])
+        b_hat=fit_boundary_polynomial(boundary_u1,boundary_u2)
+        print(boundary_u1, boundary_u2)
+        print (b_hat)
+        overlay_boundary_and_fit(ax,b_hat,deg=2)
+        plt.tight_layout()
+        plt.show()
 
-    ax=plot_stability_map(U1,
-                          U2,
-                          STABLE=results_all["surrogate"]["STABLE"],
-                          title="Stability map + fitted stability constraint")
-    boundary_u1, boundary_u2 = extract_stability_boundary_from_grid(u1_grid, u2_grid, results_all["surrogate"]["STABLE"])
-    b_hat=fit_boundary_polynomial(boundary_u1,boundary_u2)
-    print(boundary_u1, boundary_u2)
-    print (b_hat)
-    overlay_boundary_and_fit(ax,b_hat,deg=2)
-    plt.tight_layout()
-    plt.show()
+        ax=plot_stability_map(U1,
+                              U2,
+                              STABLE=results_all["surrogate"]["STABLE"],
+                              title="Stability map + fitted stability constraint")
+        boundary_u1, boundary_u2 = extract_stability_boundary_from_grid(u1_grid, u2_grid, results_all["surrogate"]["STABLE"])
+        b_hat=fit_boundary_polynomial(boundary_u1,boundary_u2)
+        print(boundary_u1, boundary_u2)
+        print (b_hat)
+        overlay_boundary_and_fit(ax,b_hat,deg=2)
+        plt.tight_layout()
+        plt.show()

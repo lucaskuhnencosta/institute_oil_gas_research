@@ -3,67 +3,17 @@ import importlib
 import casadi as ca
 import numpy as np
 from collections import defaultdict
+# from Solvers.solve_glc_ode_equilibrium import print_z_grouped
 
 
-def print_z_grouped(z_star, names, floatfmt="{: .6f}"):
-    z = np.array(z_star).astype(float).reshape(-1)
-    if len(z) != len(names):
-        raise ValueError(
-            f"z length mismatch: got {len(z)} values but {len(names)} names"
-        )
-    pairs = list(zip(names, z))
-    groups = defaultdict(list)
-    for name, val in pairs:
-        if name.startswith("P_"):
-            groups["Pressures"].append((name, val))
-        elif name.startswith("dP_"):
-            groups["Pressure Drops"].append((name, val))
-        elif name.startswith("F_"):
-            groups["Friction Terms"].append((name, val))
-        elif name.startswith("w_"):
-            groups["Mass Flows"].append((name, val))
-        elif name.startswith("rho_"):
-            groups["Densities"].append((name, val))
-        elif name.startswith("U_"):
-            groups["Velocities"].append((name, val))
-        elif name.startswith("Re_"):
-            groups["Reynolds Numbers"].append((name, val))
-        elif name.startswith("alpha_"):
-            groups["Alphas (Fractions)"].append((name, val))
-        elif name.startswith("V_"):
-            groups["Volumes"].append((name, val))
-        elif name.startswith("Q_"):
-            groups["Volumetric Flows"].append((name, val))
-        elif name.startswith("lambda_"):
-            groups["Friction Factors"].append((name, val))
-        else:
-            groups["Other"].append((name, val))
-    for group_name in sorted(groups.keys()):
-        print("\n" + "="*60)
-        print(f"{group_name.upper()}")
-        print("="*60)
-
-        for name, val in groups[group_name]:
-            print(f"{name:25s} = {floatfmt.format(val)}")
+from Application.model_analysis_application import make_model
 
 
 def _build_out_dict(out_vec, Z_NAMES):
     return {name: out_vec[i] for i, name in enumerate(Z_NAMES)}
 
-def _get_module_builder(module_name: str):
-    """
-    module_name must expose:
-        - build_well_model(i) -> dict with keys:
-            is_dae, nx, nu, nz, Z_NAMES, F_all
-        - Z_NAMES (optional, but usually present)
-    """
-    mod = importlib.import_module(module_name)
-    if not hasattr(mod, "build_well_model"):
-        raise AttributeError(f"Module '{module_name}' must define build_well_model(i).")
-    return mod.build_well_model
-
 def optimize_field_production(
-        module_name: str,
+        model_type: str,
         N: int,
         # -------------------------
         # Initial guesses (lists of lists)
@@ -83,7 +33,7 @@ def optimize_field_production(
         # Individual well constraints
         # -------------------------
         P_max_tb_b_bar=120,
-        P_min_bh_bar=85
+        P_min_bh_bar=90
         ):
 
     """
@@ -103,13 +53,12 @@ def optimize_field_production(
     # 1) Build one well to know dimensions and names
     # ---------------------
 
-    build_well_model = _get_module_builder(module_name)
-    proto=build_well_model(i=0)
-    is_dae=bool(proto["is_dae"])
-    nx=int(proto["nx"])
-    nu=int(proto["nu"])
-    nz = int(proto["nz"]) if is_dae else 0
-    Z_NAMES=proto["Z_NAMES"]
+    model=make_model(model_type)
+    is_dae=bool(model["is_dae"])
+    nx=int(model["nx"])
+    nu=int(model["nu"])
+    nz = int(model["nz"]) if is_dae else 0
+    Z_NAMES=model["Z_NAMES"]
 
     # ---------------------
     # 2) User can change ipopt opts here
@@ -128,14 +77,18 @@ def optimize_field_production(
     # ---------------------
     # 3) Bounds and defaults
     # ---------------------
-
-    y_lb=[0.0]*nx
-    y_ub=[1e20]*nx
-    u_lb=[0.0]*nu
-    u_ub=[1.0]*nu
     if is_dae:
-        z_lb = [1e3, 1e3, 0.0]
-        z_ub = [1e9, 1e9, 1e6]
+        y_lb=[0.0,0.0,0.0,0,0,0,0]
+        y_ub=[1e20,1e20,1e20,1e20,1e20,1e20,1e20]
+        z_lb = [1e5, 1e5, 0.0, 0.0]
+        z_ub = [5e7, 5e7, 50, 50]
+    else:
+        y_lb=[0.0,0.0,0.0]
+        y_ub=[1e20,1e20,1e20]
+    u_lb=[0.0,0.0]
+    u_ub=[1.0,1.0]
+
+
 
     # ---------------------
     # 4) Decision Variables (symbolic, stacked)
@@ -176,7 +129,7 @@ def optimize_field_production(
 
     # Build each well block and add constraints
     for i in range(N):
-        well=build_well_model(i=i)
+        well=model
         F_all=well["F_all"]
         if is_dae:
             dx_i,g_i,out_i=F_all(Y[i],Z[i],U[i])
@@ -221,26 +174,47 @@ def optimize_field_production(
 
         # 5.1.4) Per-well health/validity constraints
 
-        # log args must stay positive
-        g_list.append(outD["log_arg_tb"])
-        lbg.append(1e-12)
-        ubg.append(1e20)
-
-        g_list.append(outD["log_arg_bh"])
-        lbg.append(1e-12)
-        ubg.append(1e20)
-
         # alpha constraints in [0,1]
-        for akey in ["alpha_L_tb_b", "alpha_L_tb_t", "alpha_G_tb_t", "alpha_avg_L_tb"]:
+        for akey in ["alpha_L_tb_b", "alpha_L_tb_t", "alpha_L_tb"]:
             g_list.append(outD[akey])
             lbg.append(0.0)
             ubg.append(1.0)
 
+        BSW=0.20
+        Vmin_g = 1e-12  # gas cushion
+        rho_o = 760.0
+        rho_w = 1000.0
+        rho_L=rho_o*(1-BSW)+BSW*rho_w
+        D_bh = 0.2
+        L_bh = 75.0
+        S_bh = ca.pi * D_bh ** 2 / 4.0
+        V_bh = S_bh * L_bh
+
+        D_tb = 0.134
+        L_tb = 1973.0
+        S_tb = ca.pi * D_tb ** 2 / 4.0
+        V_tb = S_tb * L_tb
+        if is_dae:
+            V_L_t = outD["m_o_t"] / rho_o + outD["m_w_t"] / rho_w
+            V_L_b = outD["m_o_b"] / rho_o + outD["m_w_b"] / rho_w
+        else:
+            V_L_t = outD["m_o_t"] / rho_L
+
+        # enforce: V_L <= V - Vmin_g
+        g_list.append(V_L_t)
+        lbg.append(0.0)
+        ubg.append(float(V_tb - Vmin_g))
+
+        if is_dae:
+            g_list.append(V_L_b)
+            lbg.append(0.0)
+            ubg.append(float(V_bh - Vmin_g))
+
         # pressures positive
-        for pkey in ["P_an_t_bar", "P_an_b_bar", "P_tb_t_bar", "P_tb_b_bar", "P_bh_bar"]:
-            g_list.append(outD[pkey])
-            lbg.append(1e-6)
-            ubg.append(1e20)
+        # for pkey in ["P_an_t_bar", "P_an_b_bar", "P_tb_t_bar", "P_tb_b_bar", "P_bh_bar"]:
+        #     g_list.append(outD[pkey])
+        #     lbg.append(1e-6)
+        #     ubg.append(1e20)
 
         # choke forward
         g_list.append(outD["dP_tb_choke_bar"])
@@ -257,8 +231,13 @@ def optimize_field_production(
         lbg.append(0.0)
         ubg.append(1e20)
 
+        # reservoir -> well
+        g_list.append(outD["dP_int_bar"])
+        lbg.append(0.0)
+        ubg.append(1e20)
+
         # nonnegative flows
-        for wkey in ["w_G_inj", "w_out", "w_L_out", "w_G_out"]:
+        for wkey in ["w_res","w_up","w_G_inj", "w_out", "w_L_out", "w_G_out"]:
             g_list.append(outD[wkey])
             lbg.append(0.0)
             ubg.append(1e20)
@@ -268,7 +247,7 @@ def optimize_field_production(
         if i==0:
             u1=U[i][0]
             u2=U[i][1]
-            b_hat=-0.4969*u1*u1+0.7561*u1+0.195
+            b_hat=-0.3268*u1*u1+0.5116*u1+0.01914
             g_stab=u2-b_hat
             g_list.append(g_stab)
             lbg.append(0.0)
@@ -382,7 +361,7 @@ def optimize_field_production(
         ui=x_star[idx:idx+nu]
         idx+=nu
 
-        well = build_well_model(i)
+        well = model
         F_all = well["F_all"]
 
         if is_dae:
@@ -428,11 +407,11 @@ def optimize_field_production(
     }
 
 res = optimize_field_production(
-    module_name="Surrogate_ODE_Model.glc_surrogate_casadi",
+    model_type="surrogate",
     N=1,
-    y_guess_list=[[3919.7688, 437.16663, 7956.1206]],
-    u_guess_list=[[0.20, 0.55]],
-    z_guess_list=None,  # ODE => None
+    y_guess_list=[[3285.42, 300.822, 6910.91]],
+    u_guess_list=[[1.00, 1.00]],
+    z_guess_list=None,
     P_max_tb_b_bar=130,
     P_min_bh_bar=90,
 )
@@ -444,11 +423,20 @@ print("y* well1:", np.array(res["per_well"][0]["y"]).squeeze())
 
 
 res = optimize_field_production(
-    module_name="Rigorous_DAE_model.glc_rigorous_casadi",
+    model_type="rigorous",
     N=1,
-    y_guess_list=[[3919.7688, 437.16663, 7956.1206]],
-    u_guess_list=[[0.20, 0.55]],
-    z_guess_list=[[120e5, 140e5, 10.0]],  # [P_tb_b, P_bh, w_res] initial guess
+    y_guess_list=[[3679.08033973,
+           289.73390193,
+           3167.56224658,
+           1041.96126532,
+           50.46858403,
+           759.52720527,
+           249.84447542]],
+    u_guess_list=[[1.00, 1.00]],
+    z_guess_list=[[8.75897957e+06,
+           8.42155186e+06,
+           2.17230613e+01,
+           2.17230613e+01]],  # [P_tb_b, P_bh, w_res] initial guess
     P_max_tb_b_bar=130,
     P_min_bh_bar=90,
 )
