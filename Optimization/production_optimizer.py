@@ -3,7 +3,9 @@ import importlib
 import casadi as ca
 import numpy as np
 from collections import defaultdict
-# from Solvers.solve_glc_ode_equilibrium import print_z_grouped
+from Solvers.solve_glc_ode_equilibrium import print_z_grouped
+from Rigorous_DAE_model.glc_truth_casadi import Z_NAMES_RIG
+from Surrogate_ODE_Model.glc_surrogate_casadi import Z_NAMES_SUR
 
 
 from Application.model_analysis_application import make_model
@@ -420,7 +422,7 @@ print("success:", res["stats"]["success"], res["stats"]["return_status"])
 print("totals:", res["totals"])
 print("u* well1:", np.array(res["per_well"][0]["u"]).squeeze())
 print("y* well1:", np.array(res["per_well"][0]["y"]).squeeze())
-
+print_z_grouped(res["per_well"][0]["out"], Z_NAMES_SUR)
 
 res = optimize_field_production(
     model_type="rigorous",
@@ -446,3 +448,4 @@ print("totals:", res["totals"])
 print("u* well1:", np.array(res["per_well"][0]["u"]).squeeze())
 print("y* well1:", np.array(res["per_well"][0]["y"]).squeeze())
 print("z* well1:", np.array(res["per_well"][0]["z"]).squeeze())
+print_z_grouped(res["per_well"][0]["out"], Z_NAMES_RIG)
