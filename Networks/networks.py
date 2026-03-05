@@ -20,7 +20,7 @@ class PINN(nn.Module):
         y_max: list[float] = [4796.20, 1094.60, 11990.90],
         u_min: list[float] = [0.05, 0.10],
         u_max: list[float] = [1.0, 1.0],
-        improved_structure: bool = True,
+        improved_structure: bool = False,
         activation: type[nn.Module] = nn.Tanh,
     ):
         super().__init__()
@@ -99,3 +99,69 @@ class PINN(nn.Module):
 
         y_hat = self._descale_y(y_norm)
         return y_hat
+
+
+class AlgNN(nn.Module):
+    def __init__(self,
+                 hidden_units: list,
+                 y_min: list[float] = [3032.55, 220.05, 6341.30],
+                 y_max: list[float] = [4796.20, 1094.60, 11990.90],
+                 u_min: list[float] = [0.05, 0.10],
+                 u_max: list[float] = [1.0, 1.0],
+                 z_min: list[float] = [3.50,84.95,79.0],  # Output de-normalization
+                 z_max: list[float] =[17.15,144.75,138.77],
+                 Nonlin=nn.Tanh) -> None:
+        super().__init__()
+
+        # --- Register all normalization constants as buffers ---
+
+        # Input scaling
+        self.register_buffer('y_min', torch.tensor(y_min, dtype=torch.float32))
+        self.register_buffer('y_max', torch.tensor(y_max, dtype=torch.float32))
+        self.register_buffer('u_min', torch.tensor(u_min, dtype=torch.float32))
+        self.register_buffer('u_max', torch.tensor(u_max, dtype=torch.float32))
+
+        # Output scaling
+        self.register_buffer('z_min', torch.tensor(z_min, dtype=torch.float32))
+        self.register_buffer('z_max', torch.tensor(z_max, dtype=torch.float32))
+
+        # Pre-calculate ranges for efficiency
+        self.register_buffer('y_range', self.y_max - self.y_min)
+        self.register_buffer('u_range', self.u_max - self.u_min)
+        self.register_buffer('z_range', self.z_max - self.z_min)
+
+        # --- Define network dimensions ---
+        n_in = len(y_min) + len(u_min)
+        n_out = len(z_min)
+
+        # --- Build the network layers (standard FNN) ---
+        self.main_layers = nn.ModuleList()
+        layer_sizes = [n_in] + hidden_units
+
+        for i in range(len(hidden_units)):
+            self.main_layers.append(nn.Linear(layer_sizes[i], layer_sizes[i + 1]))
+
+        self.output_layer = nn.Linear(hidden_units[-1], n_out)
+        self.activation = Nonlin()
+        self._initialize_weights()
+
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                # Use xavier_normal_ (Glorot Normal) for weights
+                nn.init.xavier_normal_(m.weight)
+                if m.bias is not None:
+                    # Use xavier_normal_ for biases as well
+                    nn.init.zeros_(m.bias)
+
+    def forward(self, y, u):
+        y_scaled = 2 * (y - self.y_min) / self.y_range - 1
+        u_scaled = 2 * (u - self.u_min) / self.u_range - 1
+        input_tensor = torch.cat([y_scaled, u_scaled], dim=-1)
+        a = input_tensor
+        for layer in self.main_layers:
+            a = self.activation(layer(a))
+        output_normalized = self.output_layer(a)
+        output_physical = ((output_normalized + 1) / 2) * self.z_range + self.z_min
+
+        return output_physical

@@ -1,4 +1,7 @@
 import casadi as ca
+from Networks.networks import PINN
+from Networks.networks import AlgNN
+import torch
 
 def build_steady_state_model(f_func,
                             state_size,
@@ -195,48 +198,96 @@ def build_steady_state_model(f_func,
 
         }
 
-# import numpy as np
-#
-# """
-# Build symbolic CasADi functions for steady-state (equilibrium) solving of ODE or DAE.
-# Actually builds symbolic blocks:
-# - dx(y,u), z(y,u)
-# - A(y,u) = d(dx)/d(y)
-#
-# f_func(y,u) must return either:
-#   - dx
-#   - or (dx, z)
-#
-# Returns a dict with:
-#   y_sym, u_sym
-#   dx_expr, z_expr
-#   F_dx(y,u), F_all(y,u)
-# """
-#
-# """
-#
-#         You will solve for (y,z_alg) such that:
-#             dx(y,z_alg,u) = 0
-#             g (y,z_alg,u) = 0
-#
-#         where:
-#             y      : differential states (nx)
-#             z_alg  : algebraic unknowns (nz_alg), e.g. [P_tb, P_bh, w_res]
-#             u      : controls/inputs (nu)
-#
-#         f_dae_func must have signature:
-#             dx, g, out = f_dae_func(y, z_alg, u)
-#         returning:
-#             dx  : (nx x 1)
-#             g   : (nz_alg x 1)
-#             out : (nout x 1) any extra algebraic outputs/logging (can be empty)
-#
-#         Returns dict with:
-#             y_sym, z_sym, u_sym
-#             dx_expr, g_expr, out_expr
-#             F_all(y,z,u) -> (dx,g,out)
-#             F_res(y,z,u) -> stacked residual [dx; g]
-#             J_yz(y,z,u)  -> Jacobian d([dx;g]) / d([y;z])
-#             (optionally) J_u(y,z,u) -> d([dx;g]) / d(u)
-#
-# """
+def load_state_dict(model_path: str, device: str = "cpu") -> dict:
+    """Loads a PyTorch state_dict from disk (kept simple & robust)."""
+    print(f"=== LOADING STATE_DICT FROM {model_path} ===")
+    try:
+        sd = torch.load(model_path, map_location=device, weights_only=True)
+    except TypeError:
+        # older torch versions don't support weights_only
+        sd = torch.load(model_path, map_location=device)
+    if not isinstance(sd, dict):
+        raise ValueError("Loaded object is not a state_dict dict.")
+    return sd
+
+
+def infer_pinn_hidden_units_from_state_dict(state_dict: dict) -> list[int]:
+    """
+    Infers hidden layer sizes for the *standard* (improved_structure=False) PINN.
+
+    Expects keys like:
+      layers.0.weight: (h1, n_u)
+      layers.1.weight: (h2, h1)
+      ...
+      out.weight: (n_y, h_last)
+    """
+    i = 0
+    hidden_units = []
+    while f"layers.{i}.weight" in state_dict:
+        w = state_dict[f"layers.{i}.weight"]
+        hidden_units.append(int(w.shape[0]))  # out_features of that layer
+        i += 1
+
+    if not hidden_units:
+        raise ValueError(
+            "Could not infer hidden_units. Expected keys like 'layers.0.weight' in state_dict."
+        )
+    return hidden_units
+
+
+def rebuild_pinn_from_weights(model_path: str, device: str = "cpu") -> PINN:
+    """
+    Rebuilds your PINN architecture from the saved weights, then loads the weights.
+    Assumes improved_structure=False.
+    """
+    sd = load_state_dict(model_path, device=device)
+
+    hidden_units = infer_pinn_hidden_units_from_state_dict(sd)
+
+    # Infer input/output sizes from weight shapes
+    n_u = int(sd["layers.0.weight"].shape[1])
+    n_y = int(sd["out.weight"].shape[0])
+
+    # Build model with inferred architecture.
+    # Scaling buffers (u_min/u_max/y_min/y_max) will be overwritten by load_state_dict.
+    model = PINN(hidden_units=hidden_units, n_u=n_u, n_y=n_y, improved_structure=False).to(device)
+    model.load_state_dict(sd)
+    model.eval()
+    print(f"Rebuilt PINN: n_u={n_u}, n_y={n_y}, hidden_units={hidden_units}")
+    return model
+
+# ---------------------------
+# AlgNN rebuild (standard)
+# ---------------------------
+def infer_algnn_hidden_units_from_state_dict(state_dict: dict) -> list[int]:
+    """
+    Infers AlgNN hidden sizes from:
+      main_layers.0.weight: (h1, n_in)
+      main_layers.1.weight: (h2, h1)
+      ...
+      output_layer.weight: (n_out, h_last)
+    """
+    i = 0
+    hidden_units = []
+    while f"main_layers.{i}.weight" in state_dict:
+        w = state_dict[f"main_layers.{i}.weight"]
+        hidden_units.append(int(w.shape[0]))
+        i += 1
+    if not hidden_units:
+        raise ValueError("Could not infer AlgNN hidden_units (expected keys like 'main_layers.0.weight').")
+    return hidden_units
+
+
+def rebuild_algnn_from_weights(model_path: str, device: str = "cpu") -> AlgNN:
+    sd = load_state_dict(model_path, device=device)
+
+    hidden_units = infer_algnn_hidden_units_from_state_dict(sd)
+
+    # Build model. Buffers (y_min/y_max/u_min/u_max/z_min/z_max) are overwritten by load_state_dict anyway.
+    model = AlgNN(hidden_units=hidden_units).to(device)
+    model.load_state_dict(sd)
+    model.eval()
+
+    n_out = int(sd["output_layer.weight"].shape[0])
+    print(f"Rebuilt AlgNN: n_out={n_out}, hidden_units={hidden_units}")
+    return model

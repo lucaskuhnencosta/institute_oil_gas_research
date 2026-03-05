@@ -5,8 +5,8 @@ from contextlib import nullcontext
 
 from Training.base_trainer import Trainer
 from Networks.networks import AlgNN
-from OLD.glc_surrogate_torch_alg import glc_surrogate_dx_torch_nostuck_alg
-from Surrogate_ODE_Model.glc_check_feasibility import glc_check_feasibility
+from Application.model_analysis_application import *
+from Application.dataset_generator import *
 
 class AlgTrainer(Trainer):
     """
@@ -44,8 +44,6 @@ class AlgTrainer(Trainer):
         self.u_min_train = np.array(u_min_train)
         self.u_max_train = np.array(u_max_train)
 
-        # This is the "ground truth" function
-        self.gt_f = glc_surrogate_dx_torch_nostuck_alg
 
         self.K1 = adam_epochs
         self.K2 = lbfgs_epochs
@@ -78,48 +76,101 @@ class AlgTrainer(Trainer):
         })
 
     def prepare_data(self):
-        self.l.info("Preparing data for AlgNN...")
+        """
+        Prepare AlgNN data using ground-truth sweeps.
 
-        # --- 1. Generate Training Data ---
-        self.l.info(f"Generating {self.N_train} training points...")
-        y_train_np = np.random.uniform(self.y_min_train, self.y_max_train, (self.N_train, 3))
-        u_train_np = np.random.uniform(self.u_min_train, self.u_max_train, (self.N_train, 2))
+        Dataset:
+            input  -> (y,u)
+            target -> (w_o_out, P_bh_bar, P_tb_b_bar)
 
-        # --- Feasibility Check (critical) ---
-        y_train_torch = torch.tensor(y_train_np, dtype=torch.float32, device=self.device)
-        u_train_torch = torch.tensor(u_train_np, dtype=torch.float32, device=self.device)
-        feasible_mask = glc_check_feasibility(y_train_torch, u_train_torch)
+        States y are the first 3 entries in Z_NAMES.
+        Targets are selected by name.
+        """
 
-        y_train_filtered = y_train_torch[feasible_mask]
-        u_train_filtered = u_train_torch[feasible_mask]
+        self.l.info("Preparing AlgNN dataset from ground-truth sweeps...")
 
-        N_train_new = len(y_train_filtered)
-        self.l.info(f"  Removed {self.N_train - N_train_new} infeasible points. New N_train = {N_train_new}")
+        # ------------------------------------------------
+        # 1. Build sweep grids
+        # ------------------------------------------------
+        Nu1_train = int(np.sqrt(self.N_train))
+        Nu2_train = int(np.sqrt(self.N_train))
 
-        # --- Generate Targets ---
-        with torch.no_grad():
-            # Call our new glc_f_alg function
-            z_train_targets = self.gt_f(y_train_filtered, u_train_filtered)
+        Nu1_val = int(np.sqrt(self.N_val))
+        Nu2_val = int(np.sqrt(self.N_val))
 
-        self.train_data = (y_train_filtered, u_train_filtered, z_train_targets)
+        u1_grid_train = np.linspace(self.u_min_train[0], self.u_max_train[0], Nu1_train)
+        u2_grid_train = np.linspace(self.u_min_train[1], self.u_max_train[1], Nu2_train)
 
-        # --- 2. Generate Validation Data (repeat the process) ---
-        self.l.info(f"Generating {self.N_val} validation points...")
-        y_val_np = np.random.uniform(self.y_min_train, self.y_max_train, (self.N_val, 3))
-        u_val_np = np.random.uniform(self.u_min_train, self.u_max_train, (self.N_val, 2))
+        u1_grid_val = np.linspace(self.u_min_train[0], self.u_max_train[0], Nu1_val)
+        u2_grid_val = np.linspace(self.u_min_train[1], self.u_max_train[1], Nu2_val)
 
-        y_val_torch = torch.tensor(y_val_np, dtype=torch.float32, device=self.device)
-        u_val_torch = torch.tensor(u_val_np, dtype=torch.float32, device=self.device)
-        feasible_mask_val = glc_check_feasibility(y_val_torch, u_val_torch)
+        self.model_sur = make_model("surrogate", BSW=0.20, GOR=0.05, PI=3.0e-6)
+        self.y_guess_surr = np.array([3285.42, 300.822, 6910.91], dtype=float)
+        # ------------------------------------------------
+        # 2. Run sweeps
+        # ------------------------------------------------
+        self.l.info("Running TRAIN sweep...")
+        results_train = run_sweep(
+            self.model_sur,
+            u1_grid=u1_grid_train,
+            u2_grid=u2_grid_train,
+            y_guess_init=self.y_guess_surr,
+            z_guess_init=None,
+        )
 
-        y_val_filtered = y_val_torch[feasible_mask_val]
-        u_val_filtered = u_val_torch[feasible_mask_val]
+        self.l.info("Running VAL sweep...")
+        results_val = run_sweep(
+            self.model_sur,
+            u1_grid=u1_grid_val,
+            u2_grid=u2_grid_val,
+            y_guess_init=self.y_guess_surr,
+            z_guess_init=None,
+        )
 
-        with torch.no_grad():
-            z_val_targets = self.gt_f(y_val_filtered, u_val_filtered)
+        # ------------------------------------------------
+        # 3. Flatten sweep results
+        # ------------------------------------------------
+        batch_train = flatten_sweep_results_to_batch(results_train, only_success=True)
+        batch_val = flatten_sweep_results_to_batch(results_val, only_success=True)
 
-        self.val_data = (y_val_filtered, u_val_filtered, z_val_targets)
-        self.l.info("Data preparation complete.")
+        Z_NAMES = list(batch_train["Z_NAMES"])
+
+        # Inputs
+        y_train = batch_train["y_t"].to(self.device)
+        u_train = batch_train["u_t"].to(self.device)
+
+        y_val = batch_val["y_t"].to(self.device)
+        u_val = batch_val["u_t"].to(self.device)
+
+        # ------------------------------------------------
+        # 4. Extract targets by name
+        # ------------------------------------------------
+        target_names = ["w_o_out", "P_bh_bar", "P_tb_b_bar"]
+
+        def extract_targets(results, mask_np):
+            z_cols = []
+            for name in target_names:
+                arr = np.asarray(results["OUT"][name], dtype=float)
+                z_cols.append(arr.reshape(-1))
+            z_flat = np.stack(z_cols, axis=1)
+            z_np = z_flat[mask_np]
+            return torch.tensor(z_np, dtype=torch.float32)
+
+        z_train = extract_targets(results_train, batch_train["mask_np"]).to(self.device)
+        z_val = extract_targets(results_val, batch_val["mask_np"]).to(self.device)
+
+        # ------------------------------------------------
+        # 5. Store datasets
+        # ------------------------------------------------
+        self.train_data = (y_train, u_train, z_train)
+        self.val_data = (y_val, u_val, z_val)
+
+        self.l.info(
+            f"Data preparation complete.\n"
+            f"Targets: {target_names}\n"
+            f"Train shapes: y={tuple(y_train.shape)}, u={tuple(u_train.shape)}, z={tuple(z_train.shape)}\n"
+            f"Val shapes:   y={tuple(y_val.shape)}, u={tuple(u_val.shape)}, z={tuple(z_val.shape)}"
+        )
 
     def train_pass(self):
         """Performs a single standard supervised training step."""
@@ -167,25 +218,40 @@ class AlgTrainer(Trainer):
         return losses
 
     def validation_pass(self):
-        """Performs a standard validation pass."""
+        """Simple validation: total MSE + per-output MSE/RMSE/MAE."""
         self.net.eval()
-
         (y_in_val, u_in_val, z_target_val) = self.val_data
 
+        eps = 1e-8
         with torch.no_grad():
             with self.autocast_if_mp():
                 z_pred_val = self.net(y_in_val, u_in_val)
-                loss = self._loss_func(z_pred_val, z_target_val)
 
-                # Calculate component-wise MSE for logging
-                # [P_bh, w_G_in, w_G_res, w_L_res]
-                loss_comps = torch.mean((z_pred_val - z_target_val) ** 2, dim=0)
+            err = z_pred_val - z_target_val  # (N,3)
 
+            # total
+            total_mse = torch.mean(err ** 2).item()
+
+            # per-output
+            mse = torch.mean(err ** 2, dim=0)  # (3,)
+            rmse = torch.sqrt(mse + eps)  # (3,)
+            mae = torch.mean(torch.abs(err), dim=0)  # (3,)
+
+        # Target order from prepare_data(): [w_o_out, P_bh_bar, P_tb_b_bar]
         return {
-            'total': loss.item(),
-            'comp_m_oil': loss_comps[0].item(),
-            'comp_P_bh': loss_comps[1].item(),
-            'comp_P_tb_b': loss_comps[2].item(),
+            "total": total_mse,
+
+            "mse_w_o_out": mse[0].item(),
+            "mse_P_bh": mse[1].item(),
+            "mse_P_tb_b": mse[2].item(),
+
+            "rmse_w_o_out": rmse[0].item(),
+            "rmse_P_bh": rmse[1].item(),
+            "rmse_P_tb_b": rmse[2].item(),
+
+            "mae_w_o_out": mae[0].item(),
+            "mae_P_bh": mae[1].item(),
+            "mae_P_tb_b": mae[2].item(),
         }
 
     def _log_epoch_info(self, train_losses: dict, val_losses: dict):

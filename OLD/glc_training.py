@@ -3,7 +3,7 @@ import wandb
 import numpy as np
 
 from Surrogate_ODE_Model.glc_surrogate_torch import glc_surrogate_dx_torch
-from OLD.glc_check_feasibility import glc_check_feasibility
+from Surrogate_ODE_Model.glc_check_feasibility import glc_check_feasibility
 from OLD.networks import PINN
 from Training.base_trainer import Trainer
 

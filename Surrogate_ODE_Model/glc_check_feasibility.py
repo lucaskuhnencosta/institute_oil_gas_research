@@ -171,4 +171,4 @@ def glc_check_feasibility(y: torch.Tensor,
     dx2 = w_G_inj + w_G_res - w_G_out
     dx3 = w_L_res - w_L_out
 
-    return alpha_L_tb_t>=0
+    return alpha_L_tb_t>0
