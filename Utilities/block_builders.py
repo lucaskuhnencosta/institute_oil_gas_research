@@ -3,6 +3,160 @@ from Networks.networks import PINN
 from Networks.networks import AlgNN
 import torch
 
+import numpy as np
+import torch
+import torch.nn as nn
+
+#######################################################################
+################# LOAD MODEL WEIGHTS ################################
+#######################################################################
+
+def load_model_weights(model,model_path, device="cpu"):
+    """Just loads the model from model_path and put it in evaluation mode"""
+    print(f"=== LOADING MODEL FROM {model_path} ===")
+    model.to(device)
+    model.load_state_dict(torch.load(model_path, map_location=device,weights_only=True))
+    model.eval()
+    return model
+
+#######################################################################
+################# EXTRACT PINN WEIGHTS ################################
+#######################################################################
+
+def extract_pinn_standard_weights(model: nn.Module) -> dict:
+    model.cpu().eval()
+    W, b = [], []
+    for layer in model.layers:
+        W.append(layer.weight.detach().numpy())
+        b.append(layer.bias.detach().numpy())
+    out_w = model.out.weight.detach().numpy()
+    out_b = model.out.bias.detach().numpy()
+    return {"hidden_layers_w": W, "hidden_layers_b": b, "output_w": out_w, "output_b": out_b}
+
+
+def extract_algnn_standard_weights(model: nn.Module) -> dict:
+    model.cpu().eval()
+    W, b = [], []
+    for layer in model.main_layers:
+        W.append(layer.weight.detach().numpy())
+        b.append(layer.bias.detach().numpy())
+    out_w = model.output_layer.weight.detach().numpy()
+    out_b = model.output_layer.bias.detach().numpy()
+    return {"hidden_layers_w": W, "hidden_layers_b": b, "output_w": out_w, "output_b": out_b}
+
+#######################################################################
+################# CASADI BUILDERS ################################
+#######################################################################
+
+def build_casadi_pinn_function_standard(
+    weights_dict: dict,
+    y_min: list,
+    y_max: list,
+    u_min: list,
+    u_max: list,
+    activation=ca.tanh
+):
+    y_min_ca = ca.DM(y_min); y_max_ca = ca.DM(y_max)
+    u_min_ca = ca.DM(u_min); u_max_ca = ca.DM(u_max)
+
+    y_range = y_max_ca - y_min_ca
+    u_range = u_max_ca - u_min_ca
+
+    n_u = len(u_min)
+    n_y = len(y_min)
+
+    u_sym = ca.MX.sym("u", n_u)
+
+    # u scaling (same as PINN._scale_u)
+    u_scaled = 2 * (u_sym - u_min_ca) / (u_range + 1e-12) - 1
+    a = u_scaled
+
+    # hidden layers
+    for W_np, b_np in zip(weights_dict["hidden_layers_w"], weights_dict["hidden_layers_b"]):
+        W = ca.DM(W_np)
+        b = ca.DM(b_np).reshape((-1, 1))
+        a = activation(W @ a + b)
+
+    # output
+    out_w = ca.DM(weights_dict["output_w"])
+    out_b = ca.DM(weights_dict["output_b"]).reshape((-1, 1))
+    y_norm = out_w @ a + out_b
+
+    # y de-scale (same as PINN._descale_y)
+    y_squash = ca.tanh(y_norm)
+    y_hat = 0.5 * (y_squash + 1.0) * y_range + y_min_ca
+
+    return ca.Function("F_pinn_u2y", [u_sym], [y_hat], ["u"], ["y"])
+
+
+def build_casadi_algnn_function_standard(
+    weights_dict: dict,
+    y_min: list, y_max: list,
+    u_min: list, u_max: list,
+    z_min: list, z_max: list,
+    activation=ca.tanh
+):
+    y_min_ca = ca.DM(y_min); y_max_ca = ca.DM(y_max)
+    u_min_ca = ca.DM(u_min); u_max_ca = ca.DM(u_max)
+    z_min_ca = ca.DM(z_min); z_max_ca = ca.DM(z_max)
+
+    y_range = y_max_ca - y_min_ca
+    u_range = u_max_ca - u_min_ca
+    z_range = z_max_ca - z_min_ca
+
+    n_y = len(y_min)
+    n_u = len(u_min)
+    n_z = len(z_min)
+
+    y_sym = ca.MX.sym("y", n_y)
+    u_sym = ca.MX.sym("u", n_u)
+
+    y_scaled = 2 * (y_sym - y_min_ca) / (y_range + 1e-12) - 1
+    u_scaled = 2 * (u_sym - u_min_ca) / (u_range + 1e-12) - 1
+    a = ca.vertcat(y_scaled, u_scaled)
+
+    for W_np, b_np in zip(weights_dict["hidden_layers_w"], weights_dict["hidden_layers_b"]):
+        W = ca.DM(W_np)
+        b = ca.DM(b_np).reshape((-1, 1))
+        a = activation(W @ a + b)
+
+    out_w = ca.DM(weights_dict["output_w"])
+    out_b = ca.DM(weights_dict["output_b"]).reshape((-1, 1))
+    z_norm = out_w @ a + out_b
+
+    z_hat = 0.5 * (z_norm + 1.0) * z_range + z_min_ca
+
+    return ca.Function("F_algnn_yu2z", [y_sym, u_sym], [z_hat], ["y", "u"], ["z"])
+
+def build_casadi_surrogate_u2z(
+    pinn_weights: dict,
+    algnn_weights: dict,
+    pinn_y_min: list, pinn_y_max: list,
+    pinn_u_min: list, pinn_u_max: list,
+    alg_y_min: list, alg_y_max: list,
+    alg_u_min: list, alg_u_max: list,
+    alg_z_min: list, alg_z_max: list,
+):
+    F_pinn = build_casadi_pinn_function_standard(
+        weights_dict=pinn_weights,
+        y_min=pinn_y_min, y_max=pinn_y_max,
+        u_min=pinn_u_min, u_max=pinn_u_max
+    )
+    F_alg = build_casadi_algnn_function_standard(
+        weights_dict=algnn_weights,
+        y_min=alg_y_min, y_max=alg_y_max,
+        u_min=alg_u_min, u_max=alg_u_max,
+        z_min=alg_z_min, z_max=alg_z_max
+    )
+
+    u = ca.MX.sym("u", len(pinn_u_min))
+    y = F_pinn(u=u)["y"]              # (3x1)
+    z = F_alg(y=y, u=u)["z"]          # (3x1): [m_o_out, p_bh, p_tb_b] depending on your z_min/z_max order
+
+    return ca.Function("F_u2z", [u], [z], ["u"], ["z"])
+
+
+
 def build_steady_state_model(f_func,
                             state_size,
                             control_size=2,
