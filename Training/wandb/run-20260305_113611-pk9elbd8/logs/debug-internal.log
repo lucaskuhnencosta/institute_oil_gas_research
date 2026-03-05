@@ -1,0 +1,20 @@
+{"time":"2026-03-05T11:36:11.44297736-03:00","level":"INFO","msg":"stream: starting","core version":"0.22.3"}
+{"time":"2026-03-05T11:36:11.815437475-03:00","level":"INFO","msg":"stream: created new stream","id":"pk9elbd8"}
+{"time":"2026-03-05T11:36:11.815474215-03:00","level":"INFO","msg":"handler: started","stream_id":"pk9elbd8"}
+{"time":"2026-03-05T11:36:11.815511247-03:00","level":"INFO","msg":"stream: started","id":"pk9elbd8"}
+{"time":"2026-03-05T11:36:11.815603429-03:00","level":"INFO","msg":"writer: started","stream_id":"pk9elbd8"}
+{"time":"2026-03-05T11:36:11.816136643-03:00","level":"INFO","msg":"sender: started","stream_id":"pk9elbd8"}
+{"time":"2026-03-05T11:36:13.629573711-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":37}
+{"time":"2026-03-05T11:36:14.594745026-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":422}
+{"time":"2026-03-05T11:36:23.448792878-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":4377}
+{"time":"2026-03-05T11:36:23.448918339-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":23}
+{"time":"2026-03-05T11:36:27.795052819-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":5662}
+{"time":"2026-03-05T11:36:27.796117657-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":210}
+{"time":"2026-03-05T11:37:37.204082302-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":26032}
+{"time":"2026-03-05T11:37:37.204408885-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":4}
+{"time":"2026-03-05T11:37:48.412980025-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":27464}
+{"time":"2026-03-05T11:37:48.414339569-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":479}
+{"time":"2026-03-05T11:42:17.607278699-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":28027}
+{"time":"2026-03-05T11:42:17.609617551-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":446}
+{"time":"2026-03-05T11:42:22.466827229-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":28506}
+{"time":"2026-03-05T11:42:22.467948025-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":479}

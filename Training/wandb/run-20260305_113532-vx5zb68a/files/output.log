@@ -1,0 +1,18 @@
+INFO:Training.base_trainer:Wandb set up. Run ID: vx5zb68a
+INFO:Training.base_trainer:Preparing data
+INFO:Training.base_trainer:Preparing AlgNN dataset from ground-truth sweeps...
+INFO:Training.base_trainer:Running TRAIN sweep...
+Traceback (most recent call last):
+  File "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/glc_run_alg_train.py", line 40, in <module>
+    trainer.run()
+    ~~~~~~~~~~~^^
+  File "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/glc_alg_train_new_version.py", line 283, in run
+    self.setup_training()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/base_trainer.py", line 126, in setup_training
+    self.prepare_data()
+    ~~~~~~~~~~~~~~~~~^^
+  File "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/glc_alg_train_new_version.py", line 117, in prepare_data
+    y_guess_init=self.y_guess_surr,
+                 ^^^^^^^^^^^^^^^^^
+AttributeError: 'AlgTrainer' object has no attribute 'y_guess_surr'

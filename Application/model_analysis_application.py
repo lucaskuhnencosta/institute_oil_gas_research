@@ -731,6 +731,15 @@ if __name__ == "__main__":
         print(f"Maximum m_G_tb is {np.max(results_all["surrogate"]["OUT"]["m_G_t"])}")
         print(f"Maximum m_L_tb is {np.max(results_all["surrogate"]["OUT"]["m_o_t"])}")
 
+        print(f"Minimum P_bh_bar is {np.min(results_all["surrogate"]["OUT"]["P_bh_bar"])}")
+        print(f"Minimum P_tb_b_bar is {np.min(results_all["surrogate"]["OUT"]["P_tb_b_bar"])}")
+        print(f"Minimum mass of oil produced is {np.min(results_all["surrogate"]["OUT"]["w_o_out"])}")
+
+        print(f"MaximumP_bh_bar is {np.max(results_all["surrogate"]["OUT"]["P_bh_bar"])}")
+        print(f"Maximum P_tb_b_bar is {np.max(results_all["surrogate"]["OUT"]["P_tb_b_bar"])}")
+        print(f"Maximum mass of oil produced is {np.max(results_all["surrogate"]["OUT"]["w_o_out"])}")
+
+
     elif MODE == "both":
         for var, title, zlabel in PLOT_VARS:
             if (var in results_all["rigorous"]["OUT"]) and \

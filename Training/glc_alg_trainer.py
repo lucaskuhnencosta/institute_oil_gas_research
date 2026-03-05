@@ -1,16 +1,12 @@
 import torch
-import torch.nn as nn
 import numpy as np
 import wandb
 from contextlib import nullcontext
 
-
-# --- Import from our project ---
-from PINC.core.base_trainer import Trainer
-from PINC.core.networks import AlgNN
-from PINC.experiments.Gas_Lift.glc_check_feasibility import glc_check_feasibility
-from PINC.experiments.Gas_Lift.glc_f_alg import glc_f_alg
-
+from Training.base_trainer import Trainer
+from Networks.networks import AlgNN
+from OLD.glc_surrogate_torch_alg import glc_surrogate_dx_torch_nostuck_alg
+from Surrogate_ODE_Model.glc_check_feasibility import glc_check_feasibility
 
 class AlgTrainer(Trainer):
     """
@@ -27,9 +23,9 @@ class AlgTrainer(Trainer):
                  lbfgs_epochs: int = 5000,  # Total L-BFGS iterations
                  lr: float = 1e-3,
                  # --- Normalization bounds from friend's 'znet_well_1_single' ---
-                 y_min_train: list = [3200.0, 180.0, 7000.0],
-                 y_max_train: list = [4700.0, 400.0, 11000.0],
-                 u_min_train: list = [0.0, 0.0],
+                 y_min_train: list[float] = [3032.55, 220.05, 6341.30],
+                 y_max_train: list[float] = [4796.20, 1094.60, 11990.90],
+                 u_min_train: list = [0.05, 0.10],
                  u_max_train: list = [1.0, 1.0],
                  # --- Other trainer params ---
                  mixed_precision=True,
@@ -49,7 +45,7 @@ class AlgTrainer(Trainer):
         self.u_max_train = np.array(u_max_train)
 
         # This is the "ground truth" function
-        self.gt_f = glc_f_alg
+        self.gt_f = glc_surrogate_dx_torch_nostuck_alg
 
         self.K1 = adam_epochs
         self.K2 = lbfgs_epochs
@@ -187,10 +183,9 @@ class AlgTrainer(Trainer):
 
         return {
             'total': loss.item(),
-            'comp_P_bh': loss_comps[0].item(),
-            'comp_w_G_in': loss_comps[1].item(),
-            'comp_w_G_res': loss_comps[2].item(),
-            'comp_w_L_res': loss_comps[3].item(),
+            'comp_m_oil': loss_comps[0].item(),
+            'comp_P_bh': loss_comps[1].item(),
+            'comp_P_tb_b': loss_comps[2].item(),
         }
 
     def _log_epoch_info(self, train_losses: dict, val_losses: dict):

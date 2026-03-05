@@ -1,0 +1,17 @@
+{"time":"2026-03-05T10:26:55.730941171-03:00","level":"INFO","msg":"stream: starting","core version":"0.22.3"}
+{"time":"2026-03-05T10:26:56.059148496-03:00","level":"INFO","msg":"stream: created new stream","id":"dilgy1mu"}
+{"time":"2026-03-05T10:26:56.059219535-03:00","level":"INFO","msg":"stream: started","id":"dilgy1mu"}
+{"time":"2026-03-05T10:26:56.059221181-03:00","level":"INFO","msg":"handler: started","stream_id":"dilgy1mu"}
+{"time":"2026-03-05T10:26:56.059252183-03:00","level":"INFO","msg":"sender: started","stream_id":"dilgy1mu"}
+{"time":"2026-03-05T10:26:56.0592643-03:00","level":"INFO","msg":"writer: started","stream_id":"dilgy1mu"}
+{"time":"2026-03-05T10:26:56.845795817-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":37}
+{"time":"2026-03-05T10:26:56.85290273-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":2}
+{"time":"2026-03-05T10:29:15.239581087-03:00","level":"ERROR","msg":"file transfer: upload: failed to upload: status: 400 Bad Request: error reading body: stream error: stream ID 421; PROTOCOL_ERROR; received from peer","task":"DefaultUploadTask{FileKind: 0, Path: /home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/wandb/run-20260305_102655-dilgy1mu/files/model_best.pth, Name: model_best.pth, Url: https://storage.googleapis.com/wandb-production.appspot.com/lucas-kuhnen-universidade-federal-de-santa-catarina/PINN-VDP/dilgy1mu/model_best.pth?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=gorilla-files-url-signer-man%40wandb-production.iam.gserviceaccount.com%2F20260305%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260305T132912Z&X-Goog-Expires=86399&X-Goog-Signature=95bafde24d20d4b0ce170e870a33e257f859f451da113e92ff4043ae0aedb20e9f72abc41aa670adfc59f81034cb780c54e9a143da9d4746515eed88adc9d56861dd3b0fc63f0a483c94c5deb4d064139539d7a8b26bdb1b79ea01d5d37078cef5ae213688fb84baae282e9957849ea1685545cfcd3da2125f0675fc2a68505cdcf0bf91eeff3509f4aee4615ef626e863b2061faedcbfcc4ff3e58463981c8e4f86bd810fe2c4d9eab66263a50946b37e7e196d9551922822ba2c9282664b748edaf6bb7a0eb5ef5fdb0e32d92e3eabb4ac0ab2d1b7416f7bcdcedd4bd431a0fb65f19d6366b8d60c5fcad825ba662ebb1efade9caac23125ec1e660feced0e&X-Goog-SignedHeaders=host&X-User=lucas-kuhnen, Size: 58805}"}
+{"time":"2026-03-05T10:30:57.123733306-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":17155}
+{"time":"2026-03-05T10:30:57.146203124-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":4}
+{"time":"2026-03-05T10:37:00.798128786-03:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2026-03-05T10:37:07.509973346-03:00","level":"INFO","msg":"handler: operation stats","stats":{}}
+{"time":"2026-03-05T10:37:07.511400401-03:00","level":"INFO","msg":"stream: closing","id":"dilgy1mu"}
+{"time":"2026-03-05T10:37:07.511404629-03:00","level":"INFO","msg":"handler: closed","stream_id":"dilgy1mu"}
+{"time":"2026-03-05T10:37:07.511429845-03:00","level":"INFO","msg":"sender: closed","stream_id":"dilgy1mu"}
+{"time":"2026-03-05T10:37:07.511432808-03:00","level":"INFO","msg":"stream: closed","id":"dilgy1mu"}

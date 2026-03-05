@@ -1,0 +1,21 @@
+INFO:Training.base_trainer:Wandb set up. Run ID: 6vuaemx6
+INFO:Training.base_trainer:Preparing data
+INFO:Training.base_trainer:Preparing data for AlgNN...
+INFO:Training.base_trainer:Generating 100000 training points...
+INFO:Training.base_trainer:  Removed 0 infeasible points. New N_train = 100000
+INFO:Training.base_trainer:Generating 5000 validation points...
+INFO:Training.base_trainer:Data preparation complete.
+INFO:Training.base_trainer:--- Starting Stage 1: Adam Training for 5000 epochs ---
+Traceback (most recent call last):
+  File "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/glc_run_alg_train.py", line 50, in <module>
+    trainer.run()
+    ~~~~~~~~~~~^^
+  File "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/glc_alg_trainer.py", line 239, in run
+    data_to_log, val_score = self._run_epoch()
+                             ~~~~~~~~~~~~~~~^^
+  File "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/base_trainer.py", line 173, in _run_epoch
+    val_losses = self.validation_pass()
+  File "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/glc_alg_trainer.py", line 190, in validation_pass
+    'comp_w_L_res': loss_comps[3].item(),
+                    ~~~~~~~~~~^^^
+IndexError: index 3 is out of bounds for dimension 0 with size 3
