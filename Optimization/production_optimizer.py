@@ -174,6 +174,8 @@ def optimize_field_production(
         lbg.append(0)
         ubg.append(float(P_max_tb_b_bar))
 
+
+
         # 5.1.4) Per-well health/validity constraints
 
         # alpha constraints in [0,1]
@@ -414,15 +416,16 @@ res = optimize_field_production(
     y_guess_list=[[3285.42, 300.822, 6910.91]],
     u_guess_list=[[1.00, 1.00]],
     z_guess_list=None,
-    P_max_tb_b_bar=130,
+    P_max_tb_b_bar=120,
     P_min_bh_bar=90,
 )
 
+print("THIS IS WITH SURROGATE:")
 print("success:", res["stats"]["success"], res["stats"]["return_status"])
 print("totals:", res["totals"])
 print("u* well1:", np.array(res["per_well"][0]["u"]).squeeze())
 print("y* well1:", np.array(res["per_well"][0]["y"]).squeeze())
-print_z_grouped(res["per_well"][0]["out"], Z_NAMES_SUR)
+# print_z_grouped(res["per_well"][0]["out"], Z_NAMES_SUR)
 
 res = optimize_field_production(
     model_type="rigorous",
@@ -443,9 +446,11 @@ res = optimize_field_production(
     P_min_bh_bar=90,
 )
 
+print('\n\n')
+print("THIS IS WITH RIGOROUS:")
 print("success:", res["stats"]["success"], res["stats"]["return_status"])
 print("totals:", res["totals"])
 print("u* well1:", np.array(res["per_well"][0]["u"]).squeeze())
 print("y* well1:", np.array(res["per_well"][0]["y"]).squeeze())
-print("z* well1:", np.array(res["per_well"][0]["z"]).squeeze())
-print_z_grouped(res["per_well"][0]["out"], Z_NAMES_RIG)
+# print("z* well1:", np.array(res["per_well"][0]["z"]).squeeze())
+# print_z_grouped(res["per_well"][0]["out"], Z_NAMES_RIG)

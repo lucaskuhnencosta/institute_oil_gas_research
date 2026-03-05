@@ -280,7 +280,7 @@ def make_glc_well_surrogate(BSW,GOR,PI):
         w_up=w_res
 
         z = vertcat(
-            m_G_an,
+            m_G_an, #0
             m_G_tb,
             m_L_tb,
             a,
@@ -305,9 +305,9 @@ def make_glc_well_surrogate(BSW,GOR,PI):
             # =================================
             # Pressures (bar)
             # =================================
-            P_bh_bar,
+            P_bh_bar,#15
             P_tb_t_bar,
-            P_tb_b_bar,
+            P_tb_b_bar,#17
             P_hidro_tb_bar,
             P_hidro_bh_bar,
 
@@ -332,7 +332,7 @@ def make_glc_well_surrogate(BSW,GOR,PI):
             # =================================
             # Flows (kg/s)
             # =================================
-            w_res,
+            w_res, #31
             w_L_res,
             w_G_res,
 
@@ -340,7 +340,7 @@ def make_glc_well_surrogate(BSW,GOR,PI):
             w_G_out,
             w_L_out,
             w_w_out,
-            w_o_out,
+            w_o_out,#38
 
             w_G_inj,
 
