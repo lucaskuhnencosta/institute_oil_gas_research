@@ -8,8 +8,8 @@ HIDDEN_UNITS = [64] * 4
 
 
 # 3. Training Parameters
-N_TRAIN_SAMPLES = 100  # Use a large dataset for good accuracy
-N_VAL_SAMPLES = 33
+N_TRAIN_SAMPLES = 40000  # Use a large dataset for good accuracy
+N_VAL_SAMPLES = 1089
 EPOCHS = 10000
 LEARNING_RATE = 1e-3
 RANDOM_SEED = 42
