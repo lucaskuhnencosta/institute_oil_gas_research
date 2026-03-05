@@ -258,7 +258,7 @@ class AlgTrainer(Trainer):
         """Implements the abstract logging method."""
         train_loss = train_losses['total']
         val_loss = val_losses['total']
-        val_pbh_loss = val_losses.get('comp_P_bh', 0.0)  # .get for safety
+        val_pbh_loss = val_losses.get('mse_w_o_out', 0.0)  # .get for safety
 
         self.l.info(
             f"Epoch {self._e} | "
