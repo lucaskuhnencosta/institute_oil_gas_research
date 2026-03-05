@@ -1,0 +1,19 @@
+{"time":"2026-03-05T00:09:50.395768405-03:00","level":"INFO","msg":"stream: starting","core version":"0.22.3"}
+{"time":"2026-03-05T00:09:50.738346071-03:00","level":"INFO","msg":"stream: created new stream","id":"6t1nl9u8"}
+{"time":"2026-03-05T00:09:50.738374027-03:00","level":"INFO","msg":"handler: started","stream_id":"6t1nl9u8"}
+{"time":"2026-03-05T00:09:50.738404574-03:00","level":"INFO","msg":"stream: started","id":"6t1nl9u8"}
+{"time":"2026-03-05T00:09:50.738522572-03:00","level":"INFO","msg":"writer: started","stream_id":"6t1nl9u8"}
+{"time":"2026-03-05T00:09:50.738541512-03:00","level":"INFO","msg":"sender: started","stream_id":"6t1nl9u8"}
+{"time":"2026-03-05T00:09:51.462178011-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":37}
+{"time":"2026-03-05T00:09:51.54127816-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":32}
+{"time":"2026-03-05T00:09:53.347024799-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":1517}
+{"time":"2026-03-05T00:09:53.348175385-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":404}
+{"time":"2026-03-05T00:09:53.34887983-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":1962}
+{"time":"2026-03-05T00:09:53.351267348-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":466}
+{"time":"2026-03-05T00:10:06.364998116-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":5591}
+{"time":"2026-03-05T00:10:06.365134798-03:00","level":"INFO","msg":"stream: closing","id":"6t1nl9u8"}
+{"time":"2026-03-05T00:10:06.56164447-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":14}
+{"time":"2026-03-05T00:10:07.343145224-03:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2026-03-05T00:10:08.163135902-03:00","level":"INFO","msg":"handler: closed","stream_id":"6t1nl9u8"}
+{"time":"2026-03-05T00:10:08.163307343-03:00","level":"INFO","msg":"sender: closed","stream_id":"6t1nl9u8"}
+{"time":"2026-03-05T00:10:08.163324119-03:00","level":"INFO","msg":"stream: closed","id":"6t1nl9u8"}

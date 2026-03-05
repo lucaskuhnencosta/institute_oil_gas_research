@@ -1,0 +1,735 @@
+INFO:Training.base_trainer:Wandb set up. Run ID: 2z31a5z6
+INFO:Training.base_trainer:Mixed precision is enabled, but no CUDA device is available. Proceeding with standard precision.
+INFO:Training.base_trainer:Preparing data
+INFO:Training.base_trainer:Preparing PINN data for Gas-Lift Well...
+INFO:Training.base_trainer:Generating 20000 initial condition points...
+INFO:Training.base_trainer:Prepared data: u_col=(20000, 2), u_val=(2000, 2), u_probe=(0.6, 0.6)
+INFO:Training.base_trainer:Generating supervised dataset via sweep (N_data=10 => 100 grid pts)...
+
+----------------------------------
+u1=1.00001 u2=1.00001
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3584.3, 323.701, 6341.31] ||dx||: 7.327471962526033e-15 stable: True
+
+----------------------------------
+u1=1.00001 u2=0.900008888888889
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3489.02, 317.22, 6493.68] ||dx||: 1.131338507574586e-14 stable: True
+
+----------------------------------
+u1=1.00001 u2=0.8000077777777779
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3392.08, 309.961, 6672.61] ||dx||: 3.800791407964896e-15 stable: True
+
+----------------------------------
+u1=1.00001 u2=0.7000066666666668
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3295.91, 301.793, 6884.89] ||dx||: 2.1673020796438715e-13 stable: True
+
+----------------------------------
+u1=1.00001 u2=0.6000055555555556
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3204.34, 292.549, 7139.71] ||dx||: 4.708813822505857e-13 stable: True
+
+----------------------------------
+u1=1.00001 u2=0.5000044444444445
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3123.32, 282.022, 7449.79] ||dx||: 1.0805156823142815e-14 stable: True
+
+----------------------------------
+u1=1.00001 u2=0.4000033333333334
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3061.76, 269.94, 7833.07] ||dx||: 3.2691308283698434e-14 stable: False
+
+----------------------------------
+u1=1.00001 u2=0.3000022222222223
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3032.56, 255.95, 8315.44] ||dx||: 8.074153716986702e-15 stable: False
+
+----------------------------------
+u1=1.00001 u2=0.20000111111111113
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3053.37, 239.571, 8935.63] ||dx||: 4.995177043074354e-14 stable: False
+
+----------------------------------
+u1=1.00001 u2=0.1
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3147.94, 220.052, 9756.7] ||dx||: 5.384183920204332e-14 stable: False
+
+----------------------------------
+u1=0.8944533333333334 u2=1.00001
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3596.76, 337.401, 6401.58] ||dx||: 2.6182439279735938e-14 stable: True
+
+----------------------------------
+u1=0.8944533333333334 u2=0.900008888888889
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3502.07, 330.241, 6553.89] ||dx||: 2.132206370031251e-14 stable: True
+
+----------------------------------
+u1=0.8944533333333334 u2=0.8000077777777779
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3405.77, 322.227, 6732.69] ||dx||: 7.119291619286993e-15 stable: True
+
+----------------------------------
+u1=0.8944533333333334 u2=0.7000066666666668
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3310.3, 313.217, 6944.75] ||dx||: 2.0307505695546448e-13 stable: True
+
+----------------------------------
+u1=0.8944533333333334 u2=0.6000055555555556
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3219.48, 303.036, 7199.2] ||dx||: 4.2460734670409787e-13 stable: True
+
+----------------------------------
+u1=0.8944533333333334 u2=0.5000044444444445
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3139.24, 291.463, 7508.68] ||dx||: 1.7791302319389972e-14 stable: True
+
+----------------------------------
+u1=0.8944533333333334 u2=0.4000033333333334
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3078.44, 278.218, 7890.99] ||dx||: 1.4622948031141686e-14 stable: False
+
+----------------------------------
+u1=0.8944533333333334 u2=0.3000022222222223
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3049.81, 262.943, 8371.76] ||dx||: 3.5732800126192574e-14 stable: False
+
+----------------------------------
+u1=0.8944533333333334 u2=0.20000111111111113
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3070.75, 245.156, 8989.35] ||dx||: 2.1328132722409387e-14 stable: False
+
+----------------------------------
+u1=0.8944533333333334 u2=0.1
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3164.58, 224.12, 9806.19] ||dx||: 3.7460537584541245e-14 stable: False
+
+----------------------------------
+u1=0.7888966666666668 u2=1.00001
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3615.33, 354.752, 6478.51] ||dx||: 2.9381292506366506e-14 stable: True
+
+----------------------------------
+u1=0.7888966666666668 u2=0.900008888888889
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3521.49, 346.764, 6630.9] ||dx||: 7.94721185223203e-15 stable: True
+
+----------------------------------
+u1=0.7888966666666668 u2=0.8000077777777779
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3426.08, 337.827, 6809.73] ||dx||: 1.4581163873597565e-13 stable: True
+
+----------------------------------
+u1=0.7888966666666668 u2=0.7000066666666668
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3331.52, 327.785, 7021.72] ||dx||: 1.8271127556227992e-13 stable: True
+
+----------------------------------
+u1=0.7888966666666668 u2=0.6000055555555556
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3241.66, 316.448, 7275.94] ||dx||: 4.0573741059996913e-13 stable: True
+
+----------------------------------
+u1=0.7888966666666668 u2=0.5000044444444445
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3162.36, 303.581, 7584.91] ||dx||: 1.1095566908502429e-14 stable: True
+
+----------------------------------
+u1=0.7888966666666668 u2=0.4000033333333334
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3102.38, 288.889, 7966.24] ||dx||: 3.595820250601821e-15 stable: False
+
+----------------------------------
+u1=0.7888966666666668 u2=0.3000022222222223
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3074.27, 272.002, 8445.29] ||dx||: 3.717175243785499e-15 stable: False
+
+----------------------------------
+u1=0.7888966666666668 u2=0.20000111111111113
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3095.05, 252.438, 9059.87] ||dx||: 3.93576802544892e-14 stable: False
+
+----------------------------------
+u1=0.7888966666666668 u2=0.1
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3187.54, 229.466, 9871.64] ||dx||: 6.840452016806046e-13 stable: False
+
+----------------------------------
+u1=0.6833400000000001 u2=1.00001
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3643.07, 377.112, 6577.45] ||dx||: 8.046352381281315e-14 stable: True
+
+----------------------------------
+u1=0.6833400000000001 u2=0.900008888888889
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3550.47, 368.101, 6730.23] ||dx||: 7.49708873476879e-15 stable: True
+
+----------------------------------
+u1=0.6833400000000001 u2=0.8000077777777779
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3456.33, 358.017, 6909.43] ||dx||: 1.2482146173061583e-13 stable: True
+
+----------------------------------
+u1=0.6833400000000001 u2=0.7000066666666668
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3363.08, 346.689, 7121.7] ||dx||: 1.7539218870861546e-13 stable: True
+
+----------------------------------
+u1=0.6833400000000001 u2=0.6000055555555556
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3274.51, 333.907, 7376.03] ||dx||: 3.559109052150951e-13 stable: True
+
+----------------------------------
+u1=0.6833400000000001 u2=0.5000044444444445
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3196.42, 319.415, 7684.81] ||dx||: 7.242875823676482e-15 stable: True
+
+----------------------------------
+u1=0.6833400000000001 u2=0.4000033333333334
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3137.4, 302.896, 8065.4] ||dx||: 1.4607767620765455e-14 stable: False
+
+----------------------------------
+u1=0.6833400000000001 u2=0.3000022222222223
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3109.7, 283.963, 8542.76] ||dx||: 5.043883840194739e-15 stable: False
+
+----------------------------------
+u1=0.6833400000000001 u2=0.20000111111111113
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3129.89, 262.121, 9154.07] ||dx||: 1.426496181880936e-14 stable: False
+
+----------------------------------
+u1=0.6833400000000001 u2=0.1
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3220.15, 236.642, 9959.98] ||dx||: 8.330484040716198e-14 stable: False
+
+----------------------------------
+u1=0.5777833333333334 u2=1.00001
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3684.73, 406.568, 6705.41] ||dx||: 4.654481297376308e-13 stable: True
+
+----------------------------------
+u1=0.5777833333333334 u2=0.900008888888889
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3594.03, 396.264, 6859.19] ||dx||: 3.820199830714189e-15 stable: True
+
+----------------------------------
+u1=0.5777833333333334 u2=0.8000077777777779
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3501.83, 384.727, 7039.41] ||dx||: 2.4873951610593658e-14 stable: True
+
+----------------------------------
+u1=0.5777833333333334 u2=0.7000066666666668
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3410.52, 371.764, 7252.67] ||dx||: 1.8520010937721035e-13 stable: True
+
+----------------------------------
+u1=0.5777833333333334 u2=0.6000055555555556
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3323.84, 357.137, 7507.87] ||dx||: 3.3784398580291173e-13 stable: True
+
+----------------------------------
+u1=0.5777833333333334 u2=0.5000044444444445
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3247.42, 340.562, 7817.21] ||dx||: 1.0823393387719041e-14 stable: True
+
+----------------------------------
+u1=0.5777833333333334 u2=0.4000033333333334
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3189.62, 321.691, 8197.77] ||dx||: 3.820199830714189e-15 stable: True
+
+----------------------------------
+u1=0.5777833333333334 u2=0.3000022222222223
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3162.25, 300.107, 8673.98] ||dx||: 7.112362866677808e-15 stable: False
+
+----------------------------------
+u1=0.5777833333333334 u2=0.20000111111111113
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3181.2, 275.293, 9282.21] ||dx||: 1.8160208208854855e-14 stable: False
+
+----------------------------------
+u1=0.5777833333333334 u2=0.1
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3267.87, 246.501, 10081.8] ||dx||: 3.89726236137824e-15 stable: False
+
+----------------------------------
+u1=0.4722266666666667 u2=1.00001
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3748.12, 446.532, 6870.98] ||dx||: 1.9860273225978185e-15 stable: True
+
+----------------------------------
+u1=0.4722266666666667 u2=0.900008888888889
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3660.42, 434.541, 7026.88] ||dx||: 1.0814278949565478e-14 stable: True
+
+----------------------------------
+u1=0.4722266666666667 u2=0.8000077777777779
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3571.27, 421.105, 7209.38] ||dx||: 7.327471962526033e-15 stable: True
+
+----------------------------------
+u1=0.4722266666666667 u2=0.7000066666666668
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3483.01, 405.997, 7425.04] ||dx||: 1.7188905850207002e-13 stable: True
+
+----------------------------------
+u1=0.4722266666666667 u2=0.6000055555555556
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3399.22, 388.944, 7682.65] ||dx||: 3.2187155807542515e-13 stable: True
+
+----------------------------------
+u1=0.4722266666666667 u2=0.5000044444444445
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3325.34, 369.619, 7994.22] ||dx||: 1.0161031394970946e-12 stable: True
+
+----------------------------------
+u1=0.4722266666666667 u2=0.4000033333333334
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3269.28, 347.631, 8376.44] ||dx||: 4.2261452805446086e-15 stable: True
+
+----------------------------------
+u1=0.4722266666666667 u2=0.3000022222222223
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3242.19, 322.518, 8853.13] ||dx||: 1.1042115452358874e-14 stable: False
+
+----------------------------------
+u1=0.4722266666666667 u2=0.20000111111111113
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3259.02, 293.718, 9459.62] ||dx||: 6.046639898674907e-15 stable: False
+
+----------------------------------
+u1=0.4722266666666667 u2=0.1
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3340.1, 260.435, 10253.7] ||dx||: 8.599116762841671e-14 stable: False
+
+----------------------------------
+u1=0.36667 u2=1.00001
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3846.78, 503.088, 7082.47] ||dx||: 1.067893742893049e-14 stable: True
+
+----------------------------------
+u1=0.36667 u2=0.900008888888889
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3763.98, 488.798, 7242.64] ||dx||: 4.741575244451873e-15 stable: True
+
+----------------------------------
+u1=0.36667 u2=0.8000077777777779
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3679.81, 472.763, 7429.88] ||dx||: 3.580361673049448e-15 stable: True
+
+----------------------------------
+u1=0.36667 u2=0.7000066666666668
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3596.48, 454.708, 7650.72] ||dx||: 1.0697389170429531e-14 stable: True
+
+----------------------------------
+u1=0.36667 u2=0.6000055555555556
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3517.37, 434.311, 7913.89] ||dx||: 3.1067912674104146e-13 stable: True
+
+----------------------------------
+u1=0.36667 u2=0.5000044444444445
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3447.51, 411.185, 8231.19] ||dx||: 9.384201933623183e-13 stable: True
+
+----------------------------------
+u1=0.36667 u2=0.4000033333333334
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3394.18, 384.876, 8618.91] ||dx||: 8.415021817870104e-15 stable: True
+
+----------------------------------
+u1=0.36667 u2=0.3000022222222223
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3367.48, 354.852, 9100.13] ||dx||: 1.2452327962373347e-14 stable: False
+
+----------------------------------
+u1=0.36667 u2=0.20000111111111113
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3381.02, 320.473, 9709.04] ||dx||: 1.2633635574891735e-14 stable: False
+
+----------------------------------
+u1=0.36667 u2=0.1
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3453.58, 280.835, 10501.5] ||dx||: 4.76187325976119e-14 stable: False
+
+----------------------------------
+u1=0.26111333333333336 u2=1.00001
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4006.31, 588.626, 7337.56] ||dx||: 5.65669253787293e-15 stable: True
+
+----------------------------------
+u1=0.26111333333333336 u2=0.900008888888889
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3931.8, 570.975, 7506.36] ||dx||: 9.872873219148074e-15 stable: True
+
+----------------------------------
+u1=0.26111333333333336 u2=0.8000077777777779
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3856.05, 551.118, 7703.38] ||dx||: 1.88411095042053e-15 stable: True
+
+----------------------------------
+u1=0.26111333333333336 u2=0.7000066666666668
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3781.02, 528.712, 7935.25] ||dx||: 7.464134339039856e-15 stable: True
+
+----------------------------------
+u1=0.26111333333333336 u2=0.6000055555555556
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3709.72, 503.354, 8210.7] ||dx||: 2.91739403224382e-13 stable: True
+
+----------------------------------
+u1=0.26111333333333336 u2=0.5000044444444445
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3646.51, 474.568, 8541.45] ||dx||: 8.146053978256402e-13 stable: True
+
+----------------------------------
+u1=0.26111333333333336 u2=0.4000033333333334
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3597.66, 441.801, 8943.49] ||dx||: 1.0807438076588089e-14 stable: True
+
+----------------------------------
+u1=0.26111333333333336 u2=0.3000022222222223
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3571.73, 404.408, 9439.27] ||dx||: 1.443503420651104e-14 stable: True
+
+----------------------------------
+u1=0.26111333333333336 u2=0.20000111111111113
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3580.35, 361.606, 10062] ||dx||: 4.1547862470286955e-14 stable: False
+
+----------------------------------
+u1=0.26111333333333336 u2=0.1
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3640.12, 312.275, 10865.9] ||dx||: 2.382277401815908e-14 stable: False
+
+----------------------------------
+u1=0.15555666666666668 u2=1.00001
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4280.6, 735.025, 7562.96] ||dx||: 1.831026719408895e-15 stable: True
+
+----------------------------------
+u1=0.15555666666666668 u2=0.900008888888889
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4220.98, 711.855, 7750.38] ||dx||: 4.39625888431457e-15 stable: True
+
+----------------------------------
+u1=0.15555666666666668 u2=0.8000077777777779
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4160.22, 685.66, 7968.97] ||dx||: 2.220446049250313e-15 stable: True
+
+----------------------------------
+u1=0.15555666666666668 u2=0.7000066666666668
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4099.84, 655.968, 8225.79] ||dx||: 4.6629367034256575e-15 stable: True
+
+----------------------------------
+u1=0.15555666666666668 u2=0.6000055555555556
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4042.12, 622.227, 8530.02] ||dx||: 5.7184569345007536e-15 stable: True
+
+----------------------------------
+u1=0.15555666666666668 u2=0.5000044444444445
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3990.33, 583.794, 8893.77] ||dx||: 6.275701785122734e-13 stable: True
+
+----------------------------------
+u1=0.15555666666666668 u2=0.4000033333333334
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3949.08, 539.922, 9333.38] ||dx||: 5.551115123125783e-16 stable: True
+
+----------------------------------
+u1=0.15555666666666668 u2=0.3000022222222223
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3924.68, 489.731, 9871.69] ||dx||: 1.3269371471010172e-14 stable: True
+
+----------------------------------
+u1=0.15555666666666668 u2=0.20000111111111113
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3925.9, 432.125, 10542.4] ||dx||: 2.9950516804379904e-14 stable: True
+
+----------------------------------
+u1=0.15555666666666668 u2=0.1
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3966.15, 365.475, 11401.2] ||dx||: 1.5544645109553575e-13 stable: False
+
+----------------------------------
+u1=0.05 u2=1.00001
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4796.22, 1094.58, 7000.96] ||dx||: 2.7465400791133423e-15 stable: True
+
+----------------------------------
+u1=0.05 u2=0.900008888888889
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4766.41, 1059.9, 7234.45] ||dx||: 8.314355271761923e-13 stable: True
+
+----------------------------------
+u1=0.05 u2=0.8000077777777779
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4735.4, 1020.03, 7509.03] ||dx||: 8.893572493663641e-15 stable: True
+
+----------------------------------
+u1=0.05 u2=0.7000066666666668
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4703.77, 974.046, 7834.17] ||dx||: 9.920822741988957e-15 stable: True
+
+----------------------------------
+u1=0.05 u2=0.6000055555555556
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4672.39, 920.856, 8222.13] ||dx||: 1.5224493639652426e-13 stable: True
+
+----------------------------------
+u1=0.05 u2=0.5000044444444445
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4642.58, 859.153, 8689.2] ||dx||: 2.942538631508571e-13 stable: True
+
+----------------------------------
+u1=0.05 u2=0.4000033333333334
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4616.26, 787.357, 9257.59] ||dx||: 6.038741543527526e-13 stable: True
+
+----------------------------------
+u1=0.05 u2=0.3000022222222223
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4596.21, 703.5, 9958.98] ||dx||: 4.834253232627814e-15 stable: True
+
+----------------------------------
+u1=0.05 u2=0.20000111111111113
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4586.79, 604.97, 10841.9] ||dx||: 1.484591228991139e-14 stable: True
+
+----------------------------------
+u1=0.05 u2=0.1
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4595.97, 487.67, 11990.9] ||dx||: 8.887045789536674e-14 stable: True
+INFO:Training.base_trainer:Sweep dataset: total grid=100, success+finite batch=100
+INFO:Training.base_trainer:Collocation (Physics) Data (N_col = 20000):
+INFO:Training.base_trainer:  u_col (input):      (20000, 2)  device=cpu
+INFO:Training.base_trainer:Validation Data (N_val = 2000):
+INFO:Training.base_trainer:  u_val (input):      (2000, 2)  device=cpu
+INFO:Training.base_trainer:Supervised Data (from sweep):
+INFO:Training.base_trainer:  u_data (input):     (100, 2)  device=cpu
+INFO:Training.base_trainer:  y_data (target):    (100, 3)  device=cpu
+INFO:Training.base_trainer:  res_dx_data:        (100,)  device=cpu
+INFO:Training.base_trainer:  sample[0]: u=[0.05 0.1 ], y=[ 4595.967     487.66986 11990.862  ]
+INFO:Training.base_trainer:--------------------------
+INFO:Training.base_trainer:--- Starting Stage 1: Adam Training for 1000 epochs ---
+INFO:Training.base_trainer:Epoch      0 | train total=5.0991e+04 f=[4.158e+00, 1.353e+02, 1.353e+02] | val total=3.0026e+07 f=[4.238e+00, 7.760e+03, 7.760e+03] | u_probe=(0.6, 0.6) y_hat=[0.22641052 1.2753168  0.32972345]
+INFO:Training.base_trainer:Epoch     10 | train total=4.0849e+06 f=[4.158e+00, 1.114e+04, 1.114e+04] | val total=3.3043e+07 f=[4.238e+00, 1.598e+04, 1.598e+04] | u_probe=(0.6, 0.6) y_hat=[ 0.13155475 -1.7338524   0.19357786]
+INFO:Training.base_trainer:Epoch     20 | train total=1.9798e+07 f=[4.158e+00, 5.399e+04, 5.399e+04] | val total=4.7131e+07 f=[4.239e+00, 5.441e+04, 5.441e+04] | u_probe=(0.6, 0.6) y_hat=[ 0.10047267 -3.2698839   0.19779776]
+INFO:Training.base_trainer:Epoch     30 | train total=4.6472e+06 f=[4.158e+00, 1.267e+04, 1.267e+04] | val total=3.0047e+07 f=[4.239e+00, 7.808e+03, 7.808e+03] | u_probe=(0.6, 0.6) y_hat=[ 0.03656292 -1.166085   -0.0803995 ]
+INFO:Training.base_trainer:Epoch     40 | train total=5.7653e+05 f=[4.159e+00, 1.569e+03, 1.569e+03] | val total=2.8031e+07 f=[4.239e+00, 2.305e+03, 2.305e+03] | u_probe=(0.6, 0.6) y_hat=[-0.33532897  0.6775107  -0.46479174]
+INFO:Training.base_trainer:Epoch     50 | train total=2.5208e+06 f=[4.159e+00, 6.871e+03, 6.871e+03] | val total=2.9753e+07 f=[4.239e+00, 6.999e+03, 6.999e+03] | u_probe=(0.6, 0.6) y_hat=[-0.5286529   1.1523545  -0.63125926]
+INFO:Training.base_trainer:Epoch     60 | train total=2.5650e+06 f=[4.159e+00, 6.992e+03, 6.992e+03] | val total=2.9852e+07 f=[4.239e+00, 7.270e+03, 7.270e+03] | u_probe=(0.6, 0.6) y_hat=[-0.55111074  1.1639502  -0.6671356 ]
+INFO:Training.base_trainer:Epoch     70 | train total=1.9772e+06 f=[4.159e+00, 5.389e+03, 5.389e+03] | val total=2.9326e+07 f=[4.239e+00, 5.834e+03, 5.834e+03] | u_probe=(0.6, 0.6) y_hat=[-0.5045257  1.0294247 -0.6395494]
+INFO:Training.base_trainer:Epoch     80 | train total=3.4422e+06 f=[4.159e+00, 9.384e+03, 9.384e+03] | val total=3.1080e+07 f=[4.239e+00, 1.062e+04, 1.062e+04] | u_probe=(0.6, 0.6) y_hat=[-0.6584206  1.4237397 -0.7170779]
+INFO:Training.base_trainer:Epoch     90 | train total=3.5262e+06 f=[4.159e+00, 9.613e+03, 9.613e+03] | val total=3.0952e+07 f=[4.239e+00, 1.027e+04, 1.027e+04] | u_probe=(0.6, 0.6) y_hat=[-0.64808846  1.3841366  -0.71612316]
+INFO:Training.base_trainer:Epoch    100 | train total=1.6931e+07 f=[4.159e+00, 4.617e+04, 4.617e+04] | val total=4.7415e+07 f=[4.240e+00, 5.516e+04, 5.516e+04] | u_probe=(0.6, 0.6) y_hat=[-1.288961   3.3811834 -1.034256 ]
+INFO:Training.base_trainer:Epoch    110 | train total=7.1599e+07 f=[4.159e+00, 1.953e+05, 1.953e+05] | val total=1.0957e+08 f=[4.239e+00, 2.247e+05, 2.247e+05] | u_probe=(0.6, 0.6) y_hat=[-0.3640459   7.0998125  -0.04679628]
+INFO:Training.base_trainer:Epoch    120 | train total=1.6356e+08 f=[4.156e+00, 4.461e+05, 4.462e+05] | val total=1.7995e+08 f=[4.237e+00, 4.167e+05, 4.168e+05] | u_probe=(0.6, 0.6) y_hat=[2.308105  9.496654  2.8790102]
+INFO:Training.base_trainer:Epoch    130 | train total=1.5171e+08 f=[4.157e+00, 4.138e+05, 4.139e+05] | val total=1.8670e+08 f=[4.236e+00, 4.351e+05, 4.352e+05] | u_probe=(0.6, 0.6) y_hat=[2.6239712 9.692308  2.9400191]
+INFO:Training.base_trainer:Epoch    140 | train total=2.3841e+08 f=[4.155e+00, 6.501e+05, 6.507e+05] | val total=2.9010e+08 f=[4.234e+00, 7.171e+05, 7.178e+05] | u_probe=(0.6, 0.6) y_hat=[ 5.297151 12.245739  4.854122]
+INFO:Training.base_trainer:Epoch    150 | train total=1.8546e+08 f=[4.156e+00, 5.058e+05, 5.060e+05] | val total=2.1279e+08 f=[4.236e+00, 5.063e+05, 5.065e+05] | u_probe=(0.6, 0.6) y_hat=[ 3.4454489 10.407027   3.2396538]
+INFO:Training.base_trainer:Epoch    160 | train total=1.4171e+08 f=[4.157e+00, 3.865e+05, 3.866e+05] | val total=1.6572e+08 f=[4.237e+00, 3.779e+05, 3.779e+05] | u_probe=(0.6, 0.6) y_hat=[2.1210623 9.083186  1.9619515]
+INFO:Training.base_trainer:Epoch    170 | train total=1.1922e+08 f=[4.157e+00, 3.251e+05, 3.252e+05] | val total=1.4891e+08 f=[4.237e+00, 3.320e+05, 3.321e+05] | u_probe=(0.6, 0.6) y_hat=[1.5471011 8.548542  1.4575329]
+INFO:Training.base_trainer:Epoch    180 | train total=1.2351e+08 f=[4.157e+00, 3.368e+05, 3.369e+05] | val total=1.5156e+08 f=[4.237e+00, 3.393e+05, 3.393e+05] | u_probe=(0.6, 0.6) y_hat=[1.6183927 8.641509  1.4927559]
+INFO:Training.base_trainer:Epoch    190 | train total=6.8877e+07 f=[4.159e+00, 1.878e+05, 1.878e+05] | val total=8.8420e+07 f=[4.239e+00, 1.670e+05, 1.670e+05] | u_probe=(0.6, 0.6) y_hat=[-0.8444197  6.1323147 -1.4511466]
+INFO:Training.base_trainer:Epoch    200 | train total=2.1696e+07 f=[4.161e+00, 5.917e+04, 5.917e+04] | val total=4.7257e+07 f=[4.241e+00, 5.468e+04, 5.468e+04] | u_probe=(0.6, 0.6) y_hat=[-2.8736255  3.508022  -3.4676683]
+INFO:Training.base_trainer:Epoch    210 | train total=1.0403e+07 f=[4.161e+00, 2.837e+04, 2.837e+04] | val total=3.7093e+07 f=[4.241e+00, 2.695e+04, 2.695e+04] | u_probe=(0.6, 0.6) y_hat=[-3.2970028  2.4452274 -3.8962011]
+INFO:Training.base_trainer:Epoch    220 | train total=6.9857e+06 f=[4.161e+00, 1.905e+04, 1.905e+04] | val total=3.4061e+07 f=[4.241e+00, 1.868e+04, 1.868e+04] | u_probe=(0.6, 0.6) y_hat=[-3.3504164  2.0251424 -4.00315  ]
+INFO:Training.base_trainer:Epoch    230 | train total=5.7022e+06 f=[4.161e+00, 1.555e+04, 1.555e+04] | val total=3.2884e+07 f=[4.241e+00, 1.547e+04, 1.547e+04] | u_probe=(0.6, 0.6) y_hat=[-3.3314614  1.8373225 -4.0271177]
+INFO:Training.base_trainer:Epoch    240 | train total=5.0821e+06 f=[4.161e+00, 1.386e+04, 1.386e+04] | val total=3.2346e+07 f=[4.241e+00, 1.400e+04, 1.400e+04] | u_probe=(0.6, 0.6) y_hat=[-3.3045027  1.7452383 -4.0256205]
+INFO:Training.base_trainer:Epoch    250 | train total=4.7865e+06 f=[4.161e+00, 1.305e+04, 1.305e+04] | val total=3.2004e+07 f=[4.241e+00, 1.307e+04, 1.307e+04] | u_probe=(0.6, 0.6) y_hat=[-3.2750092  1.6844676 -4.0170345]
+INFO:Training.base_trainer:Epoch    260 | train total=4.2778e+06 f=[4.161e+00, 1.166e+04, 1.166e+04] | val total=3.1372e+07 f=[4.241e+00, 1.135e+04, 1.135e+04] | u_probe=(0.6, 0.6) y_hat=[-3.1934097  1.5665084 -3.9828453]
+INFO:Training.base_trainer:Epoch    270 | train total=3.8907e+06 f=[4.161e+00, 1.061e+04, 1.061e+04] | val total=3.1040e+07 f=[4.241e+00, 1.044e+04, 1.044e+04] | u_probe=(0.6, 0.6) y_hat=[-3.145828   1.5002823 -3.9591131]
+INFO:Training.base_trainer:Epoch    280 | train total=2.9280e+06 f=[4.161e+00, 7.982e+03, 7.982e+03] | val total=3.0115e+07 f=[4.241e+00, 7.924e+03, 7.924e+03] | u_probe=(0.6, 0.6) y_hat=[-2.9910848  1.3035357 -3.8729253]
+INFO:Training.base_trainer:Epoch    290 | train total=2.3273e+06 f=[4.161e+00, 6.343e+03, 6.343e+03] | val total=2.9545e+07 f=[4.241e+00, 6.371e+03, 6.371e+03] | u_probe=(0.6, 0.6) y_hat=[-2.8726716  1.1666523 -3.789669 ]
+INFO:Training.base_trainer:Epoch    300 | train total=2.6869e+06 f=[4.161e+00, 7.324e+03, 7.324e+03] | val total=2.9945e+07 f=[4.241e+00, 7.460e+03, 7.460e+03] | u_probe=(0.6, 0.6) y_hat=[-2.9656546  1.2640051 -3.8583624]
+INFO:Training.base_trainer:Epoch    310 | train total=2.2395e+06 f=[4.161e+00, 6.104e+03, 6.104e+03] | val total=2.9400e+07 f=[4.241e+00, 5.975e+03, 5.975e+03] | u_probe=(0.6, 0.6) y_hat=[-2.8427432  1.1280935 -3.7739785]
+INFO:Training.base_trainer:Epoch    320 | train total=1.8681e+06 f=[4.161e+00, 5.091e+03, 5.091e+03] | val total=2.9132e+07 f=[4.241e+00, 5.246e+03, 5.246e+03] | u_probe=(0.6, 0.6) y_hat=[-2.7768214  1.0552171 -3.7308578]
+INFO:Training.base_trainer:Epoch    330 | train total=2.3777e+06 f=[4.161e+00, 6.481e+03, 6.481e+03] | val total=2.9671e+07 f=[4.241e+00, 6.712e+03, 6.712e+03] | u_probe=(0.6, 0.6) y_hat=[-2.9153287  1.1975763 -3.8365543]
+INFO:Training.base_trainer:Epoch    340 | train total=2.5950e+06 f=[4.161e+00, 7.074e+03, 7.074e+03] | val total=2.9796e+07 f=[4.241e+00, 7.052e+03, 7.052e+03] | u_probe=(0.6, 0.6) y_hat=[-2.9490511  1.2285942 -3.8682418]
+INFO:Training.base_trainer:Epoch    350 | train total=2.3262e+06 f=[4.161e+00, 6.340e+03, 6.340e+03] | val total=2.9509e+07 f=[4.241e+00, 6.272e+03, 6.272e+03] | u_probe=(0.6, 0.6) y_hat=[-2.8876882  1.1573181 -3.8361099]
+INFO:Training.base_trainer:Epoch    360 | train total=1.9564e+06 f=[4.161e+00, 5.332e+03, 5.332e+03] | val total=2.9152e+07 f=[4.241e+00, 5.300e+03, 5.300e+03] | u_probe=(0.6, 0.6) y_hat=[-2.799974   1.0625584 -3.7752044]
+INFO:Training.base_trainer:Epoch    370 | train total=1.7284e+06 f=[4.161e+00, 4.710e+03, 4.710e+03] | val total=2.8886e+07 f=[4.241e+00, 4.575e+03, 4.575e+03] | u_probe=(0.6, 0.6) y_hat=[-2.7280898  0.9856783 -3.7284544]
+INFO:Training.base_trainer:Epoch    380 | train total=1.1786e+06 f=[4.161e+00, 3.211e+03, 3.211e+03] | val total=2.8356e+07 f=[4.241e+00, 3.132e+03, 3.132e+03] | u_probe=(0.6, 0.6) y_hat=[-2.5609577   0.81061417 -3.6124465 ]
+INFO:Training.base_trainer:Epoch    390 | train total=1.0462e+06 f=[4.160e+00, 2.850e+03, 2.850e+03] | val total=2.8251e+07 f=[4.241e+00, 2.846e+03, 2.846e+03] | u_probe=(0.6, 0.6) y_hat=[-2.5222347   0.77116305 -3.5807676 ]
+INFO:Training.base_trainer:Epoch    400 | train total=8.6008e+05 f=[4.160e+00, 2.342e+03, 2.342e+03] | val total=2.8062e+07 f=[4.241e+00, 2.332e+03, 2.332e+03] | u_probe=(0.6, 0.6) y_hat=[-2.4488292   0.69479954 -3.5253382 ]
+INFO:Training.base_trainer:Epoch    410 | train total=7.1679e+05 f=[4.160e+00, 1.951e+03, 1.951e+03] | val total=2.7910e+07 f=[4.240e+00, 1.918e+03, 1.918e+03] | u_probe=(0.6, 0.6) y_hat=[-2.3832836   0.62686473 -3.4756017 ]
+INFO:Training.base_trainer:Epoch    420 | train total=5.8625e+05 f=[4.160e+00, 1.595e+03, 1.595e+03] | val total=2.7782e+07 f=[4.240e+00, 1.570e+03, 1.570e+03] | u_probe=(0.6, 0.6) y_hat=[-2.322156    0.56404954 -3.4291058 ]
+INFO:Training.base_trainer:Epoch    430 | train total=4.9439e+05 f=[4.160e+00, 1.345e+03, 1.345e+03] | val total=2.7697e+07 f=[4.240e+00, 1.341e+03, 1.341e+03] | u_probe=(0.6, 0.6) y_hat=[-2.2777276  0.5187838 -3.3964396]
+INFO:Training.base_trainer:Epoch    440 | train total=5.1690e+05 f=[4.160e+00, 1.406e+03, 1.406e+03] | val total=2.7734e+07 f=[4.240e+00, 1.441e+03, 1.441e+03] | u_probe=(0.6, 0.6) y_hat=[-2.2976637  0.5389395 -3.4050107]
+INFO:Training.base_trainer:Epoch    450 | train total=5.2073e+05 f=[4.160e+00, 1.416e+03, 1.416e+03] | val total=2.7729e+07 f=[4.240e+00, 1.426e+03, 1.426e+03] | u_probe=(0.6, 0.6) y_hat=[-2.2946603   0.53584164 -3.3985276 ]
+INFO:Training.base_trainer:Epoch    460 | train total=4.5080e+05 f=[4.160e+00, 1.226e+03, 1.226e+03] | val total=2.7652e+07 f=[4.240e+00, 1.217e+03, 1.217e+03] | u_probe=(0.6, 0.6) y_hat=[-2.2520823  0.4926868 -3.369085 ]
+INFO:Training.base_trainer:Epoch    470 | train total=4.3378e+05 f=[4.160e+00, 1.179e+03, 1.179e+03] | val total=2.7635e+07 f=[4.240e+00, 1.172e+03, 1.172e+03] | u_probe=(0.6, 0.6) y_hat=[-2.2424393   0.48285955 -3.3606555 ]
+INFO:Training.base_trainer:Epoch    480 | train total=3.9950e+05 f=[4.160e+00, 1.086e+03, 1.086e+03] | val total=2.7608e+07 f=[4.240e+00, 1.098e+03, 1.098e+03] | u_probe=(0.6, 0.6) y_hat=[-2.226093   0.4665125 -3.3458402]
+INFO:Training.base_trainer:Epoch    490 | train total=3.4424e+05 f=[4.160e+00, 9.351e+02, 9.351e+02] | val total=2.7543e+07 f=[4.240e+00, 9.200e+02, 9.200e+02] | u_probe=(0.6, 0.6) y_hat=[-2.18313     0.42428845 -3.3134599 ]
+INFO:Training.base_trainer:Epoch    500 | train total=2.9617e+05 f=[4.160e+00, 8.040e+02, 8.040e+02] | val total=2.7496e+07 f=[4.240e+00, 7.941e+02, 7.941e+02] | u_probe=(0.6, 0.6) y_hat=[-2.149833    0.39195448 -3.2894354 ]
+INFO:Training.base_trainer:Epoch    510 | train total=2.8371e+05 f=[4.160e+00, 7.700e+02, 7.700e+02] | val total=2.7490e+07 f=[4.240e+00, 7.760e+02, 7.760e+02] | u_probe=(0.6, 0.6) y_hat=[-2.1449142  0.3870743 -3.2853222]
+INFO:Training.base_trainer:Epoch    520 | train total=2.8805e+05 f=[4.160e+00, 7.818e+02, 7.818e+02] | val total=2.7492e+07 f=[4.240e+00, 7.834e+02, 7.834e+02] | u_probe=(0.6, 0.6) y_hat=[-2.1470795  0.3890699 -3.28524  ]
+INFO:Training.base_trainer:Epoch    530 | train total=2.6119e+05 f=[4.160e+00, 7.086e+02, 7.086e+02] | val total=2.7467e+07 f=[4.240e+00, 7.145e+02, 7.145e+02] | u_probe=(0.6, 0.6) y_hat=[-2.1272128  0.3701516 -3.2710454]
+INFO:Training.base_trainer:Epoch    540 | train total=2.3576e+05 f=[4.160e+00, 6.392e+02, 6.392e+02] | val total=2.7436e+07 f=[4.240e+00, 6.301e+02, 6.301e+02] | u_probe=(0.6, 0.6) y_hat=[-2.101274    0.34563848 -3.252169  ]
+INFO:Training.base_trainer:Epoch    550 | train total=1.8975e+05 f=[4.160e+00, 5.137e+02, 5.137e+02] | val total=2.7391e+07 f=[4.240e+00, 5.074e+02, 5.074e+02] | u_probe=(0.6, 0.6) y_hat=[-2.0597072   0.30686757 -3.22355   ]
+INFO:Training.base_trainer:Epoch    560 | train total=1.7946e+05 f=[4.160e+00, 4.857e+02, 4.857e+02] | val total=2.7384e+07 f=[4.240e+00, 4.892e+02, 4.892e+02] | u_probe=(0.6, 0.6) y_hat=[-2.053346    0.30084863 -3.2177548 ]
+INFO:Training.base_trainer:Epoch    570 | train total=1.8178e+05 f=[4.160e+00, 4.920e+02, 4.920e+02] | val total=2.7384e+07 f=[4.240e+00, 4.904e+02, 4.904e+02] | u_probe=(0.6, 0.6) y_hat=[-2.0539439  0.3013255 -3.217515 ]
+INFO:Training.base_trainer:Epoch    580 | train total=1.7721e+05 f=[4.160e+00, 4.795e+02, 4.795e+02] | val total=2.7383e+07 f=[4.240e+00, 4.858e+02, 4.858e+02] | u_probe=(0.6, 0.6) y_hat=[-2.052438    0.29991484 -3.2168164 ]
+INFO:Training.base_trainer:Epoch    590 | train total=1.8763e+05 f=[4.160e+00, 5.079e+02, 5.079e+02] | val total=2.7394e+07 f=[4.240e+00, 5.174e+02, 5.174e+02] | u_probe=(0.6, 0.6) y_hat=[-2.0641384  0.3106186 -3.2246313]
+INFO:Training.base_trainer:Epoch    600 | train total=2.2101e+05 f=[4.160e+00, 5.990e+02, 5.990e+02] | val total=2.7423e+07 f=[4.240e+00, 5.966e+02, 5.966e+02] | u_probe=(0.6, 0.6) y_hat=[-2.0915923   0.33589894 -3.2422118 ]
+INFO:Training.base_trainer:Epoch    610 | train total=2.2275e+05 f=[4.160e+00, 6.037e+02, 6.037e+02] | val total=2.7433e+07 f=[4.240e+00, 6.236e+02, 6.236e+02] | u_probe=(0.6, 0.6) y_hat=[-2.1004353   0.34405082 -3.246776  ]
+INFO:Training.base_trainer:Epoch    620 | train total=3.0250e+05 f=[4.160e+00, 8.212e+02, 8.212e+02] | val total=2.7519e+07 f=[4.240e+00, 8.562e+02, 8.562e+02] | u_probe=(0.6, 0.6) y_hat=[-2.168773   0.4086231 -3.2941387]
+INFO:Training.base_trainer:Epoch    630 | train total=3.8246e+05 f=[4.160e+00, 1.039e+03, 1.039e+03] | val total=2.7600e+07 f=[4.240e+00, 1.075e+03, 1.075e+03] | u_probe=(0.6, 0.6) y_hat=[-2.2238495   0.46176496 -3.3325548 ]
+INFO:Training.base_trainer:Epoch    640 | train total=4.4661e+05 f=[4.160e+00, 1.214e+03, 1.214e+03] | val total=2.7667e+07 f=[4.240e+00, 1.259e+03, 1.259e+03] | u_probe=(0.6, 0.6) y_hat=[-2.264793   0.5022186 -3.3607337]
+INFO:Training.base_trainer:Epoch    650 | train total=5.1372e+05 f=[4.160e+00, 1.397e+03, 1.397e+03] | val total=2.7720e+07 f=[4.240e+00, 1.401e+03, 1.401e+03] | u_probe=(0.6, 0.6) y_hat=[-2.2941658  0.5315945 -3.381265 ]
+INFO:Training.base_trainer:Epoch    660 | train total=4.6999e+05 f=[4.160e+00, 1.278e+03, 1.278e+03] | val total=2.7674e+07 f=[4.240e+00, 1.276e+03, 1.276e+03] | u_probe=(0.6, 0.6) y_hat=[-2.2689319   0.50575733 -3.3633494 ]
+INFO:Training.base_trainer:Epoch    670 | train total=5.1069e+05 f=[4.160e+00, 1.389e+03, 1.389e+03] | val total=2.7724e+07 f=[4.240e+00, 1.412e+03, 1.412e+03] | u_probe=(0.6, 0.6) y_hat=[-2.2961478   0.53359324 -3.3786607 ]
+INFO:Training.base_trainer:Epoch    680 | train total=6.2621e+05 f=[4.160e+00, 1.704e+03, 1.704e+03] | val total=2.7846e+07 f=[4.240e+00, 1.745e+03, 1.745e+03] | u_probe=(0.6, 0.6) y_hat=[-2.3573732   0.59691465 -3.4211004 ]
+INFO:Training.base_trainer:Epoch    690 | train total=5.9855e+05 f=[4.160e+00, 1.629e+03, 1.629e+03] | val total=2.7796e+07 f=[4.240e+00, 1.610e+03, 1.610e+03] | u_probe=(0.6, 0.6) y_hat=[-2.3342867  0.5721494 -3.4032075]
+INFO:Training.base_trainer:Epoch    700 | train total=5.1258e+05 f=[4.160e+00, 1.394e+03, 1.394e+03] | val total=2.7723e+07 f=[4.240e+00, 1.410e+03, 1.410e+03] | u_probe=(0.6, 0.6) y_hat=[-2.297186    0.53333366 -3.3740845 ]
+INFO:Training.base_trainer:Epoch    710 | train total=5.9452e+05 f=[4.160e+00, 1.618e+03, 1.618e+03] | val total=2.7825e+07 f=[4.240e+00, 1.687e+03, 1.687e+03] | u_probe=(0.6, 0.6) y_hat=[-2.3482978   0.58633024 -3.4092202 ]
+INFO:Training.base_trainer:Epoch    720 | train total=6.8762e+05 f=[4.160e+00, 1.872e+03, 1.872e+03] | val total=2.7885e+07 f=[4.240e+00, 1.851e+03, 1.851e+03] | u_probe=(0.6, 0.6) y_hat=[-2.3767142  0.6156833 -3.431346 ]
+INFO:Training.base_trainer:Epoch    730 | train total=6.0146e+05 f=[4.160e+00, 1.637e+03, 1.637e+03] | val total=2.7799e+07 f=[4.240e+00, 1.617e+03, 1.617e+03] | u_probe=(0.6, 0.6) y_hat=[-2.3369362  0.573392  -3.401489 ]
+INFO:Training.base_trainer:Epoch    740 | train total=4.3743e+05 f=[4.160e+00, 1.189e+03, 1.189e+03] | val total=2.7630e+07 f=[4.240e+00, 1.158e+03, 1.158e+03] | u_probe=(0.6, 0.6) y_hat=[-2.248303    0.48059183 -3.3382869 ]
+INFO:Training.base_trainer:Epoch    750 | train total=3.6033e+05 f=[4.160e+00, 9.789e+02, 9.789e+02] | val total=2.7561e+07 f=[4.240e+00, 9.711e+02, 9.711e+02] | u_probe=(0.6, 0.6) y_hat=[-2.2065961   0.43760437 -3.308006  ]
+INFO:Training.base_trainer:Epoch    760 | train total=3.1903e+05 f=[4.160e+00, 8.663e+02, 8.663e+02] | val total=2.7518e+07 f=[4.240e+00, 8.526e+02, 8.526e+02] | u_probe=(0.6, 0.6) y_hat=[-2.1774027  0.4082068 -3.285665 ]
+INFO:Training.base_trainer:Epoch    770 | train total=2.9253e+05 f=[4.160e+00, 7.940e+02, 7.940e+02] | val total=2.7495e+07 f=[4.240e+00, 7.919e+02, 7.919e+02] | u_probe=(0.6, 0.6) y_hat=[-2.1615477   0.39231583 -3.2746942 ]
+INFO:Training.base_trainer:Epoch    780 | train total=2.7832e+05 f=[4.160e+00, 7.553e+02, 7.553e+02] | val total=2.7481e+07 f=[4.240e+00, 7.522e+02, 7.522e+02] | u_probe=(0.6, 0.6) y_hat=[-2.1507325  0.3816321 -3.2674527]
+INFO:Training.base_trainer:Epoch    790 | train total=2.6442e+05 f=[4.160e+00, 7.174e+02, 7.174e+02] | val total=2.7472e+07 f=[4.240e+00, 7.294e+02, 7.294e+02] | u_probe=(0.6, 0.6) y_hat=[-2.1444068   0.37543464 -3.2613335 ]
+INFO:Training.base_trainer:Epoch    800 | train total=3.0566e+05 f=[4.160e+00, 8.298e+02, 8.298e+02] | val total=2.7513e+07 f=[4.240e+00, 8.397e+02, 8.397e+02] | u_probe=(0.6, 0.6) y_hat=[-2.1749508   0.40506816 -3.2776177 ]
+INFO:Training.base_trainer:Epoch    810 | train total=2.9861e+05 f=[4.160e+00, 8.106e+02, 8.106e+02] | val total=2.7508e+07 f=[4.240e+00, 8.253e+02, 8.253e+02] | u_probe=(0.6, 0.6) y_hat=[-2.171311    0.40130866 -3.2736983 ]
+INFO:Training.base_trainer:Epoch    820 | train total=3.4934e+05 f=[4.160e+00, 9.490e+02, 9.490e+02] | val total=2.7560e+07 f=[4.240e+00, 9.669e+02, 9.669e+02] | u_probe=(0.6, 0.6) y_hat=[-2.2076848  0.4369975 -3.299488 ]
+INFO:Training.base_trainer:Epoch    830 | train total=3.3431e+05 f=[4.160e+00, 9.080e+02, 9.080e+02] | val total=2.7534e+07 f=[4.240e+00, 8.958e+02, 8.958e+02] | u_probe=(0.6, 0.6) y_hat=[-2.1901505   0.41941226 -3.2874982 ]
+INFO:Training.base_trainer:Epoch    840 | train total=2.5578e+05 f=[4.160e+00, 6.938e+02, 6.938e+02] | val total=2.7458e+07 f=[4.240e+00, 6.894e+02, 6.894e+02] | u_probe=(0.6, 0.6) y_hat=[-2.1338882   0.36400217 -3.2485983 ]
+INFO:Training.base_trainer:Epoch    850 | train total=2.5688e+05 f=[4.160e+00, 6.968e+02, 6.968e+02] | val total=2.7461e+07 f=[4.240e+00, 6.995e+02, 6.995e+02] | u_probe=(0.6, 0.6) y_hat=[-2.137086    0.36676875 -3.2509186 ]
+INFO:Training.base_trainer:Epoch    860 | train total=2.3093e+05 f=[4.160e+00, 6.260e+02, 6.260e+02] | val total=2.7438e+07 f=[4.240e+00, 6.369e+02, 6.369e+02] | u_probe=(0.6, 0.6) y_hat=[-2.118372   0.3486144 -3.2376044]
+INFO:Training.base_trainer:Epoch    870 | train total=2.2072e+05 f=[4.160e+00, 5.982e+02, 5.982e+02] | val total=2.7422e+07 f=[4.240e+00, 5.929e+02, 5.929e+02] | u_probe=(0.6, 0.6) y_hat=[-2.1045473   0.33527485 -3.2285905 ]
+INFO:Training.base_trainer:Epoch    880 | train total=1.9145e+05 f=[4.160e+00, 5.184e+02, 5.184e+02] | val total=2.7394e+07 f=[4.240e+00, 5.165e+02, 5.165e+02] | u_probe=(0.6, 0.6) y_hat=[-2.0790014  0.3110071 -3.2110915]
+INFO:Training.base_trainer:Epoch    890 | train total=1.8264e+05 f=[4.160e+00, 4.943e+02, 4.943e+02] | val total=2.7387e+07 f=[4.240e+00, 4.967e+02, 4.967e+02] | u_probe=(0.6, 0.6) y_hat=[-2.071982    0.30437016 -3.206167  ]
+INFO:Training.base_trainer:Epoch    900 | train total=2.0410e+05 f=[4.160e+00, 5.529e+02, 5.529e+02] | val total=2.7409e+07 f=[4.240e+00, 5.584e+02, 5.584e+02] | u_probe=(0.6, 0.6) y_hat=[-2.0934706   0.32449776 -3.221898  ]
+INFO:Training.base_trainer:Epoch    910 | train total=2.2028e+05 f=[4.160e+00, 5.970e+02, 5.970e+02] | val total=2.7428e+07 f=[4.240e+00, 6.091e+02, 6.091e+02] | u_probe=(0.6, 0.6) y_hat=[-2.1098843   0.33996236 -3.2365859 ]
+INFO:Training.base_trainer:Epoch    920 | train total=1.9971e+05 f=[4.160e+00, 5.409e+02, 5.409e+02] | val total=2.7398e+07 f=[4.240e+00, 5.267e+02, 5.267e+02] | u_probe=(0.6, 0.6) y_hat=[-2.0822046   0.31357133 -3.2223136 ]
+INFO:Training.base_trainer:Epoch    930 | train total=1.5172e+05 f=[4.160e+00, 4.100e+02, 4.100e+02] | val total=2.7355e+07 f=[4.240e+00, 4.096e+02, 4.096e+02] | u_probe=(0.6, 0.6) y_hat=[-2.0385084  0.2725866 -3.1958413]
+INFO:Training.base_trainer:Epoch    940 | train total=1.3040e+05 f=[4.160e+00, 3.519e+02, 3.519e+02] | val total=2.7333e+07 f=[4.240e+00, 3.499e+02, 3.499e+02] | u_probe=(0.6, 0.6) y_hat=[-2.013486    0.24945131 -3.180455  ]
+INFO:Training.base_trainer:Epoch    950 | train total=1.1478e+05 f=[4.160e+00, 3.093e+02, 3.093e+02] | val total=2.7319e+07 f=[4.240e+00, 3.128e+02, 3.128e+02] | u_probe=(0.6, 0.6) y_hat=[-1.9966313  0.2340905 -3.1712477]
+INFO:Training.base_trainer:Epoch    960 | train total=1.2466e+05 f=[4.160e+00, 3.362e+02, 3.362e+02] | val total=2.7328e+07 f=[4.240e+00, 3.387e+02, 3.387e+02] | u_probe=(0.6, 0.6) y_hat=[-2.0086417   0.24485633 -3.1808863 ]
+INFO:Training.base_trainer:Epoch    970 | train total=1.3824e+05 f=[4.160e+00, 3.732e+02, 3.732e+02] | val total=2.7343e+07 f=[4.240e+00, 3.791e+02, 3.791e+02] | u_probe=(0.6, 0.6) y_hat=[-2.0264223   0.26091725 -3.1941416 ]
+INFO:Training.base_trainer:Epoch    980 | train total=1.4485e+05 f=[4.160e+00, 3.913e+02, 3.913e+02] | val total=2.7349e+07 f=[4.240e+00, 3.940e+02, 3.940e+02] | u_probe=(0.6, 0.6) y_hat=[-2.032714    0.26661345 -3.1993685 ]
+INFO:Training.base_trainer:Epoch    990 | train total=1.3269e+05 f=[4.160e+00, 3.581e+02, 3.581e+02] | val total=2.7335e+07 f=[4.240e+00, 3.567e+02, 3.567e+02] | u_probe=(0.6, 0.6) y_hat=[-2.0166883   0.25201288 -3.1891837 ]
+INFO:Training.base_trainer:--- Starting Stage 2: L-BFGS Block 1 (Adam Epochs: 1000) ---
+INFO:Training.base_trainer:Epoch 1000: Switching optimizer from Adam to L-BFGS.
+INFO:Training.base_trainer:Epoch   1000 | train total=1.6511e+07 f=[4.160e+00, 6.510e+01, 6.510e+01] | val total=2.7228e+07 f=[4.240e+00, 6.497e+01, 6.497e+01] | u_probe=(0.6, 0.6) y_hat=[-1.9933671   0.09227347 -3.2067697 ]
+INFO:Training.base_trainer:Skipping optimizer state in checkpoint (L-BFGS).
+INFO:Training.base_trainer:--- Starting Stage 3: L-BFGS Block 2 (Adam Epochs: 2000) ---
+INFO:Training.base_trainer:Epoch 2000: Switching optimizer from Adam to L-BFGS.
+INFO:Training.base_trainer:Epoch   2000 | train total=1.6511e+07 f=[4.160e+00, 6.510e+01, 6.510e+01] | val total=2.7228e+07 f=[4.240e+00, 6.497e+01, 6.497e+01] | u_probe=(0.6, 0.6) y_hat=[-1.9933671   0.09227347 -3.2067697 ]
+INFO:Training.base_trainer:Skipping optimizer state in checkpoint (L-BFGS).
+INFO:Training.base_trainer:Saving final model

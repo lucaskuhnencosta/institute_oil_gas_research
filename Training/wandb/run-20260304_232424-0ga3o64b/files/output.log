@@ -1,0 +1,655 @@
+INFO:Training.base_trainer:Wandb set up. Run ID: 0ga3o64b
+INFO:Training.base_trainer:Mixed precision is enabled, but no CUDA device is available. Proceeding with standard precision.
+INFO:Training.base_trainer:Preparing data
+INFO:Training.base_trainer:Preparing PINN data for Gas-Lift Well...
+INFO:Training.base_trainer:Generating 20000 initial condition points...
+INFO:Training.base_trainer:Prepared data: u_col=(20000, 2), u_val=(2000, 2), u_probe=(0.6, 0.6)
+INFO:Training.base_trainer:Generating supervised dataset via sweep (N_data=10 => 100 grid pts)...
+
+----------------------------------
+u1=1.00001 u2=1.00001
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3584.3, 323.701, 6341.31] ||dx||: 7.327471962526033e-15 stable: True
+
+----------------------------------
+u1=1.00001 u2=0.900008888888889
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3489.02, 317.22, 6493.68] ||dx||: 1.131338507574586e-14 stable: True
+
+----------------------------------
+u1=1.00001 u2=0.8000077777777779
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3392.08, 309.961, 6672.61] ||dx||: 3.800791407964896e-15 stable: True
+
+----------------------------------
+u1=1.00001 u2=0.7000066666666668
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3295.91, 301.793, 6884.89] ||dx||: 2.1673020796438715e-13 stable: True
+
+----------------------------------
+u1=1.00001 u2=0.6000055555555556
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3204.34, 292.549, 7139.71] ||dx||: 4.708813822505857e-13 stable: True
+
+----------------------------------
+u1=1.00001 u2=0.5000044444444445
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3123.32, 282.022, 7449.79] ||dx||: 1.0805156823142815e-14 stable: True
+
+----------------------------------
+u1=1.00001 u2=0.4000033333333334
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3061.76, 269.94, 7833.07] ||dx||: 3.2691308283698434e-14 stable: False
+
+----------------------------------
+u1=1.00001 u2=0.3000022222222223
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3032.56, 255.95, 8315.44] ||dx||: 8.074153716986702e-15 stable: False
+
+----------------------------------
+u1=1.00001 u2=0.20000111111111113
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3053.37, 239.571, 8935.63] ||dx||: 4.995177043074354e-14 stable: False
+
+----------------------------------
+u1=1.00001 u2=0.1
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3147.94, 220.052, 9756.7] ||dx||: 5.384183920204332e-14 stable: False
+
+----------------------------------
+u1=0.8944533333333334 u2=1.00001
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3596.76, 337.401, 6401.58] ||dx||: 2.6182439279735938e-14 stable: True
+
+----------------------------------
+u1=0.8944533333333334 u2=0.900008888888889
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3502.07, 330.241, 6553.89] ||dx||: 2.132206370031251e-14 stable: True
+
+----------------------------------
+u1=0.8944533333333334 u2=0.8000077777777779
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3405.77, 322.227, 6732.69] ||dx||: 7.119291619286993e-15 stable: True
+
+----------------------------------
+u1=0.8944533333333334 u2=0.7000066666666668
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3310.3, 313.217, 6944.75] ||dx||: 2.0307505695546448e-13 stable: True
+
+----------------------------------
+u1=0.8944533333333334 u2=0.6000055555555556
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3219.48, 303.036, 7199.2] ||dx||: 4.2460734670409787e-13 stable: True
+
+----------------------------------
+u1=0.8944533333333334 u2=0.5000044444444445
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3139.24, 291.463, 7508.68] ||dx||: 1.7791302319389972e-14 stable: True
+
+----------------------------------
+u1=0.8944533333333334 u2=0.4000033333333334
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3078.44, 278.218, 7890.99] ||dx||: 1.4622948031141686e-14 stable: False
+
+----------------------------------
+u1=0.8944533333333334 u2=0.3000022222222223
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3049.81, 262.943, 8371.76] ||dx||: 3.5732800126192574e-14 stable: False
+
+----------------------------------
+u1=0.8944533333333334 u2=0.20000111111111113
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3070.75, 245.156, 8989.35] ||dx||: 2.1328132722409387e-14 stable: False
+
+----------------------------------
+u1=0.8944533333333334 u2=0.1
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3164.58, 224.12, 9806.19] ||dx||: 3.7460537584541245e-14 stable: False
+
+----------------------------------
+u1=0.7888966666666668 u2=1.00001
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3615.33, 354.752, 6478.51] ||dx||: 2.9381292506366506e-14 stable: True
+
+----------------------------------
+u1=0.7888966666666668 u2=0.900008888888889
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3521.49, 346.764, 6630.9] ||dx||: 7.94721185223203e-15 stable: True
+
+----------------------------------
+u1=0.7888966666666668 u2=0.8000077777777779
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3426.08, 337.827, 6809.73] ||dx||: 1.4581163873597565e-13 stable: True
+
+----------------------------------
+u1=0.7888966666666668 u2=0.7000066666666668
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3331.52, 327.785, 7021.72] ||dx||: 1.8271127556227992e-13 stable: True
+
+----------------------------------
+u1=0.7888966666666668 u2=0.6000055555555556
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3241.66, 316.448, 7275.94] ||dx||: 4.0573741059996913e-13 stable: True
+
+----------------------------------
+u1=0.7888966666666668 u2=0.5000044444444445
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3162.36, 303.581, 7584.91] ||dx||: 1.1095566908502429e-14 stable: True
+
+----------------------------------
+u1=0.7888966666666668 u2=0.4000033333333334
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3102.38, 288.889, 7966.24] ||dx||: 3.595820250601821e-15 stable: False
+
+----------------------------------
+u1=0.7888966666666668 u2=0.3000022222222223
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3074.27, 272.002, 8445.29] ||dx||: 3.717175243785499e-15 stable: False
+
+----------------------------------
+u1=0.7888966666666668 u2=0.20000111111111113
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3095.05, 252.438, 9059.87] ||dx||: 3.93576802544892e-14 stable: False
+
+----------------------------------
+u1=0.7888966666666668 u2=0.1
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3187.54, 229.466, 9871.64] ||dx||: 6.840452016806046e-13 stable: False
+
+----------------------------------
+u1=0.6833400000000001 u2=1.00001
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3643.07, 377.112, 6577.45] ||dx||: 8.046352381281315e-14 stable: True
+
+----------------------------------
+u1=0.6833400000000001 u2=0.900008888888889
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3550.47, 368.101, 6730.23] ||dx||: 7.49708873476879e-15 stable: True
+
+----------------------------------
+u1=0.6833400000000001 u2=0.8000077777777779
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3456.33, 358.017, 6909.43] ||dx||: 1.2482146173061583e-13 stable: True
+
+----------------------------------
+u1=0.6833400000000001 u2=0.7000066666666668
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3363.08, 346.689, 7121.7] ||dx||: 1.7539218870861546e-13 stable: True
+
+----------------------------------
+u1=0.6833400000000001 u2=0.6000055555555556
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3274.51, 333.907, 7376.03] ||dx||: 3.559109052150951e-13 stable: True
+
+----------------------------------
+u1=0.6833400000000001 u2=0.5000044444444445
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3196.42, 319.415, 7684.81] ||dx||: 7.242875823676482e-15 stable: True
+
+----------------------------------
+u1=0.6833400000000001 u2=0.4000033333333334
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3137.4, 302.896, 8065.4] ||dx||: 1.4607767620765455e-14 stable: False
+
+----------------------------------
+u1=0.6833400000000001 u2=0.3000022222222223
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3109.7, 283.963, 8542.76] ||dx||: 5.043883840194739e-15 stable: False
+
+----------------------------------
+u1=0.6833400000000001 u2=0.20000111111111113
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3129.89, 262.121, 9154.07] ||dx||: 1.426496181880936e-14 stable: False
+
+----------------------------------
+u1=0.6833400000000001 u2=0.1
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3220.15, 236.642, 9959.98] ||dx||: 8.330484040716198e-14 stable: False
+
+----------------------------------
+u1=0.5777833333333334 u2=1.00001
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3684.73, 406.568, 6705.41] ||dx||: 4.654481297376308e-13 stable: True
+
+----------------------------------
+u1=0.5777833333333334 u2=0.900008888888889
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3594.03, 396.264, 6859.19] ||dx||: 3.820199830714189e-15 stable: True
+
+----------------------------------
+u1=0.5777833333333334 u2=0.8000077777777779
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3501.83, 384.727, 7039.41] ||dx||: 2.4873951610593658e-14 stable: True
+
+----------------------------------
+u1=0.5777833333333334 u2=0.7000066666666668
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3410.52, 371.764, 7252.67] ||dx||: 1.8520010937721035e-13 stable: True
+
+----------------------------------
+u1=0.5777833333333334 u2=0.6000055555555556
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3323.84, 357.137, 7507.87] ||dx||: 3.3784398580291173e-13 stable: True
+
+----------------------------------
+u1=0.5777833333333334 u2=0.5000044444444445
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3247.42, 340.562, 7817.21] ||dx||: 1.0823393387719041e-14 stable: True
+
+----------------------------------
+u1=0.5777833333333334 u2=0.4000033333333334
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3189.62, 321.691, 8197.77] ||dx||: 3.820199830714189e-15 stable: True
+
+----------------------------------
+u1=0.5777833333333334 u2=0.3000022222222223
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3162.25, 300.107, 8673.98] ||dx||: 7.112362866677808e-15 stable: False
+
+----------------------------------
+u1=0.5777833333333334 u2=0.20000111111111113
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3181.2, 275.293, 9282.21] ||dx||: 1.8160208208854855e-14 stable: False
+
+----------------------------------
+u1=0.5777833333333334 u2=0.1
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3267.87, 246.501, 10081.8] ||dx||: 3.89726236137824e-15 stable: False
+
+----------------------------------
+u1=0.4722266666666667 u2=1.00001
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3748.12, 446.532, 6870.98] ||dx||: 1.9860273225978185e-15 stable: True
+
+----------------------------------
+u1=0.4722266666666667 u2=0.900008888888889
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3660.42, 434.541, 7026.88] ||dx||: 1.0814278949565478e-14 stable: True
+
+----------------------------------
+u1=0.4722266666666667 u2=0.8000077777777779
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3571.27, 421.105, 7209.38] ||dx||: 7.327471962526033e-15 stable: True
+
+----------------------------------
+u1=0.4722266666666667 u2=0.7000066666666668
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3483.01, 405.997, 7425.04] ||dx||: 1.7188905850207002e-13 stable: True
+
+----------------------------------
+u1=0.4722266666666667 u2=0.6000055555555556
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3399.22, 388.944, 7682.65] ||dx||: 3.2187155807542515e-13 stable: True
+
+----------------------------------
+u1=0.4722266666666667 u2=0.5000044444444445
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3325.34, 369.619, 7994.22] ||dx||: 1.0161031394970946e-12 stable: True
+
+----------------------------------
+u1=0.4722266666666667 u2=0.4000033333333334
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3269.28, 347.631, 8376.44] ||dx||: 4.2261452805446086e-15 stable: True
+
+----------------------------------
+u1=0.4722266666666667 u2=0.3000022222222223
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3242.19, 322.518, 8853.13] ||dx||: 1.1042115452358874e-14 stable: False
+
+----------------------------------
+u1=0.4722266666666667 u2=0.20000111111111113
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3259.02, 293.718, 9459.62] ||dx||: 6.046639898674907e-15 stable: False
+
+----------------------------------
+u1=0.4722266666666667 u2=0.1
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3340.1, 260.435, 10253.7] ||dx||: 8.599116762841671e-14 stable: False
+
+----------------------------------
+u1=0.36667 u2=1.00001
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3846.78, 503.088, 7082.47] ||dx||: 1.067893742893049e-14 stable: True
+
+----------------------------------
+u1=0.36667 u2=0.900008888888889
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3763.98, 488.798, 7242.64] ||dx||: 4.741575244451873e-15 stable: True
+
+----------------------------------
+u1=0.36667 u2=0.8000077777777779
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3679.81, 472.763, 7429.88] ||dx||: 3.580361673049448e-15 stable: True
+
+----------------------------------
+u1=0.36667 u2=0.7000066666666668
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3596.48, 454.708, 7650.72] ||dx||: 1.0697389170429531e-14 stable: True
+
+----------------------------------
+u1=0.36667 u2=0.6000055555555556
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3517.37, 434.311, 7913.89] ||dx||: 3.1067912674104146e-13 stable: True
+
+----------------------------------
+u1=0.36667 u2=0.5000044444444445
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3447.51, 411.185, 8231.19] ||dx||: 9.384201933623183e-13 stable: True
+
+----------------------------------
+u1=0.36667 u2=0.4000033333333334
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3394.18, 384.876, 8618.91] ||dx||: 8.415021817870104e-15 stable: True
+
+----------------------------------
+u1=0.36667 u2=0.3000022222222223
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3367.48, 354.852, 9100.13] ||dx||: 1.2452327962373347e-14 stable: False
+
+----------------------------------
+u1=0.36667 u2=0.20000111111111113
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3381.02, 320.473, 9709.04] ||dx||: 1.2633635574891735e-14 stable: False
+
+----------------------------------
+u1=0.36667 u2=0.1
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3453.58, 280.835, 10501.5] ||dx||: 4.76187325976119e-14 stable: False
+
+----------------------------------
+u1=0.26111333333333336 u2=1.00001
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4006.31, 588.626, 7337.56] ||dx||: 5.65669253787293e-15 stable: True
+
+----------------------------------
+u1=0.26111333333333336 u2=0.900008888888889
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3931.8, 570.975, 7506.36] ||dx||: 9.872873219148074e-15 stable: True
+
+----------------------------------
+u1=0.26111333333333336 u2=0.8000077777777779
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3856.05, 551.118, 7703.38] ||dx||: 1.88411095042053e-15 stable: True
+
+----------------------------------
+u1=0.26111333333333336 u2=0.7000066666666668
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3781.02, 528.712, 7935.25] ||dx||: 7.464134339039856e-15 stable: True
+
+----------------------------------
+u1=0.26111333333333336 u2=0.6000055555555556
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3709.72, 503.354, 8210.7] ||dx||: 2.91739403224382e-13 stable: True
+
+----------------------------------
+u1=0.26111333333333336 u2=0.5000044444444445
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3646.51, 474.568, 8541.45] ||dx||: 8.146053978256402e-13 stable: True
+
+----------------------------------
+u1=0.26111333333333336 u2=0.4000033333333334
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3597.66, 441.801, 8943.49] ||dx||: 1.0807438076588089e-14 stable: True
+
+----------------------------------
+u1=0.26111333333333336 u2=0.3000022222222223
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3571.73, 404.408, 9439.27] ||dx||: 1.443503420651104e-14 stable: True
+
+----------------------------------
+u1=0.26111333333333336 u2=0.20000111111111113
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3580.35, 361.606, 10062] ||dx||: 4.1547862470286955e-14 stable: False
+
+----------------------------------
+u1=0.26111333333333336 u2=0.1
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3640.12, 312.275, 10865.9] ||dx||: 2.382277401815908e-14 stable: False
+
+----------------------------------
+u1=0.15555666666666668 u2=1.00001
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4280.6, 735.025, 7562.96] ||dx||: 1.831026719408895e-15 stable: True
+
+----------------------------------
+u1=0.15555666666666668 u2=0.900008888888889
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4220.98, 711.855, 7750.38] ||dx||: 4.39625888431457e-15 stable: True
+
+----------------------------------
+u1=0.15555666666666668 u2=0.8000077777777779
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4160.22, 685.66, 7968.97] ||dx||: 2.220446049250313e-15 stable: True
+
+----------------------------------
+u1=0.15555666666666668 u2=0.7000066666666668
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4099.84, 655.968, 8225.79] ||dx||: 4.6629367034256575e-15 stable: True
+
+----------------------------------
+u1=0.15555666666666668 u2=0.6000055555555556
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4042.12, 622.227, 8530.02] ||dx||: 5.7184569345007536e-15 stable: True
+
+----------------------------------
+u1=0.15555666666666668 u2=0.5000044444444445
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3990.33, 583.794, 8893.77] ||dx||: 6.275701785122734e-13 stable: True
+
+----------------------------------
+u1=0.15555666666666668 u2=0.4000033333333334
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3949.08, 539.922, 9333.38] ||dx||: 5.551115123125783e-16 stable: True
+
+----------------------------------
+u1=0.15555666666666668 u2=0.3000022222222223
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3924.68, 489.731, 9871.69] ||dx||: 1.3269371471010172e-14 stable: True
+
+----------------------------------
+u1=0.15555666666666668 u2=0.20000111111111113
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3925.9, 432.125, 10542.4] ||dx||: 2.9950516804379904e-14 stable: True
+
+----------------------------------
+u1=0.15555666666666668 u2=0.1
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [3966.15, 365.475, 11401.2] ||dx||: 1.5544645109553575e-13 stable: False
+
+----------------------------------
+u1=0.05 u2=1.00001
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4796.22, 1094.58, 7000.96] ||dx||: 2.7465400791133423e-15 stable: True
+
+----------------------------------
+u1=0.05 u2=0.900008888888889
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4766.41, 1059.9, 7234.45] ||dx||: 8.314355271761923e-13 stable: True
+
+----------------------------------
+u1=0.05 u2=0.8000077777777779
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4735.4, 1020.03, 7509.03] ||dx||: 8.893572493663641e-15 stable: True
+
+----------------------------------
+u1=0.05 u2=0.7000066666666668
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4703.77, 974.046, 7834.17] ||dx||: 9.920822741988957e-15 stable: True
+
+----------------------------------
+u1=0.05 u2=0.6000055555555556
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4672.39, 920.856, 8222.13] ||dx||: 1.5224493639652426e-13 stable: True
+
+----------------------------------
+u1=0.05 u2=0.5000044444444445
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4642.58, 859.153, 8689.2] ||dx||: 2.942538631508571e-13 stable: True
+
+----------------------------------
+u1=0.05 u2=0.4000033333333334
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4616.26, 787.357, 9257.59] ||dx||: 6.038741543527526e-13 stable: True
+
+----------------------------------
+u1=0.05 u2=0.3000022222222223
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4596.21, 703.5, 9958.98] ||dx||: 4.834253232627814e-15 stable: True
+
+----------------------------------
+u1=0.05 u2=0.20000111111111113
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4586.79, 604.97, 10841.9] ||dx||: 1.484591228991139e-14 stable: True
+
+----------------------------------
+u1=0.05 u2=0.1
+IPOPT success: True
+IPOPT status : Solve_Succeeded
+Accepted. y*: [4595.97, 487.67, 11990.9] ||dx||: 8.887045789536674e-14 stable: True
+INFO:Training.base_trainer:Sweep dataset: total grid=100, success+finite batch=100
+INFO:Training.base_trainer:Collocation (Physics) Data (N_col = 20000):
+INFO:Training.base_trainer:  u_col (input):      (20000, 2)  device=cpu
+INFO:Training.base_trainer:Validation Data (N_val = 2000):
+INFO:Training.base_trainer:  u_val (input):      (2000, 2)  device=cpu
+INFO:Training.base_trainer:Supervised Data (from sweep):
+INFO:Training.base_trainer:  u_data (input):     (100, 2)  device=cpu
+INFO:Training.base_trainer:  y_data (target):    (100, 3)  device=cpu
+INFO:Training.base_trainer:  res_dx_data:        (100,)  device=cpu
+INFO:Training.base_trainer:  sample[0]: u=[0.05 0.1 ], y=[ 4595.967     487.66986 11990.862  ]
+INFO:Training.base_trainer:--------------------------
+INFO:Training.base_trainer:[CHECK] u_col min=[0.05005828 0.100012  ] max=[0.9999286 0.999971 ]
+INFO:Training.base_trainer:[CHECK] u_val min=[0.05003212 0.10013748] max=[0.998849  0.9997121]
+INFO:Training.base_trainer:[CHECK] u_data min=[0.05 0.1 ] max=[1.00001 1.00001]
+INFO:Training.base_trainer:[CHECK] expected u_min=[0.05 0.1 ] u_max=[1. 1.]
+INFO:Training.base_trainer:[CHECK] y_data min=[3032.5579   220.05203 6341.306  ] max=[ 4796.216   1094.5759 11990.862 ]
+INFO:Training.base_trainer:[CHECK] y_mu=[3586.6316   422.08417 8167.035  ]
+INFO:Training.base_trainer:[CHECK] y_std=[ 467.32202  190.54027 1251.0396 ]
+INFO:Training.base_trainer:[CHECK] u_col finite=True
+INFO:Training.base_trainer:[CHECK] u_val finite=True
+INFO:Training.base_trainer:[CHECK] u_data finite=True
+INFO:Training.base_trainer:[CHECK] y_data finite=True
+INFO:Training.base_trainer:[CHECK] res_dx_data finite=True
+INFO:Training.base_trainer:--- Starting Stage 1: Adam Training for 1000 epochs ---
+Traceback (most recent call last):
+  File "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/glc_trainer.py", line 29, in <module>
+    main()
+    ~~~~^^
+  File "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/glc_trainer.py", line 22, in main
+    results = trainer.run()
+  File "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/glc_train.py", line 427, in run
+    data_to_log,val_score=self._run_epoch()
+                          ~~~~~~~~~~~~~~~^^
+  File "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/base_trainer.py", line 173, in _run_epoch
+    val_losses = self.validation_pass()
+  File "/home/lucas-kuhnen-costa/miniconda3/envs/MScThesis/lib/python3.13/site-packages/torch/utils/_contextlib.py", line 120, in decorate_context
+    return func(*args, **kwargs)
+  File "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/glc_train.py", line 371, in validation_pass
+    loss_f, mse_f_comps = self.get_physics_loss(self.u_val)
+    ^^^^^^^^^^^^^^^^^^^
+ValueError: too many values to unpack (expected 2)

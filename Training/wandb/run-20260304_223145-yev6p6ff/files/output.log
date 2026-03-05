@@ -1,0 +1,23 @@
+INFO:Training.base_trainer:Wandb set up. Run ID: yev6p6ff
+INFO:Training.base_trainer:Mixed precision is enabled, but no CUDA device is available. Proceeding with standard precision.
+INFO:Training.base_trainer:Preparing data
+INFO:Training.base_trainer:Preparing PINN data for Gas-Lift Well...
+INFO:Training.base_trainer:Generating 20000 initial condition points...
+INFO:Training.base_trainer:Prepared data: u_col=(20000, 2), u_val=(2000, 2), u_probe=(0.6, 0.6)
+INFO:Training.base_trainer:Generating supervised dataset via sweep (N_data=10 => 100 grid pts)...
+Traceback (most recent call last):
+  File "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/glc_trainer.py", line 29, in <module>
+    main()
+    ~~~~^^
+  File "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/glc_trainer.py", line 22, in main
+    results = trainer.run()
+  File "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/glc_train.py", line 284, in run
+    self.setup_training()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/base_trainer.py", line 126, in setup_training
+    self.prepare_data()
+    ~~~~~~~~~~~~~~~~~^^
+  File "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/glc_train.py", line 118, in prepare_data
+    u1_grid = np.linspace(float(self.u_min[0]), float(self.u_max[0]) + 1e-5, int(self.N_data))
+                                ^^^^^^^^^^
+AttributeError: 'SteadyStatePINNTrainer' object has no attribute 'u_min'. Did you mean: 'u1_min'?

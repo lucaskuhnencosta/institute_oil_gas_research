@@ -1,0 +1,28 @@
+{
+  "os": "Linux-6.17.0-14-generic-x86_64-with-glibc2.39",
+  "python": "CPython 3.13.9",
+  "startedAt": "2026-03-05T01:50:37.703892Z",
+  "program": "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/glc_trainer.py",
+  "codePath": "Training/glc_trainer.py",
+  "codePathLocal": "glc_trainer.py",
+  "git": {
+    "remote": "https://github.com/lucaskuhnencosta/institute_oil_gas_research",
+    "commit": "6349e74ad62a597fdf530e0915c19b6e6db553db"
+  },
+  "email": "lucas.kuhnen@posgrad.ufsc.br",
+  "root": "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training",
+  "host": "LucasOptiPlex",
+  "executable": "/home/lucas-kuhnen-costa/miniconda3/envs/MScThesis/bin/python",
+  "cpu_count": 20,
+  "cpu_count_logical": 28,
+  "disk": {
+    "/": {
+      "total": "501809635328",
+      "used": "78662946816"
+    }
+  },
+  "memory": {
+    "total": "33320550400"
+  },
+  "writerId": "oads1pvnm81n7eupzce28eiczsfrg8fq"
+}

@@ -1,0 +1,15 @@
+{"time":"2026-03-04T22:58:05.866785614-03:00","level":"INFO","msg":"stream: starting","core version":"0.22.3"}
+{"time":"2026-03-04T22:58:06.220037588-03:00","level":"INFO","msg":"stream: created new stream","id":"s3857y3p"}
+{"time":"2026-03-04T22:58:06.220068902-03:00","level":"INFO","msg":"handler: started","stream_id":"s3857y3p"}
+{"time":"2026-03-04T22:58:06.220097881-03:00","level":"INFO","msg":"stream: started","id":"s3857y3p"}
+{"time":"2026-03-04T22:58:06.220206572-03:00","level":"INFO","msg":"writer: started","stream_id":"s3857y3p"}
+{"time":"2026-03-04T22:58:06.220218732-03:00","level":"INFO","msg":"sender: started","stream_id":"s3857y3p"}
+{"time":"2026-03-04T22:58:07.189386623-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":37}
+{"time":"2026-03-04T22:58:07.407522267-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":200}
+{"time":"2026-03-04T22:58:21.908797975-03:00","level":"ERROR","msg":"file transfer: upload: failed to upload: status: 400 Bad Request: error reading body: stream error: stream ID 37; PROTOCOL_ERROR; received from peer","task":"DefaultUploadTask{FileKind: 0, Path: /home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/wandb/run-20260304_225805-s3857y3p/files/checkpoint.tar, Name: checkpoint.tar, Url: https://storage.googleapis.com/wandb-production.appspot.com/lucas-kuhnen-universidade-federal-de-santa-catarina/PINN-VDP/s3857y3p/checkpoint.tar?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=gorilla-files-url-signer-man%40wandb-production.iam.gserviceaccount.com%2F20260305%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260305T015818Z&X-Goog-Expires=86399&X-Goog-Signature=64165371edbb4d6a155b20695019568574f0c1b0d9f2977b3c4083d89d09051ff6acc7b32693909b368aa7fb53ba33b37faabe3d01e202c99f44174d63efaf33742faa90f53c45cc36ad9fc3bb5973c9f2c288064614f4ab6ec6ebbb427ba3939da4ef2a493c096c0050c40af06a5846ac815811003b55dbfd8713f6534577b396f8f5f21d729b578f88a589234f9d5c65fbc58e7b917851d1bd88a34106285aecf820c69cd8c9ea185fa45b3a9f92c3678b541545081e6671d0a5f77fb4fc69e45e068c8e6668eb11d20cb3c64bc8703388ac53d35d125d58eb39ef4c8608a2549656702ebd8b1abd3ef1c0f16374941ed6e5eace99425549b9198ed7eb01f9&X-Goog-SignedHeaders=host&X-User=lucas-kuhnen, Size: 114485}"}
+{"time":"2026-03-04T22:58:22.698033489-03:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2026-03-04T22:58:24.418681999-03:00","level":"INFO","msg":"handler: operation stats","stats":{}}
+{"time":"2026-03-04T22:58:24.421154387-03:00","level":"INFO","msg":"stream: closing","id":"s3857y3p"}
+{"time":"2026-03-04T22:58:24.421159481-03:00","level":"INFO","msg":"handler: closed","stream_id":"s3857y3p"}
+{"time":"2026-03-04T22:58:24.421186908-03:00","level":"INFO","msg":"sender: closed","stream_id":"s3857y3p"}
+{"time":"2026-03-04T22:58:24.421194099-03:00","level":"INFO","msg":"stream: closed","id":"s3857y3p"}

@@ -1,0 +1,24 @@
+2026-03-04 22:44:15,799 INFO    MainThread:15473 [wandb_setup.py:_flush():81] Current SDK version is 0.22.3
+2026-03-04 22:44:15,799 INFO    MainThread:15473 [wandb_setup.py:_flush():81] Configure stats pid to 15473
+2026-03-04 22:44:15,799 INFO    MainThread:15473 [wandb_setup.py:_flush():81] Loading settings from /home/lucas-kuhnen-costa/.config/wandb/settings
+2026-03-04 22:44:15,799 INFO    MainThread:15473 [wandb_setup.py:_flush():81] Loading settings from /home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/wandb/settings
+2026-03-04 22:44:15,799 INFO    MainThread:15473 [wandb_setup.py:_flush():81] Loading settings from environment variables
+2026-03-04 22:44:15,799 INFO    MainThread:15473 [wandb_init.py:setup_run_log_directory():706] Logging user logs to /home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/wandb/run-20260304_224415-ftgtu7un/logs/debug.log
+2026-03-04 22:44:15,799 INFO    MainThread:15473 [wandb_init.py:setup_run_log_directory():707] Logging internal logs to /home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/wandb/run-20260304_224415-ftgtu7un/logs/debug-internal.log
+2026-03-04 22:44:15,799 INFO    MainThread:15473 [wandb_init.py:init():833] calling init triggers
+2026-03-04 22:44:15,799 INFO    MainThread:15473 [wandb_init.py:init():838] wandb.init called with sweep_config: {}
+config: {'N_col': 20000, 'N_val': 2000, 'N_data': 10, 'K1_adam': 1000, 'K2_lbfgs': 2000, 'y_min': [3032.55, 220.05, 6341.3], 'y_max': [4796.2, 1094.6, 11990.9], 'u_min': [0.05, 0.1], 'u_max': [1.0, 1.0], 'mse_f_scale_factors': [1000.0, 1000.0, 100.0], 'learning_rate': 0.007, 'epochs': 3000, 'model': 'PINN', 'optimizer': 'Adam', 'lr_scheduler': None, 'lr_scheduler_params': {}, 'mixed_precision': True, 'loss_func': 'MSELoss', 'random_seed': 333333, 'device': 'cpu', '_wandb': {}}
+2026-03-04 22:44:15,799 INFO    MainThread:15473 [wandb_init.py:init():881] starting backend
+2026-03-04 22:44:16,004 INFO    MainThread:15473 [wandb_init.py:init():884] sending inform_init request
+2026-03-04 22:44:16,007 INFO    MainThread:15473 [wandb_init.py:init():892] backend started and connected
+2026-03-04 22:44:16,007 INFO    MainThread:15473 [wandb_init.py:init():962] updated telemetry
+2026-03-04 22:44:16,010 INFO    MainThread:15473 [wandb_init.py:init():986] communicating run to backend with 90.0 second timeout
+2026-03-04 22:44:16,759 INFO    MainThread:15473 [wandb_init.py:init():1033] starting run threads in backend
+2026-03-04 22:44:16,803 INFO    MainThread:15473 [wandb_run.py:_console_start():2506] atexit reg
+2026-03-04 22:44:16,803 INFO    MainThread:15473 [wandb_run.py:_redirect():2354] redirect: wrap_raw
+2026-03-04 22:44:16,803 INFO    MainThread:15473 [wandb_run.py:_redirect():2423] Wrapping output streams.
+2026-03-04 22:44:16,803 INFO    MainThread:15473 [wandb_run.py:_redirect():2446] Redirects installed.
+2026-03-04 22:44:16,805 INFO    MainThread:15473 [wandb_init.py:init():1073] run started, returning control to user process
+2026-03-04 22:44:16,805 INFO    MainThread:15473 [wandb_watch.py:_watch():68] Watching
+2026-03-04 22:44:18,781 INFO    wandb-AsyncioManager-main:15473 [service_client.py:_forward_responses():80] Reached EOF.
+2026-03-04 22:44:18,781 INFO    wandb-AsyncioManager-main:15473 [mailbox.py:close():137] Closing mailbox, abandoning 1 handles.

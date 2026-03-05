@@ -1,0 +1,21 @@
+INFO:Training.base_trainer:Wandb set up. Run ID: x3bsjpd4
+INFO:Training.base_trainer:Mixed precision is enabled, but no CUDA device is available. Proceeding with standard precision.
+INFO:Training.base_trainer:Preparing data
+INFO:Training.base_trainer:Preparing PINN data for Gas-Lift Well...
+INFO:Training.base_trainer:Generating 20000 initial condition points...
+Traceback (most recent call last):
+  File "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/glc_trainer.py", line 29, in <module>
+    main()
+    ~~~~^^
+  File "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/glc_trainer.py", line 22, in main
+    results = trainer.run()
+  File "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/glc_train.py", line 292, in run
+    self.setup_training()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/base_trainer.py", line 126, in setup_training
+    self.prepare_data()
+    ~~~~~~~~~~~~~~~~~^^
+  File "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/Training/glc_train.py", line 108, in prepare_data
+    f"Prepared data: u_col={tuple(self.u_col.shape)}, u_val={tuple(self.u_val.shape)}, "
+                                                                   ^^^^^^^^^^
+AttributeError: 'SteadyStatePINNTrainer' object has no attribute 'u_val'. Did you mean: 'N_val'?
