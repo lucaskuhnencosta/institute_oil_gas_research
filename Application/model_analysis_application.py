@@ -42,7 +42,12 @@ def make_model(sim_kind:str,BSW=0.20,GOR=0.05,PI=3.0e-6):
         raise ValueError("sim_kind must be 'surrogate' or 'rigorous'")
 
 
-def run_sweep(model,u1_grid,u2_grid,y_guess_init,z_guess_init=None):
+def run_sweep(model,
+              u1_grid,
+              u2_grid,
+              y_guess_init,
+              z_guess_init=None,
+              RES_TOL_DX=1E-6):
     nx=model["nx"]
     nu=model["nu"]
     is_dae=bool(model["is_dae"])
