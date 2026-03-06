@@ -115,14 +115,10 @@ def plant_zeroth_and_first_order(
     J = hx_num @ dxdu + hu_num                 # 3 x nu
 
     return {
-        "u_k": u_k,
         "y_star": np.array(y_star, dtype=float).reshape((-1,)),
         "z_star": np.array(z_star, dtype=float).reshape((-1,)),
         "z0": np.array(z0, dtype=float),               # [w_o_out, P_bh, P_tb_b]
         "J": np.array(J, dtype=float),                 # 3x2
-        "stable": stable,
-        "eig": eig,
-        "stats": stats,
     }
 
 
@@ -164,8 +160,5 @@ if __name__ == "__main__":
 
     np.set_printoptions(suppress=True, precision=6)
 
-    print("Plant z0(u_k) = [w_o_out, P_bh_bar, P_tb_b_bar]:")
-    print(res["z0"])
 
-    print("\nPlant J(u_k) = dz/du:")
-    print(res["J"])
+

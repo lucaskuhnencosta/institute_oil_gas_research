@@ -548,13 +548,13 @@ if __name__ == "__main__":
 
 
 
-    MODE="surrogate" # <-- change to "surrogate" or "rigorous"
+    MODE="both" # <-- change to "surrogate" or "rigorous"
 
     u1_stable, u2_stable = [], []
     u1_unstab, u2_unstab = [], []
 
-    u1_grid = np.linspace(0.05, 1.00001, 10)
-    u2_grid=np.linspace(0.10,1.00001,10)
+    u1_grid = np.linspace(0.05, 1.00001, 100)
+    u2_grid=np.linspace(0.10,1.00001,100)
 
     RES_TOL_DX=1e-6
     RES_TOL_G=1e-6
@@ -753,8 +753,13 @@ if __name__ == "__main__":
                     title=title,
                     zlabel=zlabel
                 )
-        plot_figures(results_all["rigorous"],title="Rigorous Model")
-        plot_figures(results_all["surrogate"],title="Surrogate Model")
+                # save using variable name
+                plt.savefig(f"{var}.png", dpi=300, bbox_inches="tight")
+                plt.savefig(f"{var}.pdf", bbox_inches="tight")
+
+                plt.close()
+        plot_figures(results_all["rigorous"],title="Rigorous Model (DAE solver)")
+        plot_figures(results_all["surrogate"],title="Surrogate Model (PINN on the simplified simulation)")
 
 
         ax=plot_stability_map(U1,
@@ -766,6 +771,10 @@ if __name__ == "__main__":
         print(boundary_u1, boundary_u2)
         print (b_hat)
         overlay_boundary_and_fit(ax,b_hat,deg=2)
+        plt.savefig("Stability plot.png", dpi=300, bbox_inches="tight")
+        plt.savefig("Stability plot.pdf", bbox_inches="tight")
+
+        plt.close()
         plt.tight_layout()
         plt.show()
 
