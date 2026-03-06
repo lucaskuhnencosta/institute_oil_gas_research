@@ -342,35 +342,35 @@ def solve_equilibrium_ipopt(
     x_star = sol["x"]
     stats=solver.stats()
 
-    if not bool(stats.get("success", False)):
-        print("\n---- IPOPT FAILURE DIAGNOSTICS ----")
-        print("Status:", stats.get("return_status", ""))
-
-        x_last = sol["x"]
-
-        if is_dae:
-            y_last = x_last[0:nx]
-            z_last = x_last[nx:nx + nz]
-            dx_last, g_last, out_last = model["F_all"](y_last, z_last, u_val_dm)
-
-            dx_np = np.array(dx_last, dtype=float).reshape(-1)
-            g_np = np.array(g_last, dtype=float).reshape(-1)
-
-            print("||dx|| =", np.linalg.norm(dx_np))
-            print("||g||  =", np.linalg.norm(g_np))
-            print("dx =", dx_np)
-            print("g  =", g_np)
-
-        else:
-            y_last = x_last
-            dx_last, out_last = model["F_all"](y_last, u_val_dm)
-
-            dx_np = np.array(dx_last, dtype=float).reshape(-1)
-
-            print("||dx|| =", np.linalg.norm(dx_np))
-            print("dx =", dx_np)
-
-        print("------------------------------------\n")
+    # if not bool(stats.get("success", False)):
+    #     print("\n---- IPOPT FAILURE DIAGNOSTICS ----")
+    #     print("Status:", stats.get("return_status", ""))
+    #
+    #     x_last = sol["x"]
+    #
+    #     if is_dae:
+    #         y_last = x_last[0:nx]
+    #         z_last = x_last[nx:nx + nz]
+    #         dx_last, g_last, out_last = model["F_all"](y_last, z_last, u_val_dm)
+    #
+    #         dx_np = np.array(dx_last, dtype=float).reshape(-1)
+    #         g_np = np.array(g_last, dtype=float).reshape(-1)
+    #
+    #         print("||dx|| =", np.linalg.norm(dx_np))
+    #         print("||g||  =", np.linalg.norm(g_np))
+    #         print("dx =", dx_np)
+    #         print("g  =", g_np)
+    #
+    #     else:
+    #         y_last = x_last
+    #         dx_last, out_last = model["F_all"](y_last, u_val_dm)
+    #
+    #         dx_np = np.array(dx_last, dtype=float).reshape(-1)
+    #
+    #         print("||dx|| =", np.linalg.norm(dx_np))
+    #         print("dx =", dx_np)
+    #
+    #     print("------------------------------------\n")
 
     # -------------------------
     # 13) Post-eval
