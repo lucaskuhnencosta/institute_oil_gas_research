@@ -417,7 +417,7 @@ def solve_equilibrium_ipopt(
 
 if __name__ == "__main__":
 
-    u = [1.00,1.00]
+    u = [0.80,0.80]
 
     surrogate=False
 
