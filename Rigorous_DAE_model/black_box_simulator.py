@@ -2,7 +2,9 @@ from casadi import *
 import numpy as np
 import casadi as ca
 
-def make_glc_well_rigorous(BSW,GOR,PI):
+def create_black_box_simulator_instance(BSW,
+                                        GOR,
+                                        PI):
 
     def glc_well(y, z, u):
 
@@ -18,13 +20,19 @@ def make_glc_well_rigorous(BSW,GOR,PI):
             # smooth approximation of max(z,zmin))
             return zmin + smooth_pos_scaled(z - zmin)
 
-        k_pos = 20
+        def ksi(P_down,P_up,gamma=1.3):
+            P_up_safe = smooth_max_scaled(P_up, 1e-8)
+            r=P_down/P_up_safe
+            val = r ** (2.0 / gamma) - r ** ((gamma + 1.0) / gamma)
+            return smooth_pos_scaled(val)
+
+        K_gs = 9.98e-5
+        K_inj = 1.40e-4  # is the injection valve choke constant
+        K_pr = 2.90e-3  # is the production choke constant
+        K0_int = 2.50
+        k_pos = 2000
         eps = 1e-12
 
-        # # Well properties ###
-        # BSW = 0
-        # GOR = 0 # is the gas oil ratio
-        # PI = 3.00e-6  # is the productivity index in kg/(s.Pa)
 
         # Geometry and temperature of the wellbore
         ### Annulus ###
@@ -64,12 +72,6 @@ def make_glc_well_rigorous(BSW,GOR,PI):
         P_res = 160e5  # 160bar, the constant reservoir pressure
         P_0 = 20e5  # pressure downstream of choke
 
-        # Chokes
-        # K_gs = 9.98e-5  # is the gas lift choke constant
-        K_gs=7.5e-4 #5.00e-4 here was the best P1
-        K_inj = 1.75e-3  # is the injection valve choke constant #7.50 for P1
-        K_pr = 7.00e-3  # is the production choke constant #was 2.90e-3 for P2
-        K0_int=2.50
 
         # Friction
         epsilon_tubing = 1e-3
@@ -105,18 +107,28 @@ def make_glc_well_rigorous(BSW,GOR,PI):
         # -----------------------
         # PART 2 - ANNULUS (from state)
         # -----------------------
-        P_an_t=R*T_an*m_G_an/(M_G*V_an) # 2.1
-        P_an_b=P_an_t+(m_G_an*g*L_an/V_an) # 2.2
+        P_an_t = (m_G_an * g / (V_an / L_an)) * (
+                np.exp(-g * M_G * L_an / (R * T_an)) / (1 - np.exp(-g * M_G / (R * T_an) * L_an)))
+
+        P_an_b = (m_G_an * g / (V_an / L_an)) * (
+                1 / (1 - np.exp(-g * M_G / (R * T_an) * L_an)))
 
         rho_G_an_b=P_an_b*M_G/(R*T_an) # 2.3
         rho_G_in=P_gs*M_G/(R*T_an) # 2.4
 
         dP_gs_an = P_gs - P_an_t # 2.5
-        w_G_in = K_gs * u2 * sqrt(rho_G_in * smooth_pos_scaled(dP_gs_an) + eps) # 2.6
+        scale_w_G_in = P_gs * sqrt(M_G / (R * T_an))
+        K_gs_new=K_gs*scale_w_G_in
+
+        # w_G_in = K_gs * u2 * sqrt(rho_G_in * smooth_pos_scaled(dP_gs_an) + eps) # 2.6
+        w_G_in= K_gs_new * u2 * sqrt(ksi(P_an_t, P_gs))
 
         # This makes our equation 2.7
         dP_an_tb = P_an_b - P_tb_b_g
-        w_G_inj = K_inj * sqrt(rho_G_an_b * smooth_pos_scaled(dP_an_tb) + eps)
+        scale_w_G_inj = P_an_b * sqrt(M_G / (R * T_an))
+        K_inj_new = K_inj * scale_w_G_inj
+
+        w_G_inj = K_inj_new * sqrt(ksi(P_tb_b_g, P_an_b))
 
         # -----------------------
         # PART 3 - DENSITIES USING STATES
@@ -269,7 +281,9 @@ def make_glc_well_rigorous(BSW,GOR,PI):
 
         dP_tb_choke = P_tb_t - P_0
         rho_G_tb_b=P_tb_b*M_G/(R*T_tb)
-        w_out = K_pr * u1 * ca.sqrt(rho_mix_tb_t_safe * smooth_pos_scaled(dP_tb_choke) + eps)
+
+        scale_w_out = P_tb_t * sqrt(M_G / (R * T_tb))
+        w_out = K_pr *  u1 * scale_w_out*ca.sqrt(ksi(P_0,P_tb_t))
 
         denom_alpha_t = alpha_L_tb_t * rho_L + (1.0 - alpha_L_tb_t) * rho_G_tb
         denom_alpha_t_safe = fmax(denom_alpha_t, 1e-12)

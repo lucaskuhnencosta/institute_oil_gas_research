@@ -65,10 +65,10 @@ def make_glc_well_rigorous(BSW,GOR,PI):
         P_0 = 20e5  # pressure downstream of choke
 
         # Chokes
-        # K_gs = 9.98e-5  # is the gas lift choke constant
-        K_gs=7.5e-4 #5.00e-4 here was the best P1
-        K_inj = 1.75e-3  # is the injection valve choke constant #7.50 for P1
-        K_pr = 7.00e-3  # is the production choke constant #was 2.90e-3 for P2
+        K_gs = 9.98e-5  # is the gas lift choke constant
+        # K_gs=1e-4
+        K_inj = 1.40e-4  # is the injection valve choke constant
+        K_pr = 2.90e-3  # is the production choke constant
         K0_int=2.50
 
         # Friction
