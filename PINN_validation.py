@@ -1,5 +1,5 @@
-from Utilities.block_builders import *
-from Networks.networks import PINN
+from utilities.block_builders import *
+from networks.networks import PINN
 import os
 import torch
 import numpy as np
@@ -38,7 +38,7 @@ def sweep_pinn(
     return U1, U2, Y
 
 
-def plot_surfaces(U1, U2, Y, save_dir: str = "Training", prefix: str = "pinn_sweep"):
+def plot_surfaces(U1, U2, Y, save_dir: str = "training", prefix: str = "pinn_sweep"):
     """
     Makes 3 surface plots:
       plot 1: u1 x u2, y1
@@ -73,7 +73,7 @@ def plot_surfaces(U1, U2, Y, save_dir: str = "Training", prefix: str = "pinn_swe
 if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    model_path = "Training/PINN.pth"
+    model_path = "training/PINN.pth"
     model = rebuild_pinn_from_weights(model_path, device=device)
 
     # ---- Choose sweep ranges here ----
@@ -93,4 +93,4 @@ if __name__ == "__main__":
         batch_size=16384,
     )
 
-    plot_surfaces(U1, U2, Y, save_dir="Training", prefix="pinn_sweep")
+    plot_surfaces(U1, U2, Y, save_dir="training", prefix="pinn_sweep")

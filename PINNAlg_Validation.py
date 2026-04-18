@@ -1,5 +1,5 @@
-from Utilities.block_builders import *
-from Networks.networks import PINN, AlgNN
+from utilities.block_builders import *
+from networks.networks import PINN, AlgNN
 import os
 import torch
 import numpy as np
@@ -47,7 +47,7 @@ def sweep_pinn_then_algnn(
     return U1, U2, Y, Z
 
 
-def plot_3_surfaces(U1, U2, Z, save_dir: str = "Training", prefix: str = "algnn_sweep"):
+def plot_3_surfaces(U1, U2, Z, save_dir: str = "training", prefix: str = "algnn_sweep"):
     """
     Z[...,0] -> m_o_out
     Z[...,1] -> p_bh
@@ -82,8 +82,8 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # --- Paths (adjust if yours are different) ---
-    pinn_path = "Training/PINN.pth"
-    algnn_path = "Training/AlgNN.pth"   # <-- change if needed
+    pinn_path = "training/PINN.pth"
+    algnn_path = "training/AlgNN.pth"  # <-- change if needed
 
     pinn = rebuild_pinn_from_weights(pinn_path, device=device)
     algnn = rebuild_algnn_from_weights(algnn_path, device=device)
@@ -106,4 +106,4 @@ if __name__ == "__main__":
     )
 
     # If you still want the y1,y2,y3 plots, you can reuse your earlier plot function on Y.
-    plot_3_surfaces(U1, U2, Z, save_dir="Training", prefix="pinn_to_algnn")
+    plot_3_surfaces(U1, U2, Z, save_dir="training", prefix="pinn_to_algnn")
