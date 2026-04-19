@@ -14,23 +14,33 @@ class SteadyStatePINNTrainer(Trainer):
             self,
             net: PINN,
             surrogate_function,
-            N_col: int = 5000,
-            N_data: int = 30,
-            lambda_data: float = 1000,
-            adam_epochs: int = 5000,
-            lbfgs_epochs: int = 2000,
-            lr: float = 1e-3,
-            y_min: list = [3032.55, 220.05, 6341.30],
-            y_max: list = [4796.20, 1094.60, 11990.90],
-            u_min: list = [0.05, 0.10],
-            u_max: list = [1.0, 1.0],
-            mse_f_scale_factors: list=[1.0, 1.0, 1.0],
-            u_probe=(0.6, 0.6),
+            well_list: list,
+            N_col: int,
+            N_data: int,
+            lambda_data: float,
+            adam_epochs: int,
+            lbfgs_epochs: int,
+            lr: float,
+            u_min: list,
+            u_max: list,
+            mse_f_scale_factors: list,
+            u_probe,
+            wandb_project="PINC-GasLift",
             mixed_precision=True,
             device=None,
-            wandb_project="PINC-GasLift",
             wandb_group=None,
             random_seed=333333):
+
+        self.BSW = well_list["BSW"]
+        self.GOR = well_list["GOR"]
+        self.PI = well_list["PI"]
+        self.K_gs = well_list["K_gs_sur"]
+        self.K_inj = well_list["K_inj_sur"]
+        self.K_pr = well_list["K_pr_sur"]
+        self.y_guess_surr=np.array(well_list["y_guess_sur"], dtype=float)
+        self.y_min_train = np.array(well_list["y_min"])
+        self.y_max_train = np.array(well_list["y_max"])
+
 
         self.N_y=3
         self.N_u=2
@@ -59,15 +69,13 @@ class SteadyStatePINNTrainer(Trainer):
         self.N_data=N_data
         self.N_col = N_col
 
-        self.y_min_train = np.array(y_min)
-        self.y_max_train = np.array(y_max)
+
         self.u_min_train = np.array(u_min)
         self.u_max_train = np.array(u_max)
 
         self.u1_min,self.u1_max = self.u_min_train[0], self.u_max_train[0]
         self.u2_min,self.u2_max = self.u_min_train[1], self.u_max_train[1]
 
-        self.y_guess_surr=np.array([3285.42, 300.822, 6910.91], dtype=float)
 
         self.mse_f_scale = torch.tensor(mse_f_scale_factors, device=self.device)
 
@@ -78,8 +86,6 @@ class SteadyStatePINNTrainer(Trainer):
             "N_data": self.N_data,
             'K1_adam': self.K1,
             'K2_lbfgs': self.K2,
-            'y_min': y_min,
-            'y_max': y_max,
             'u_min': u_min,
             'u_max': u_max,
             "mse_f_scale_factors": mse_f_scale_factors,
@@ -119,15 +125,21 @@ class SteadyStatePINNTrainer(Trainer):
         u1_grid_train = np.linspace(float(self.u_min_train[0]), float(self.u_max_train[0]) + 1e-5, int(self.N_data))
         u2_grid_train = np.linspace(float(self.u_min_train[1]), float(self.u_max_train[1]) + 1e-5, int(self.N_data))
 
-        model_sur = make_model("surrogate", BSW=0.20, GOR=0.05, PI=3.0e-6)
+        model_sur = make_model("surrogate",
+                               BSW=self.BSW,
+                               GOR=self.GOR,
+                               PI=self.PI,
+                               K_gs=self.K_gs,
+                               K_inj=self.K_inj,
+                               K_pr=self.K_pr)
 
         results_train = run_sweep(
             model_sur,
-            u1_grid=u1_grid_train,
-            u2_grid=u2_grid_train,
-            y_guess_init=self.y_guess_surr,
-            z_guess_init=None,
-        )
+            U1_MIN=self.u1_min,
+            U2_MIN=self.u2_min,
+            U_SIM_SIZE=self.N_data,
+            y_guess_init=self.y_guess_surr)
+
 
         batch_train = flatten_sweep_results_to_batch(results_train, only_success=True)
 
@@ -148,10 +160,10 @@ class SteadyStatePINNTrainer(Trainer):
 
         results_val = run_sweep(
             model_sur,
-            u1_grid_val,
-            u2_grid_val,
+            U1_MIN=self.u1_min,
+            U2_MIN=self.u2_min,
+            U_SIM_SIZE=self.N_data,
             y_guess_init=self.y_guess_surr,
-            z_guess_init=None
         )
 
         batch_val= flatten_sweep_results_to_batch(results_val, only_success=True)
@@ -196,7 +208,14 @@ class SteadyStatePINNTrainer(Trainer):
 
     def get_physics_loss(self, u: torch.Tensor):
         y_hat=self.net(u)
-        dx=self.physics_f(y_hat,u)
+        dx=self.physics_f(y_hat,
+                          u,
+                          BSW=self.BSW,
+                          GOR=self.GOR,
+                          PI=self.PI,
+                          K_gs=self.K_gs,
+                          K_inj=self.K_inj,
+                          K_pr=self.K_pr)
 
         # component-wise MSE
 
@@ -254,7 +273,7 @@ class SteadyStatePINNTrainer(Trainer):
         with self.autocast_if_mp():
             loss_f, mse_f_comps,y_hat_col,dx_col = self.get_physics_loss(self.u_col)
             loss_data_n,y_pred_data = self._data_loss()
-            if self._e<1000:
+            if self._e<10000:
                 loss = self.lambda_data * loss_data_n
             else:
                 loss = loss_f + self.lambda_data * loss_data_n

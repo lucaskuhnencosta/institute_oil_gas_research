@@ -1,0 +1,41 @@
+{"time":"2026-04-18T12:41:21.629780885-03:00","level":"INFO","msg":"stream: starting","core version":"0.22.3"}
+{"time":"2026-04-18T12:41:22.012063814-03:00","level":"INFO","msg":"stream: created new stream","id":"b8tn1zk1"}
+{"time":"2026-04-18T12:41:22.012133737-03:00","level":"INFO","msg":"stream: started","id":"b8tn1zk1"}
+{"time":"2026-04-18T12:41:22.012218049-03:00","level":"INFO","msg":"handler: started","stream_id":"b8tn1zk1"}
+{"time":"2026-04-18T12:41:22.012254491-03:00","level":"INFO","msg":"writer: started","stream_id":"b8tn1zk1"}
+{"time":"2026-04-18T12:41:22.012267877-03:00","level":"INFO","msg":"sender: started","stream_id":"b8tn1zk1"}
+{"time":"2026-04-18T12:41:22.50676255-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":37}
+{"time":"2026-04-18T12:41:22.708799246-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":189}
+{"time":"2026-04-18T12:41:22.917747301-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":362}
+{"time":"2026-04-18T12:41:22.918017622-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":57}
+{"time":"2026-04-18T12:41:26.211926707-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":2449}
+{"time":"2026-04-18T12:41:26.214690412-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":567}
+{"time":"2026-04-18T12:41:28.086625258-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":3580}
+{"time":"2026-04-18T12:41:28.086845897-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":4}
+{"time":"2026-04-18T12:41:40.976662968-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":7922}
+{"time":"2026-04-18T12:41:40.976780862-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":2}
+{"time":"2026-04-18T12:41:48.460591064-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":10466}
+{"time":"2026-04-18T12:41:48.460696882-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":8}
+{"time":"2026-04-18T12:41:51.594210032-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":12422}
+{"time":"2026-04-18T12:41:51.594342846-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":17}
+{"time":"2026-04-18T12:42:02.103296859-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":16831}
+{"time":"2026-04-18T12:42:02.358641323-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":23406}
+{"time":"2026-04-18T12:42:02.365329989-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":41490}
+{"time":"2026-04-18T12:42:02.366126856-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":183}
+{"time":"2026-04-18T12:42:02.46676307-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":43262}
+{"time":"2026-04-18T12:42:02.774406542-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":227}
+{"time":"2026-04-18T12:42:17.463294324-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":55071}
+{"time":"2026-04-18T12:42:17.620190319-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":143}
+{"time":"2026-04-18T12:42:23.959728398-03:00","level":"ERROR","msg":"file transfer: upload: failed to upload: status: 400 Bad Request: error reading body: stream error: stream ID 111; PROTOCOL_ERROR; received from peer","task":"DefaultUploadTask{FileKind: 0, Path: /home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/application/training_pinn/wandb/run-20260418_124121-b8tn1zk1/files/model_best.pth, Name: model_best.pth, Url: https://storage.googleapis.com/wandb-production.appspot.com/lucas-kuhnen-universidade-federal-de-santa-catarina/PINN-VDP/b8tn1zk1/model_best.pth?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=gorilla-files-url-signer%40wandb-production.iam.gserviceaccount.com%2F20260418%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260418T154223Z&X-Goog-Expires=86399&X-Goog-Signature=d020bd4e5f1d1394b6ea87d09003a75271a9f3b71d7bf30efbbea827c9d4d19c2ea93a935ba9ad00de619d035293bbc89272b9defd0096b5a06c9a01bd561ebf6d738c1fe309dee93cc0de8f7d2b2c2c3b4b6a38e0e31d1d73a53c9cc76e9931753ad92b5e2dd8e432a53a49c412a785d0fad596f86ad0f37efd7d9c2fc3523d768958c80e2bb5a9de76756de6b75d2ab8d29c7cd7c7e3273076d52e59e3c6e77ac5e216894db5bb496ea99450ef6e5b8137c8549da6dae9ff010b16470bb8b2e19258920171eac3a54b303d99444906ccda5dfaf72eea950dff80e47343f5f9fbae30fb9609a061bac4bfb57c245b608f8c8227a1d4ab90fef22b0dff5f8893&X-Goog-SignedHeaders=host&X-User=lucas-kuhnen, Size: 39477}"}
+{"time":"2026-04-18T12:42:32.464409508-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":65283}
+{"time":"2026-04-18T12:42:32.766428733-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":197}
+{"time":"2026-04-18T12:42:47.472526945-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":75099}
+{"time":"2026-04-18T12:42:47.715342373-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":167}
+{"time":"2026-04-18T12:43:02.508178-03:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":82265}
+{"time":"2026-04-18T12:43:02.737409792-03:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":98}
+{"time":"2026-04-18T12:43:09.103552366-03:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2026-04-18T12:43:09.920167797-03:00","level":"INFO","msg":"handler: operation stats","stats":{}}
+{"time":"2026-04-18T12:43:09.921922036-03:00","level":"INFO","msg":"stream: closing","id":"b8tn1zk1"}
+{"time":"2026-04-18T12:43:09.921927455-03:00","level":"INFO","msg":"handler: closed","stream_id":"b8tn1zk1"}
+{"time":"2026-04-18T12:43:09.921954396-03:00","level":"INFO","msg":"sender: closed","stream_id":"b8tn1zk1"}
+{"time":"2026-04-18T12:43:09.921961647-03:00","level":"INFO","msg":"stream: closed","id":"b8tn1zk1"}

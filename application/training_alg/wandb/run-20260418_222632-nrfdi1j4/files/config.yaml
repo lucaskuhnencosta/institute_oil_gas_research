@@ -1,0 +1,82 @@
+_wandb:
+    value:
+        cli_version: 0.22.3
+        e:
+            nhlsl4g8856co5dggjsg17brx5qip5xd:
+                codePath: application/training_alg/run_train_algNN.py
+                codePathLocal: run_train_algNN.py
+                cpu_count: 20
+                cpu_count_logical: 28
+                disk:
+                    /:
+                        total: "501809635328"
+                        used: "82050961408"
+                email: lucas.kuhnen@posgrad.ufsc.br
+                executable: /home/lucas-kuhnen-costa/miniconda3/envs/MScThesis/bin/python
+                git:
+                    commit: c23eb6bf1b3ed34a5ac4d5a6e940723eb9978a13
+                    remote: https://github.com/lucaskuhnencosta/institute_oil_gas_research
+                host: LucasOptiPlex
+                memory:
+                    total: "33320558592"
+                os: Linux-6.17.0-20-generic-x86_64-with-glibc2.39
+                program: /home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/application/training_alg/run_train_algNN.py
+                python: CPython 3.13.9
+                root: /home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/application/training_alg
+                startedAt: "2026-04-19T01:26:32.000408Z"
+                writerId: nhlsl4g8856co5dggjsg17brx5qip5xd
+        m: []
+        python_version: 3.13.9
+        t:
+            "1":
+                - 1
+            "2":
+                - 1
+            "3":
+                - 1
+                - 2
+                - 3
+                - 16
+                - 61
+            "4": 3.13.9
+            "5": 0.22.3
+            "12": 0.22.3
+            "13": linux-x86_64
+N_train:
+    value: 80
+N_val:
+    value: 4
+device:
+    value: cpu
+epochs:
+    value: 20000
+learning_rate:
+    value: 0.001
+loss_func:
+    value: MSELoss
+lr_scheduler:
+    value: StepLR
+lr_scheduler_params:
+    value:
+        gamma: 0.8
+        step_size: 500
+mixed_precision:
+    value: false
+model:
+    value: AlgNN
+optimizer:
+    value: Adam
+random_seed:
+    value: 42
+z_max:
+    value:
+        - 155
+        - 149
+        - 9.75
+        - 23.5
+z_min:
+    value:
+        - 81
+        - 75
+        - 0.550000011920929
+        - 1.7000000476837158

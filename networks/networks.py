@@ -14,10 +14,10 @@ class PINN(nn.Module):
     def __init__(
         self,
         hidden_units: list[int],
+        y_min: list[float],
+        y_max: list[float],
         n_u: int = 2,
         n_y: int = 3,
-        y_min: list[float] = [3032.55, 220.05, 6341.30],
-        y_max: list[float] = [4796.20, 1094.60, 11990.90],
         u_min: list[float] = [0.05, 0.10],
         u_max: list[float] = [1.0, 1.0],
         improved_structure: bool = False,
@@ -104,12 +104,12 @@ class PINN(nn.Module):
 class AlgNN(nn.Module):
     def __init__(self,
                  hidden_units: list,
-                 y_min: list[float] = [3032.55, 220.05, 6341.30],
-                 y_max: list[float] = [4796.20, 1094.60, 11990.90],
+                 y_min: list[float],
+                 y_max: list[float],
+                 z_min: list[float],  # Output de-normalization
+                 z_max: list[float],
                  u_min: list[float] = [0.05, 0.10],
                  u_max: list[float] = [1.0, 1.0],
-                 z_min: list[float] = [3.50,84.95,79.0],  # Output de-normalization
-                 z_max: list[float] =[17.15,144.75,138.77],
                  Nonlin=nn.Tanh) -> None:
         super().__init__()
 

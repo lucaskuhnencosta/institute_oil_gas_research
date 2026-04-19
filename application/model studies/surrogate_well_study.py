@@ -2,6 +2,7 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+from plotly.graph_objs import heatmap
 
 # SPECIFIC MODULES
 from application.simulation_engine import make_model, run_sweep, fit_boundary_polynomial, extract_stability_boundary_from_grid
@@ -32,13 +33,13 @@ degree_polynomial = 2
 
 ######################################################################################
 ### PLEASE INPUT HERE WHAT KIND OF PLOTS DO YOU WANT #################################
-all_plots=False #TBB
+state_plots=False
 
 stability_map=False
 stability_plot=False
 
 focused_figures=True
-heatmap_w_out=True
+heatmap_w_out=False
 ######################################################################################
 ######################################################################################
 
@@ -126,14 +127,16 @@ for well, params in wells.items():
 
                 ax.figure.savefig(filepath, format="pdf", bbox_inches="tight")
                 plt.show()
+        print(f"coeff_stability: {coeff_stability}")
 
-    ax=plot_w_o_out_contour(results_all_wells[well],
-                         title=f"Produção de óleo do poço {well}",
-                         only_stable=False,
-                         only_success=True,
-                         levels=40)
-    ax.figure.tight_layout()
-    ax.figure.show()
+    if heatmap_w_out:
+        ax=plot_w_o_out_contour(results_all_wells[well],
+                             title=f"Produção de óleo do poço {well}",
+                             only_stable=False,
+                             only_success=True,
+                             levels=40)
+        ax.figure.tight_layout()
+        ax.figure.show()
 
     if focused_figures:
         U1=results_all_wells[well]["U1"]
@@ -159,9 +162,33 @@ for well, params in wells.items():
         plt.tight_layout()
         plt.show()
 
-print(f"coeff_stability: {coeff_stability}")
 
 
+    if state_plots:
+        OUT = results_all_wells[well]["OUT"]
+        U1=results_all_wells[well]["U1"]
+        U2=results_all_wells[well]["U2"]
+        Y = np.stack([
+            OUT["m_G_an"],
+            OUT["m_G_t"],
+            OUT["m_o_t"],
+        ], axis=2)
+        for j in range(3):
+            fig = plt.figure()
+            ax = fig.add_subplot(111, projection="3d")
+
+            plot_surface(
+                fig=fig,
+                ax=ax,
+                U1=U1,
+                U2=U2,
+                Z=Y[:, :, j],
+                title=f"y{j + 1}(u1,u2)",
+                zlabel=f"y{j + 1}",
+            )
+
+            plt.tight_layout()
+            plt.show()
 
 
         ####################################

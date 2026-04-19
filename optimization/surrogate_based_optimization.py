@@ -8,7 +8,9 @@ from optimization.api_interface_simulator import plant_zeroth_and_first_order
 # 0 - ALL FUNCTIONS DEFINITIONS
 #####################################################################
 
-def SBO(P_bh_min):
+class SurrogateBasedOptimization:
+    def __init__(self,config):
+        
 
     def build_rk_derivatives(F_u2z):
         u = ca.MX.sym("u",2)

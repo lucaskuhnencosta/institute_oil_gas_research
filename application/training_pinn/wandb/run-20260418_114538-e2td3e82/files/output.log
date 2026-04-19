@@ -1,0 +1,23 @@
+INFO:training.base_trainer:Wandb set up. Run ID: e2td3e82
+INFO:training.base_trainer:Mixed precision is enabled, but no CUDA device is available. Proceeding with standard precision.
+INFO:training.base_trainer:Preparing data
+INFO:training.base_trainer:Preparing PINN data for Gas-Lift Well...
+INFO:training.base_trainer:Generating 5000 initial condition points...
+INFO:training.base_trainer:Prepared data: u_col=(5000, 2) u_probe=(0.6, 0.6)
+INFO:training.base_trainer:Generating supervised dataset via sweep (N_data=30 => 900 grid pts)...
+Traceback (most recent call last):
+  File "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/application/training_pinn/run_train_PINN.py", line 47, in <module>
+    results = trainer.run()
+  File "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/training/glc_pinn_trainer.py", line 324, in run
+    self.setup_training()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/training/base_trainer.py", line 126, in setup_training
+    self.prepare_data()
+    ~~~~~~~~~~~~~~~~~^^
+  File "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/training/glc_pinn_trainer.py", line 136, in prepare_data
+    results_train = run_sweep(
+        model_sur,
+    ...<3 lines>...
+        z_guess_init=None,
+    )
+TypeError: run_sweep() got an unexpected keyword argument 'u1_grid'

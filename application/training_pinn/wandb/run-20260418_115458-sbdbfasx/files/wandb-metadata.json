@@ -1,0 +1,28 @@
+{
+  "os": "Linux-6.17.0-20-generic-x86_64-with-glibc2.39",
+  "python": "CPython 3.13.9",
+  "startedAt": "2026-04-18T14:54:58.064388Z",
+  "program": "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/application/training_pinn/run_train_PINN.py",
+  "codePath": "application/training_pinn/run_train_PINN.py",
+  "codePathLocal": "run_train_PINN.py",
+  "git": {
+    "remote": "https://github.com/lucaskuhnencosta/institute_oil_gas_research",
+    "commit": "c23eb6bf1b3ed34a5ac4d5a6e940723eb9978a13"
+  },
+  "email": "lucas.kuhnen@posgrad.ufsc.br",
+  "root": "/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/application/training_pinn",
+  "host": "LucasOptiPlex",
+  "executable": "/home/lucas-kuhnen-costa/miniconda3/envs/MScThesis/bin/python",
+  "cpu_count": 20,
+  "cpu_count_logical": 28,
+  "disk": {
+    "/": {
+      "total": "501809635328",
+      "used": "81674387456"
+    }
+  },
+  "memory": {
+    "total": "33320558592"
+  },
+  "writerId": "dard8jbjlvgntuvqcu30n075vmgh5au2"
+}
