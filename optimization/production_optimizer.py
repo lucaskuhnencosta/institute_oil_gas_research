@@ -563,7 +563,7 @@ def optimize_field_production(
 wells =get_wells()
 
 sol = optimize_field_production(
-    model_type="surrogate",
+    model_type="rigorous",
     wells=wells,
     G_available=14.00,
     G_max_export=1.40,

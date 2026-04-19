@@ -5,7 +5,7 @@ from contextlib import nullcontext
 
 from training.base_trainer import Trainer
 from networks.networks import AlgNN
-from ZOLD.glc_surrogate_torch_alg import glc_surrogate_dx_torch_nostuck_alg
+from simulators.surrogate_simulator.surrogate_model_torch import glc_surrogate_dx_torch_nostuck_alg
 from simulators.surrogate_simulator.check_feasibility import glc_check_feasibility
 
 class AlgTrainer(Trainer):
@@ -17,20 +17,20 @@ class AlgTrainer(Trainer):
 
     def __init__(self,
                  net: AlgNN,
-                 N_train: int = 10000,
-                 N_val: int = 1000,
-                 adam_epochs: int = 5000,
-                 lbfgs_epochs: int = 5000,  # Total L-BFGS iterations
-                 lr: float = 1e-3,
+                 N_train: int ,
+                 N_val: int,
+                 adam_epochs: int ,
+                 lbfgs_epochs: int ,  # Total L-BFGS iterations
                  # --- Normalization bounds from friend's 'znet_well_1_single' ---
-                 y_min_train: list[float] = [3032.55, 220.05, 6341.30],
-                 y_max_train: list[float] = [4796.20, 1094.60, 11990.90],
-                 u_min_train: list = [0.05, 0.10],
-                 u_max_train: list = [1.0, 1.0],
+                 y_min_train: list[float],
+                 y_max_train: list[float] ,
                  # --- Other trainer params ---
+                 u_min_train: list ,
+                 u_max_train: list ,
+                 lr: float = 1e-3,
+                 wandb_project="PINC-GasLift-AlgNN",
                  mixed_precision=True,
                  device=None,
-                 wandb_project="PINC-GasLift-AlgNN",
                  wandb_group=None,
                  random_seed=42
                  ):

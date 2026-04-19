@@ -51,30 +51,36 @@ This can be obtained by running it in "unconstrained" mode, which are called in 
 6.1.5) Possibility of solving the NLP with different solver and solver options
 
 
-
-
-
-
-
 ## What to do when you come back here for the dissertation results
 
 I know that you will be here again focusing on this problem, from May 4th to May 20th to generate results for your dissertation
 Indeed, here are some gaps that need to be closed, little by little, from basic to advanced, in these 3 weeks:
 
-0) I think well geometry and fluid properties can go to a centralized location to clean much of the code. 
-They can also go to tables at the appendix as soon as they are imutable.
-I think this can be done even before the 4th of may and that's why I am calling that activity
+### THINGS THAT IS NICE TO DO AND LOW-EFFORT BEFORE WE BEGIN GENERATING MINIMAL 6-WELLS RESULTS
+I think this can be done even before the 4th of may and that's why I am calling that activity. We can randomly select 6 wells and train PINNs with it and
+WRITE THIS THING THROUGH in the first full-time week  
+1) Important to correct small modeling incosistencies like the out calculation   
+2) I think well geometry and fluid properties can go to a centralized location to clean much of the code.
+Other constants can go there as well to clean-up the code
+This can also serve to populate tables at the appendix once and for all   
+3) Another light activity is to improve run_sweep. Purely logical, and will reduce inconsistent data result problems   
+4) Finally, I'd define the set of wells and the set of constraints that will be tested for this first (maybe definite)
+set of results   
+5) Also, I believe that nothing stop us from writing chapter 2, 3 and, for the best of our knowledge 4, in
+the weekend of 26 and 27 of April (both days)
+
+
+### THINGS WE NEED TO DO AND THAT WILL CHANGE THE METHOD
+These set of things will be tried while writing the dissertation in the three weeks of May   
+1) Train a PINN with BSW, GOR, maybe K's, vs a "static" model, to show flexility 
+2) For section 4.1 and 5 some figures need to be generated, inspired in those that we have for the article, but expanded, this generation and inputting in
+chapter 4.1, with explanations, is itself a one-day work. I think they will help framing the results and discussion chapters 
+ 
+
+### THINGS THAT CAN BE DONE AFTER THE WORK IS SENT TO BE EVALUATED (OR JUST BEFORE)
 1) The rigorous-surrogate mismatch need to be more different. Here is a great deal of work and investment into section 4.1 and appendices A, B, and C
 This activity will concentrate the files "black_box_model.py". Just make it compressible, forget valves
-2) Your sweep algorithm needs to become more robust. For 2 wells, it is OK, but remember that
-we are going to shift for 6+ wells, and we need to stop finding errors.
-3) You need to select models for 6 wells. Consistent models so that new bounds are defined (maybe a range of bounds).
-K's must be equal and both models need to converge for all domain
-4) Need to decide if changes are needed in PINN algorithm:   
-   5.1) Alg-NN is only a big one? or very different ones? For the article it is one per well, because we didnt have time to reflect on that properly   
-   5.2) Possible to train only with physics? For the article we still train with data, but dont disclose it
-   5.3) Possible to train each well for a range of BSW and GOR? If yes, we can use to show superiority to pure data (qualitatively). Maybe K's is better
-5) For section 4.1 and 5 some figures need to be generated, inspired in those that we have for the article, but expanded, this generation and inputting in
-chapter 4.1, with explanations, is itself a one-day work. I thing they will frame this dicussion
-6) Now, for results, we obviously need to compare with other types of surrogates, the opportunity here being data-based with wrong data
+2) Need to decide if changes are needed in PINN algorithm:
+   2.1) Possible to train only with physics? For the article we still train with data, but dont disclose it
+This is something we need to test and can be part of the experiment design, including how much data you use can be disclosed here and serve as PINN's defense  
 

@@ -134,7 +134,7 @@ def plot_surface(fig,
     )
 
     # lighting effect (MATLAB-like shine)
-    ax.view_init(elev=25, azim=135)
+    ax.view_init(elev=25, azim=45)
 
     cb = fig.colorbar(surf, ax=ax, pad=0.02, shrink=0.75)
     cb.set_label(zlabel)
@@ -408,7 +408,6 @@ def plot_w_o_out_contour(results,
 
 ################################################################
 ################################################################
-
 
 
 
