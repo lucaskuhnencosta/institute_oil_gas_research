@@ -392,7 +392,7 @@ def optimize_field_production(
     # 7.2) Objective
     # ---------------------
     #
-    obj=-total_w_o
+    obj=total_w_o
 
     # obj=0
 

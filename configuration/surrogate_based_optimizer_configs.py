@@ -14,9 +14,9 @@ def get_solver_configs():
         "G_max_export":1.40,
         "W_max":11.50,
         "L_max":40.0,
-        "unconstrained_well":True,
-        "unconstrained_platform":True,
-        "enforce_stable":False,
+        "unconstrained_well":False,
+        "unconstrained_platform":False,
+        "enforce_stable":True,
         "Delta":1.0,
         "gamma_c":0.4,
         "gamma_e":2.0,
@@ -26,8 +26,7 @@ def get_solver_configs():
         "gamma_s":0.9,
         "eta_1":0.4,
         "eta_2":0.8,
-        "theta_tol":1e-6,
+        "theta_tol":1.0e-4,
         "u_guess_list": np.array([[0.13385,0.4038],[0.31307,0.5000]]),
-        "max_iter": 1}
+        "max_iter": 100}
     ## need to undestans
-
