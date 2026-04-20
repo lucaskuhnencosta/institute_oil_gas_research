@@ -246,11 +246,111 @@ def fit_boundary_polynomial(boundary_u1,
     b_hat=np.poly1d(coef)
     return b_hat
 
+import torch
 
 
 
+@torch.no_grad()
+def run_sweep_PINN(
+    model,
+    U1_MIN,
+    U2_MIN,
+    U_SIM_SIZE):
+    """
+    Returns:
+      U1, U2 : meshgrids shape (n_u2, n_u1)
+      Y      : pinn outputs shape (n_u2, n_u1, 3)
+      Z      : algnn outputs shape (n_u2, n_u1, 3) -> [m_o_out, p_bh, p_tb_b]
+    """
+    u1 = np.linspace(U1_MIN, 1.001, U_SIM_SIZE, dtype=np.float32)
+    u2 = np.linspace(U2_MIN, 1.001, U_SIM_SIZE, dtype=np.float32)
+    U1, U2 = np.meshgrid(u1, u2, indexing="ij")
+
+    # Evaluate one point to get output size
+    z0 = np.array(model(u=np.array([u1[0], u2[0]]))["z"]).reshape(-1)
+    n_z = len(z0)
+
+    Z = np.zeros((U_SIM_SIZE, U_SIM_SIZE, n_z))
+
+    for i in range(U_SIM_SIZE):
+        for j in range(U_SIM_SIZE):
+            uk = np.array([U1[i, j], U2[i, j]])
+            zk = np.array(model(u=uk)["z"]).reshape(-1)
+            Z[i, j, :] = zk
+
+    return U1, U2, Z
 
 
+import numpy as np
+
+def extract_threshold_boundary_from_grid(
+    u1_grid,
+    u2_grid,
+    Z,
+    threshold,
+    mode=">=",
+    side="first_true",
+):
+    """
+    Extract a threshold boundary from a 2D grid Z(u1,u2).
+
+    Parameters
+    ----------
+    u1_grid : array-like, shape (Nu1,)
+    u2_grid : array-like, shape (Nu2,)
+    Z : array-like, shape (Nu1, Nu2)
+    threshold : float
+    mode : str
+        One of [">=", "<=", ">", "<"].
+    side : str
+        "first_true" -> first u2 where condition is satisfied
+        "last_true"  -> last  u2 where condition is satisfied
+
+    Returns
+    -------
+    boundary_u1 : ndarray
+    boundary_u2 : ndarray
+    """
+    u1_grid = np.asarray(u1_grid, dtype=float).reshape(-1)
+    u2_grid = np.asarray(u2_grid, dtype=float).reshape(-1)
+    Z = np.asarray(Z, dtype=float)
+
+    Nu1 = len(u1_grid)
+    Nu2 = len(u2_grid)
+
+    if Z.shape != (Nu1, Nu2):
+        raise ValueError(f"Z shape {Z.shape} does not match (Nu1,Nu2)=({Nu1},{Nu2})")
+
+    if mode == ">=":
+        cond = Z >= threshold
+    elif mode == "<=":
+        cond = Z <= threshold
+    elif mode == ">":
+        cond = Z > threshold
+    elif mode == "<":
+        cond = Z < threshold
+    else:
+        raise ValueError(f"Unsupported mode: {mode}")
+
+    boundary_u1 = []
+    boundary_u2 = []
+
+    for i, u1v in enumerate(u1_grid):
+        js = np.where(cond[i, :])[0]
+        if js.size == 0:
+            continue
+
+        if side == "first_true":
+            j_sel = js.min()
+        elif side == "last_true":
+            j_sel = js.max()
+        else:
+            raise ValueError(f"Unsupported side: {side}")
+
+        boundary_u1.append(u1v)
+        boundary_u2.append(u2_grid[j_sel])
+
+    return np.asarray(boundary_u1), np.asarray(boundary_u2)
 
 
 

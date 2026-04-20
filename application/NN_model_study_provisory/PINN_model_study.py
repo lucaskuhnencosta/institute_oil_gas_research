@@ -1,7 +1,6 @@
 """
 The function of this function here is to generate figures for visual validation
 """
-from pip._internal.commands import configuration
 
 from application.plotting_engine import plot_surface
 from utilities.block_builders import *
@@ -85,21 +84,7 @@ if __name__ == "__main__":
 
     # If you prefer contourf heatmaps instead of 3D surfaces, tell me and I’ll swap it.
     for j in range(3):
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection="3d")
 
-        plot_surface(
-            fig=fig,
-            ax=ax,
-            U1=U1,
-            U2=U2,
-            Z=Y[:,:,j],
-            title=f"PINN sweep: y{j + 1}(u1,u2)",
-            zlabel=f"y{j+1}",
-        )
-
-        plt.tight_layout()
-        plt.show()
 
 #
 #

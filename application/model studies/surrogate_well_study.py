@@ -6,7 +6,7 @@ from plotly.graph_objs import heatmap
 
 # SPECIFIC MODULES
 from application.simulation_engine import make_model, run_sweep, fit_boundary_polynomial, extract_stability_boundary_from_grid
-from application.plotting_engine import plot_stability_map, overlay_boundary_and_fit, plot_w_o_out_contour, plot_surface
+from application.plotting_engine import plot_stability_map, overlay_boundary_and_fit, plot_contour, plot_surface
 
 #Wells
 from configuration.wells import get_wells

@@ -233,7 +233,7 @@ def optimize_field_production(
     else:
         y_lb=[0.0,0.0,0.0]
         y_ub=[INF,INF,INF]
-    u_lb=[0.0,0.0]
+    u_lb=[0.05,0.10]
     u_ub=[1.0,1.0]
 
     # ---------------------
@@ -391,8 +391,10 @@ def optimize_field_production(
     # ---------------------
     # 7.2) Objective
     # ---------------------
-
+    #
     obj=-total_w_o
+
+    # obj=0
 
     # ---------------------
     # 7.3) Coupling Constraints (field capacities)
@@ -560,23 +562,25 @@ def optimize_field_production(
         "x_star": x_star,
     }
 
-wells =get_wells()
+if __name__=="__main__":
 
-sol = optimize_field_production(
-    model_type="rigorous",
-    wells=wells,
-    G_available=14.00,
-    G_max_export=1.40,
-    W_max=11.50,
-    L_max=40,
-    unconstrained_well=False,
-    unconstrained_platform=False,
-    enforce_stable=True
-)
+    wells =get_wells()
 
-print_solution(sol, show_states=True, show_algebraic=True)
-print_compact_summary(sol)
+    sol = optimize_field_production(
+        model_type="rigorous",
+        wells=wells,
+        G_available=14.00,
+        G_max_export=1.40,
+        W_max=11.50,
+        L_max=40,
+        unconstrained_well=False,
+        unconstrained_platform=False,
+        enforce_stable=True
+    )
 
-w_o_out = sol["per_well"][0]["out_dict"]["w_o_out"]
-P_bh    = sol["per_well"][0]["out_dict"]["P_bh_bar"]
-P_tb    = sol["per_well"][0]["out_dict"]["P_tb_b_bar"]
+    print_solution(sol, show_states=True, show_algebraic=True)
+    print_compact_summary(sol)
+
+    w_o_out = sol["per_well"][0]["out_dict"]["w_o_out"]
+    P_bh    = sol["per_well"][0]["out_dict"]["P_bh_bar"]
+    P_tb    = sol["per_well"][0]["out_dict"]["P_tb_b_bar"]
