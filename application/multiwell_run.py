@@ -1,5 +1,5 @@
 """
-THIS IS THE ULTIMATE RUNNER FILE FOR THIS ENTIRE DISSERTATION THESIS
+THIS IS THE ULTIMATE RUNNER FILE FOR THE ARTICLE AND POSSIBLE FOR THE DISSERTATION
 """
 
 import numpy as np
@@ -38,4 +38,4 @@ opt=SurrogateBasedOptimization(config=config,
                                rigorous_models=rigorous_models,
                                F_u2z_models=F_u2z_models)
 
-opt.solve()
+result=opt.solve()

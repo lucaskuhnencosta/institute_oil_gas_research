@@ -113,7 +113,8 @@ class SurrogateBasedOptimization:
     # =========================================================
 
     def solve(self):
-        for k in range(self.max_iter):
+        k=0
+        while k<self.max_iter:
             print("\n=====================================================")
             print(f"=============== ITERATION {k} ======================")
             print("=====================================================")
@@ -123,7 +124,7 @@ class SurrogateBasedOptimization:
             print("expected shape =", (self.N * self.nu,))
 
             # -------------------------------
-            # 1. Evaluate surrogate + plant
+            # 1. Evaluate surrogate + plant at current accepted point
             # -------------------------------
             z_surr_k_list, J_surr_k_list = self._eval_surrogates_with_jac(self.u_k) #This is ready
             z_plant_k_list, J_plant_k_list = self._eval_plant_models(self.u_k) # we need to build this API from scratch!
@@ -154,76 +155,149 @@ class SurrogateBasedOptimization:
             print("Entry (i,j) = ∂y_i / ∂u_j")
             print("-------------------------------------\n")
 
-        #     # -------------------------------
-        #     # 2. Build corrected model
-        #     # -------------------------------
-        #     F_corr_models = self._build_corrected_models( #This is done
-        #         self.u_k,
-        #         z_surr_k_list,
-        #         J_surr_k_list,
-        #         z_plant_k_list,
-        #         J_plant_k_list
-        #     )
-        #
-        #     # -------------------------------
-        #     # 3. Solve TR subproblem
-        #     # -------------------------------
-        #
-        #     trsp=self._solve_tr_subproblem(F_corr_models)
-        #     u_trial=trsp["x_star"]
-        #
-        #     # -------------------------------
-        #     # 4. Evaluate trial point
-        #     # -------------------------------
-        #
-        #     z_surr_trial_list = self._eval_corrected_models(F_corr_models,u_trial)
-        #     z_plant_trial_list, _ = self.plant_eval(u_trial)
-        #
-        #     phi_trial = -float(z_plant_trial_list)
-        #     theta_trial=self._compute_theta(z_plant_trial_list,z_surr_trial_list)
-        #     #
-        #     # theta_trial = float(np.linalg.norm(z_plant_trial - z_surr_trial))
-        #
-        #     print("u_trial =", u_trial)
-        #     print("theta =", theta_trial, "| phi =", phi_trial)
-        #
-        #     # -------------------------------
-        #     # 5. Initialization step
-        #     # -------------------------------
-        #     if k == 0:
-        #         self._accept_step(u_trial, theta_trial, phi_trial, step_type="init")
-        #         continue
-        #
-        #     # -------------------------------
-        #     # 6. Filter decision
-        #     # -------------------------------
-        #     accepted = self._filter_accept(theta_trial, phi_trial)
-        #
-        #     if accepted:
-        #         if self.phi_k - phi_trial >= self.k_theta * (self.theta_k ** self.gamma_s):
-        #             step_type = "f-type"
-        #             self.Delta *= self.gamma_e
-        #         else:
-        #             step_type = "theta-type"
-        #             rho = 1 - theta_trial / self.theta_k
-        #
-        #             if rho < self.eta_1:
-        #                 self.Delta *= self.gamma_c
-        #             elif rho > self.eta_2:
-        #                 self.Delta *= self.gamma_e
-        #
-        #             self._filter_update(self.theta_k, self.phi_k)
-        #
-        #         self._accept_step(u_trial, theta_trial, phi_trial, step_type)
-        #
-        #     else:
-        #         print("Rejected step")
-        #         self.Delta *= self.gamma_c
-        #
-        # return {
-        #     "u_opt": self.u_k,
-        #     "history": self.history
-        # }
+            # -------------------------------
+            # 2. Initialize the filter
+            # -------------------------------
+            if k==0 and self.theta_k is None and self.phi_k is None:
+                phi_k=self._compute_phi(z_plant_k_list)
+                theta_k,theta_k_per_well=self._compute_theta(z_plant_k_list,z_surr_k_list)
+
+                self.phi_k=phi_k
+                self.theta_k=theta_k
+                self._filter_update(theta_k,phi_k)
+
+                self.history.append({
+                    "u": self.u_k.copy(),
+                    "u_trial": self.u_k.copy(),
+                    "Delta": self.Delta,
+                    "theta": theta_k,
+                    "theta_k_per_well": theta_k_per_well,
+                    "phi": phi_k,
+                    "type": "init"
+                })
+
+                print("\n--- FILTER INITIALIZATION ---")
+                print("u0      =", self.u_k)
+                print("phi_0   =", phi_k)
+                print("theta_0 =", theta_k)
+                print("filter  =", self.filter_list)
+
+            # -------------------------------
+            # 3. Convergence test at current accepted point
+            # -------------------------------
+            if self.theta_k <= self.theta_tol:
+                oil_total = -self.phi_k
+                print("\n=== CONVERGENCE ACHIEVED ===")
+                print("theta_k=", self.theta_k)
+                print("theta_tol=",self.theta_tol)
+                print("u_converged=",self.u_k)
+                print("oil_total =", oil_total)
+
+                return {
+                    "success": True,
+                    "status": "converged",
+                    "u_opt": self.u_k.copy(),
+                    "theta_opt": self.theta_k,
+                    "phi_opt": self.phi_k,
+                    "oil_total": oil_total,
+                    "iterations": k,
+                    "history": self.history
+                }
+            # -------------------------------
+            # 4. Build corrected models
+            # -------------------------------
+            F_corr_models = self._build_corrected_models( #This is done
+                self.u_k,
+                z_surr_k_list,
+                J_surr_k_list,
+                z_plant_k_list,
+                J_plant_k_list
+            )
+
+            # -------------------------------
+            # 5. Solve TRSP
+            # -------------------------------
+            trsp=self._solve_tr_subproblem(F_corr_models)
+            u_trial = trsp["x_star"]
+
+            # -------------------------------
+            # STEP DIAGNOSTICS
+            # -------------------------------
+            du = u_trial - self.u_k
+            step_norm = np.linalg.norm(du)
+
+            print("\n--- TR STEP ---")
+            print("u_k      =", self.u_k)
+            print("u_trial  =", u_trial)
+            print("du       =", du)
+            print("||du||   =", step_norm)
+
+            print("\n--- TRUST REGION ---")
+            print("Delta          =", self.Delta)
+            print("||du||^2       =", trsp["tr_norm_sq"])
+            print("Delta^2        =", trsp["tr_radius_sq"])
+            print("TR active?     =", trsp["tr_active"])
+
+            # -------------------------------
+            # 6. Evaluate trial point
+            # -------------------------------
+
+            z_surr_trial_list = self._eval_corrected_models(F_corr_models,u_trial)
+            z_plant_trial_list, _ = self._eval_plant_models(u_trial)
+
+            phi_trial = self._compute_phi(z_plant_trial_list)
+            theta_trial,theta_trial_per_well = self._compute_theta(z_plant_trial_list, z_surr_trial_list)
+
+            print("\n--- EVALUATING ACCEPTANCE ---")
+            print("theta_trial =", theta_trial)
+            print("theta_k=", self.theta_k)
+            print("dtheta=",theta_trial-self.theta_k)
+            print("phi_k       =", self.phi_k)
+            print("phi_trial   =", phi_trial)
+            print("dphi        =", phi_trial - self.phi_k)
+
+            # -------------------------------
+            # 7. Filter decision
+            # -------------------------------
+            accepted = self._filter_accept(theta_trial, phi_trial)
+
+            if accepted:
+                if self.phi_k - phi_trial >= self.k_theta * (self.theta_k ** self.gamma_s):
+                    step_type = "f-type"
+                    self.Delta *= self.gamma_e
+                else:
+                    step_type = "theta-type"
+
+                    rho = 1 - theta_trial / self.theta_k
+
+                    if rho < self.eta_1:
+                        self.Delta *= self.gamma_c
+                    elif rho > self.eta_2:
+                        self.Delta *= self.gamma_e
+
+                    self._filter_update(self.theta_k, self.phi_k)
+
+                self._accept_step(u_trial,
+                                  theta_trial,
+                                  theta_trial_per_well,
+                                  phi_trial,
+                                  step_type)
+                print("\nSTEP ACCEPTED")
+                print("step_type =", step_type)
+                print("new theta_k =", self.theta_k)
+                print("new phi_k   =", self.phi_k)
+                print("new Delta   =", self.Delta)
+            else:
+                print("\nSTEP REJECTED")
+                print("Delta old =", self.Delta)
+                self.Delta *= self.gamma_c
+                print("Delta new =", self.Delta)
+            k+=1
+
+        return {
+            "u_opt": self.u_k,
+            "history": self.history
+        }
 
     #################################################################################################################
     ################################# EVALUATE SURROGATES WITH JAC ##################################################
@@ -370,21 +444,57 @@ class SurrogateBasedOptimization:
         F_corr_models=[]
 
         for j, well_name in enumerate(self.well_names):
+            print(f"Correcting models... for well {well_name}")
+
             F_u2z_j=self.F_u2z_models[j]
 
             u_k_j = u_k_list[j]
+            print(f"u_k_j = {u_k_j}")
+            print(f"u_k_h shape:{u_k_j.shape}")
+
             z_s_j = np.array(z_surr_list[j]).reshape((-1,))
             J_s_j = np.array(J_surr_list[j])
             z_p_j = np.array(z_p_list[j]).reshape((-1,))
             J_p_j = np.array(J_p_list[j])
 
-            u_j = ca.MX.sym(f"u_corr_{well_name}", self.nu)
-            z_surr_j = F_u2z_j(u=u_j)["z"]
+            # print("\n--- Surrogate at u_k_j ---")
+            # print("z_s_j =", z_s_j)
+            # print("z_s_j shape =", z_s_j.shape)
+            # print("J_s_j =")
+            # print(J_s_j)
+            # print("J_s_j shape =", J_s_j.shape)
+            #
+            # print("\n--- Plant at u_k_j ---")
+            # print("z_p_j =", z_p_j)
+            # print("z_p_j shape =", z_p_j.shape)
+            # print("J_p_j =")
+            # print(J_p_j)
+            # print("J_p_j shape =", J_p_j.shape)
+
+
 
             c_j = z_p_j - z_s_j
             C_j = J_p_j - J_s_j
 
+            # print("\n--- Correction terms ---")
+            # print("c_j = z_p_j - z_s_j =")
+            # print(c_j)
+            # print("||c_j||_2 =", np.linalg.norm(c_j))
+            #
+            # print("\nC_j = J_p_j - J_s_j =")
+            # print(C_j)
+            # print("||C_j||_F =", np.linalg.norm(C_j))
+
+            u_j = ca.MX.sym(f"u_corr_{well_name}", self.nu)
+            z_surr_j = F_u2z_j(u=u_j)["z"]
+
             du_j = u_j - ca.DM(u_k_j)
+
+            # print("\n--- Local displacement model ---")
+            # print("du_j = u_j - u_k_j")
+            # print("u_k_j DM =")
+            # print(ca.DM(u_k_j))
+
             z_corr_j = z_surr_j + ca.DM(c_j) + ca.DM(C_j) @ du_j
 
             F_corr_j = ca.Function(
@@ -394,6 +504,43 @@ class SurrogateBasedOptimization:
                 ["u"],
                 ["z"]
             )
+
+            # --------------------------------------------------
+            # 5) CHECK interpolation at u_k_j
+            # --------------------------------------------------
+            z_corr_at_uk = np.array(F_corr_j(u=u_k_j)["z"], dtype=float).reshape((-1,))
+
+            # print("\n--- Interpolation check at u_k_j ---")
+            # print("z_corr_j(u_k_j) =", z_corr_at_uk)
+            # print("z_p_j           =", z_p_j)
+            # print("z_corr_j(u_k_j) - z_p_j =")
+            # print(z_corr_at_uk - z_p_j)
+            # print("||z_corr_j(u_k_j) - z_p_j||_2 =", np.linalg.norm(z_corr_at_uk - z_p_j))
+
+            # --------------------------------------------------
+            # 6) CHECK corrected Jacobian at u_k_j
+            # --------------------------------------------------
+            J_corr_sym = ca.jacobian(z_corr_j, u_j)
+            F_corr_eval = ca.Function(
+                f"F_corr_eval_{well_name}",
+                [u_j],
+                [z_corr_j, J_corr_sym],
+                ["u"],
+                ["z", "J"]
+            )
+
+            corr_eval = F_corr_eval(u=u_k_j)
+            z_corr_eval = np.array(corr_eval["z"], dtype=float).reshape((-1,))
+            J_corr_eval = np.array(corr_eval["J"], dtype=float)
+
+            # print("\n--- Jacobian consistency check at u_k_j ---")
+            # print("J_corr_j(u_k_j) =")
+            # print(J_corr_eval)
+            # print("J_p_j =")
+            # print(J_p_j)
+            # print("J_corr_j(u_k_j) - J_p_j =")
+            # print(J_corr_eval - J_p_j)
+            # print("||J_corr_j(u_k_j) - J_p_j||_F =", np.linalg.norm(J_corr_eval - J_p_j))
 
             F_corr_models.append(F_corr_j)
 
@@ -428,25 +575,17 @@ class SurrogateBasedOptimization:
         Here we use the Euclidean norm of the stacked mismatch vector.
         """
         err_blocks = []
+        theta_per_well=[]
 
         for z_p_j, z_m_j in zip(z_plant_list, z_model_list):
             err_j = np.array(z_p_j).reshape((-1,)) - np.array(z_m_j).reshape((-1,))
             err_blocks.append(err_j)
+            theta_per_well.append(float(np.linalg.norm(err_j, ord=2)))
 
         err = np.concatenate(err_blocks) if err_blocks else np.array([0.0])
-        return float(np.linalg.norm(err, ord=2))
+        theta_total=float(np.linalg.norm(err, ord=2))
 
-
-    #################################################################################################################
-    ################################# EVALUATE TRUTH MODELS WITH JAC ##################################################
-
-    # THIS IS DONE THROUGH AN API
-
-    #################################################################################################################
-    ################################# BUILD CORRECTION MODEL ##################################################
-
-    #################################################################################################################
-    ################################# SOLVE TRUST REGION SUBPROBLEM (TRSP) ##########################################
+        return theta_total, theta_per_well
 
     def _solve_tr_subproblem(self,
                              F_corr_models):
@@ -683,70 +822,113 @@ class SurrogateBasedOptimization:
             "g_star": g_star,
             "wells": wells_solutions,
         }
+    # =========================================================
+    # FILTER
+    # =========================================================
 
+    def _filter_accept(self,
+                       theta,
+                       phi):
 
+        for e in self.filter_list:
+            cond_theta = theta <= (1 - self.gamma_theta) * e["theta"]
+            cond_phi   = phi <= e["phi"] - self.gamma_f * e["theta"]
 
-
-
-    def filter_accept(theta_trial, phi_trial, filter_list, gamma_theta=0.01, gamma_phi=0.01):
-        """
-        Return True if (theta_trial, phi_trial) is acceptable to the filter.
-        filter_list is a list of dicts: [{"theta":..., "phi":...}, ...]
-        """
-        theta_trial = float(theta_trial)
-        phi_trial = float(phi_trial)
-
-        for e in filter_list:
-            theta_i = float(e["theta"])
-            phi_i   = float(e["phi"])
-
-            cond_theta = theta_trial <= (1.0 - gamma_theta) * theta_i
-            cond_phi   = phi_trial   <= phi_i - gamma_phi * theta_i
-
-            # must satisfy at least one condition for each filter entry
             if not (cond_theta or cond_phi):
                 return False
 
         return True
 
-    def filter_update(theta_new, phi_new, filter_list, prune=False):
-        """
-        Add (theta_new, phi_new) to the filter.
-        Optionally prune dominated entries.
+    def _filter_update(self, theta, phi):
+        self.filter_list.append({"theta": theta, "phi": phi})
 
-        Dominance rule (minimize both):
-          (theta_a, phi_a) dominates (theta_b, phi_b) if:
-            theta_a <= theta_b and phi_a <= phi_b, with at least one strict.
-        """
-        theta_new = float(theta_new)
-        phi_new = float(phi_new)
+    # =========================================================
+    # STEP HANDLING
+    # =========================================================
 
-        filter_list.append({"theta": theta_new, "phi": phi_new})
+    def _accept_step(self,
+                     u_trial,
+                     theta,
+                     theta_per_well,
+                     phi,
+                     step_type):
 
-        if not prune:
-            return filter_list
+        self.history.append({
+            "u": self.u_k.copy(),
+            "u_trial": u_trial.copy(),
+            "Delta": self.Delta,
+            "theta": theta,
+            "theta_per_well": theta_per_well.copy(),
+            "phi": phi,
+            "type": step_type
+        })
 
-        # prune dominated points
-        kept = []
-        for i, a in enumerate(filter_list):
-            dominated = False
-            for j, b in enumerate(filter_list):
-                if i == j:
-                    continue
-                if (b["theta"] <= a["theta"] and b["phi"] <= a["phi"] and
-                    (b["theta"] < a["theta"] or b["phi"] < a["phi"])):
-                    dominated = True
-                    break
-            if not dominated:
-                kept.append(a)
+        self.u_k = u_trial
+        self.theta_k = theta
+        self.phi_k = phi
 
-        # also remove near-duplicates
-        uniq = []
-        for e in kept:
-            if not any(abs(e["theta"]-q["theta"]) < 1e-12 and abs(e["phi"]-q["phi"]) < 1e-12 for q in uniq):
-                uniq.append(e)
 
-        return uniq
+    #
+    #
+    # def filter_accept(theta_trial, phi_trial, filter_list, gamma_theta=0.01, gamma_phi=0.01):
+    #     """
+    #     Return True if (theta_trial, phi_trial) is acceptable to the filter.
+    #     filter_list is a list of dicts: [{"theta":..., "phi":...}, ...]
+    #     """
+    #     theta_trial = float(theta_trial)
+    #     phi_trial = float(phi_trial)
+    #
+    #     for e in filter_list:
+    #         theta_i = float(e["theta"])
+    #         phi_i   = float(e["phi"])
+    #
+    #         cond_theta = theta_trial <= (1.0 - gamma_theta) * theta_i
+    #         cond_phi   = phi_trial   <= phi_i - gamma_phi * theta_i
+    #
+    #         # must satisfy at least one condition for each filter entry
+    #         if not (cond_theta or cond_phi):
+    #             return False
+    #
+    #     return True
+    #
+    # def filter_update(theta_new, phi_new, filter_list, prune=False):
+    #     """
+    #     Add (theta_new, phi_new) to the filter.
+    #     Optionally prune dominated entries.
+    #
+    #     Dominance rule (minimize both):
+    #       (theta_a, phi_a) dominates (theta_b, phi_b) if:
+    #         theta_a <= theta_b and phi_a <= phi_b, with at least one strict.
+    #     """
+    #     theta_new = float(theta_new)
+    #     phi_new = float(phi_new)
+    #
+    #     filter_list.append({"theta": theta_new, "phi": phi_new})
+    #
+    #     if not prune:
+    #         return filter_list
+    #
+    #     # prune dominated points
+    #     kept = []
+    #     for i, a in enumerate(filter_list):
+    #         dominated = False
+    #         for j, b in enumerate(filter_list):
+    #             if i == j:
+    #                 continue
+    #             if (b["theta"] <= a["theta"] and b["phi"] <= a["phi"] and
+    #                 (b["theta"] < a["theta"] or b["phi"] < a["phi"])):
+    #                 dominated = True
+    #                 break
+    #         if not dominated:
+    #             kept.append(a)
+    #
+    #     # also remove near-duplicates
+    #     uniq = []
+    #     for e in kept:
+    #         if not any(abs(e["theta"]-q["theta"]) < 1e-12 and abs(e["phi"]-q["phi"]) < 1e-12 for q in uniq):
+    #             uniq.append(e)
+    #
+    #     return uniq
 
     #
     # #####################################################################
@@ -875,13 +1057,13 @@ class SurrogateBasedOptimization:
     #         P_min_bh=P_min_bh,
     #         P_max_tb_b=P_max_tb_b
     #     )
-    #
+    # #
     #     print("Solver success:", res["stats"]["success"])
     #     print("u* =", res["u_star"])
     #     print("m_o_out* =", res["m_o_out"])
     #     print("P_bh* =", res["P_bh"])
     #     print("P_tb_b* =", res["P_tb_b"])
-    #
+    # #
     #     u_k=np.array(u_k,dtype=float).reshape((2,))
     #     z_k = np.array(F_u2z(u=u_k)["z"]).reshape((-1,))
     #
