@@ -19,7 +19,7 @@ y_guess_rig = wells[well]["y_guess_rig"]
 z_guess_rig = wells[well]["z_guess_rig"]
 y_guess_sur = wells[well]["y_guess_sur"]
 
-u = [0.6,0.6]
+u = [0.78,0.3]
 
 
 well_func = make_glc_well_surrogate(BSW=BSW,

@@ -4,6 +4,9 @@ from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 import matplotlib as mpl
 import numpy as np
 
+
+from application.simulation_engine import *
+
 ################################################################
 ################### SOME RULES FOR PLOTTING ####################
 
@@ -320,91 +323,314 @@ def poly_to_string(p, var="u1", precision=3):
 ################################################################
 ########################  HEATMAP  #############################
 
-def plot_w_o_out_contour(results,
-                         title,
-                         only_stable=True,
-                         only_success=True,
-                         levels=40):
-    u1_grid = results["u1_grid"]
-    u2_grid = results["u2_grid"]
-    U1=results["U1"]
-    U2=results["U2"]
-    # u1_grid = np.asarray(results["u1_grid"],dtype=float)
-    # u2_grid = np.asarray(results["u2_grid"],dtype=float)
+############# We start with a generic plot_contour ##############
 
-    W = np.array(results["OUT"]["w_o_out"], dtype=float)
-    SUCCESS = np.array(results["SUCCESS"], dtype=bool)
-    STABLE = np.array(results["STABLE"], dtype=float)
+def plot_contour(
+        U1,
+        U2,
+        Z,
+        title,
+        zlabel='Z',
+        levels=40,
+        mask=None,
+        mark_optimum=True,
+        optimum="max",
+        ax=None):
 
-    fig,ax=plt.subplots(figsize=(8, 8))
+    Z_plot=np.array(Z,dtype=float,copy=True)
 
-    mask = np.zeros_like(W, dtype=bool)
+    if mask is not None:
+        Z_plot[np.asarray(mask,dtype=bool)] = np.nan
 
-    if only_success:
-        mask |= ~SUCCESS
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(8, 8))
+    else:
+        fig=ax.figure
 
-    if only_stable:
-        mask |= ~(STABLE == 1.0)
-
-    W_plot = np.array(W, copy=True)
-    W_plot[mask] = np.nan
-
-    # # Mesh for contour: X must match columns (u2), Y rows (u1)
-    # U2, U1 = np.meshgrid(u2_grid, u1_grid)
-
-    # plt.figure(figsize=(8, 8))
-    cf = plt.contourf(U1, U2, W_plot, levels=levels)
-    cs = plt.contour(U1, U2, W_plot, levels=levels, linewidths=0.5)
+    cf = ax.contourf(U1, U2, Z_plot, levels=levels)
+    cs = ax.contour(U1, U2, Z_plot, levels=levels, linewidths=0.5)
     ax.clabel(cs, inline=True, fontsize=8)
 
-    cbar=fig.colorbar(cf,ax=ax, label="w_o_out")
+    fig.colorbar(cf, ax=ax, label=zlabel)
 
-    # Mark optimum among valid points
-    if np.all(np.isnan(W_plot)):
-        print("No valid points available to locate optimum.")
-    else:
-        flat_idx = np.nanargmax(W_plot)
-        i_opt, j_opt = np.unravel_index(flat_idx, W_plot.shape)
+    if mark_optimum:
+        if np.all(np.isnan(Z_plot)):
+            print("No valid points available to locate optimum.")
+        else:
+            if optimum == "max":
+                flat_idx = np.nanargmax(Z_plot)
+            elif optimum == "min":
+                flat_idx = np.nanargmin(Z_plot)
+            else:
+                raise ValueError(f"optimum must be 'max' or 'min', got {optimum}")
+        i_opt,j_opt=np.unravel_index(flat_idx, Z_plot.shape)
 
+        u1_opt = U1[i_opt, j_opt]
+        u2_opt = U2[i_opt, j_opt]
+        z_opt = Z_plot[i_opt, j_opt]
 
-        u1_opt = u1_grid[i_opt]
-        u2_opt = u2_grid[j_opt]
-        w_opt = W_plot[i_opt, j_opt]
-
-
-        ax.plot(u1_opt,
-                u2_opt,
-                'b*',
-                markersize=14,
-                label=f"Ótimo {w_opt:.3f}")
+        ax.plot(
+            u1_opt,
+            u2_opt,
+            "b*",
+            markersize=14,
+            label=f"Optimum {z_opt:.3f}"
+        )
 
         handles, labels = ax.get_legend_handles_labels()
         if handles:
-            leg = ax.legend(loc="best",
-                            frameon=True,
-                            fancybox=False,
-                            fontsize=14)
+            leg = ax.legend(
+                loc="best",
+                frameon=True,
+                fancybox=False,
+                fontsize=12
+            )
             frame = leg.get_frame()
             frame.set_facecolor("white")
             frame.set_edgecolor("black")
             frame.set_alpha(1)
             frame.set_linewidth(1.0)
 
-    ax.set_xlabel("u1")
-    ax.set_ylabel("u2")
+    ax.set_xlabel("$u_1$")
+    ax.set_ylabel("$u_2$")
     ax.set_title(title, fontsize=16)
 
     return ax
-        # plt.plot(u2_opt, u1_opt, 'r*', markersize=14, label=f"Optimum = {w_opt:.3f}")
-        # plt.legend()
-        #
-        # print(f"Optimum at u1={u1_opt:.4f}, u2={u2_opt:.4f}, w_o_out={w_opt:.6f}")
 
-    plt.xlabel("u2")
-    plt.ylabel("u1")
-    plt.title(title,fontsize=16)
-    plt.tight_layout()
-    plt.show()
+############# We make a wraper for simulation models ##############
+
+def plot_surrogate_contour(
+    results,
+    key="w_o_out",
+    title="Contour plot",
+    zlabel=None,
+    only_stable=True,
+    only_success=True,
+    levels=40,
+    mark_optimum=True,
+    optimum="max",
+):
+    U1 = np.asarray(results["U1"], dtype=float)
+    U2 = np.asarray(results["U2"], dtype=float)
+    Z = np.asarray(results["OUT"][key], dtype=float)
+
+    mask = np.zeros_like(Z, dtype=bool)
+
+    if only_success:
+        SUCCESS = np.asarray(results["SUCCESS"], dtype=bool)
+        mask |= ~SUCCESS
+
+    if only_stable:
+        STABLE = np.asarray(results["STABLE"], dtype=float)
+        mask |= ~(STABLE == 1.0)
+
+    if zlabel is None:
+        zlabel = key
+
+    return plot_contour(
+        U1=U1,
+        U2=U2,
+        Z=Z,
+        title=title,
+        zlabel=zlabel,
+        levels=levels,
+        mask=mask,
+        mark_optimum=mark_optimum,
+        optimum=optimum,
+    )
+
+def overlay_common_boundaries(
+        ax,
+        U1,
+        U2,
+        P_bh,
+        P_tb_b,
+        coeff_stability,
+        u1_min=0.05,
+        u1_max=1.0,
+        pbh_min=90.0,
+        ptb_max=120.0,
+        deg=2,
+):
+    # Stability boundary
+    b_hat_stab = np.poly1d(coeff_stability)
+    overlay_boundary_curve(
+        ax,
+        b_hat_stab,
+        u1_min=u1_min,
+        u1_max=u1_max,
+        label="stability",
+        color="black"
+    )
+
+    u1_grid = U1[:, 0]
+    u2_grid = U2[0, :]
+
+    # P_bh boundary
+    boundary_u1, boundary_u2 = extract_threshold_boundary_from_grid(
+        u1_grid=u1_grid,
+        u2_grid=u2_grid,
+        Z=P_bh,
+        threshold=pbh_min,
+        mode=">=",
+        side="last_true"
+    )
+    if boundary_u1.size >= deg + 1:
+        b_hat_pbh = fit_boundary_polynomial(boundary_u1, boundary_u2, deg=deg)
+        overlay_boundary_curve(
+            ax,
+            b_hat_pbh,
+            u1_min=u1_min,
+            u1_max=u1_max,
+            label=rf"$P_{{bh}}={pbh_min:g}$ bar",
+            color="red"
+        )
+
+    # P_tb_b boundary
+    boundary_u1, boundary_u2 = extract_threshold_boundary_from_grid(
+        u1_grid=u1_grid,
+        u2_grid=u2_grid,
+        Z=P_tb_b,
+        threshold=ptb_max,
+        mode="<=",
+        side="last_true"
+    )
+    if boundary_u1.size >= deg + 1:
+        b_hat_ptb = fit_boundary_polynomial(boundary_u1, boundary_u2, deg=deg)
+        overlay_boundary_curve(
+            ax,
+            b_hat_ptb,
+            u1_min=u1_min,
+            u1_max=u1_max,
+            label=rf"$P_{{tb}}={ptb_max:g}$ bar",
+            color="blue"
+        )
+
+    return ax
+
+def overlay_boundary_curve(
+    ax,
+    b_hat,
+    u1_min=0.05,
+    u1_max=1.0,
+    label=None,
+    color="k",
+    linewidth=2.2,
+    linestyle="-",
+):
+    u1_dense = np.linspace(u1_min, u1_max, 1000)
+    u2_fit = b_hat(u1_dense)
+
+    # optional clipping to visible region
+    y0, y1 = ax.get_ylim()
+    mask = (u2_fit >= y0) & (u2_fit <= y1)
+
+    ax.plot(
+        u1_dense[mask],
+        u2_fit[mask],
+        color=color,
+        linewidth=linewidth,
+        linestyle=linestyle,
+        label=label,
+    )
+
+    if label is not None:
+        handles, labels = ax.get_legend_handles_labels()
+        if handles:
+            leg = ax.legend(
+                loc="best",
+                frameon=True,
+                fancybox=False,
+                fontsize=12
+            )
+            frame = leg.get_frame()
+            frame.set_facecolor("white")
+            frame.set_edgecolor("black")
+            frame.set_alpha(1)
+            frame.set_linewidth(1.0)
+
+    return ax
+
+    #
+    # u1_grid = results["u1_grid"]
+    # u2_grid = results["u2_grid"]
+    # U1=results["U1"]
+    # U2=results["U2"]
+    #
+    #
+    # W = np.array(results["OUT"]["w_o_out"], dtype=float)
+    # SUCCESS = np.array(results["SUCCESS"], dtype=bool)
+    # STABLE = np.array(results["STABLE"], dtype=float)
+    #
+    # fig,ax=plt.subplots(figsize=(8, 8))
+    #
+    # mask = np.zeros_like(W, dtype=bool)
+    #
+    # if only_success:
+    #     mask |= ~SUCCESS
+    #
+    # if only_stable:
+    #     mask |= ~(STABLE == 1.0)
+    #
+    # W_plot = np.array(W, copy=True)
+    # W_plot[mask] = np.nan
+    #
+    # # # Mesh for contour: X must match columns (u2), Y rows (u1)
+    # # U2, U1 = np.meshgrid(u2_grid, u1_grid)
+    #
+    # # plt.figure(figsize=(8, 8))
+    # cf = plt.contourf(U1, U2, W_plot, levels=levels)
+    # cs = plt.contour(U1, U2, W_plot, levels=levels, linewidths=0.5)
+    # ax.clabel(cs, inline=True, fontsize=8)
+    #
+    # cbar=fig.colorbar(cf,ax=ax, label="w_o_out")
+    #
+    # # Mark optimum among valid points
+    # if np.all(np.isnan(W_plot)):
+    #     print("No valid points available to locate optimum.")
+    # else:
+    #     flat_idx = np.nanargmax(W_plot)
+    #     i_opt, j_opt = np.unravel_index(flat_idx, W_plot.shape)
+    #
+    #
+    #     u1_opt = u1_grid[i_opt]
+    #     u2_opt = u2_grid[j_opt]
+    #     w_opt = W_plot[i_opt, j_opt]
+    #
+    #
+    #     ax.plot(u1_opt,
+    #             u2_opt,
+    #             'b*',
+    #             markersize=14,
+    #             label=f"Ótimo {w_opt:.3f}")
+    #
+    #     handles, labels = ax.get_legend_handles_labels()
+    #     if handles:
+    #         leg = ax.legend(loc="best",
+    #                         frameon=True,
+    #                         fancybox=False,
+    #                         fontsize=14)
+    #         frame = leg.get_frame()
+    #         frame.set_facecolor("white")
+    #         frame.set_edgecolor("black")
+    #         frame.set_alpha(1)
+    #         frame.set_linewidth(1.0)
+    #
+    # ax.set_xlabel("u1")
+    # ax.set_ylabel("u2")
+    # ax.set_title(title, fontsize=16)
+    #
+    # return ax
+    #     # plt.plot(u2_opt, u1_opt, 'r*', markersize=14, label=f"Optimum = {w_opt:.3f}")
+    #     # plt.legend()
+    #     #
+    #     # print(f"Optimum at u1={u1_opt:.4f}, u2={u2_opt:.4f}, w_o_out={w_opt:.6f}")
+    #
+    # plt.xlabel("u2")
+    # plt.ylabel("u1")
+    # plt.title(title,fontsize=16)
+    # plt.tight_layout()
+    # plt.show()
 
 ################################################################
 ################################################################

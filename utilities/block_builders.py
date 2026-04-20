@@ -4,6 +4,8 @@ from networks.networks import AlgNN
 import torch
 import casadi as ca
 
+from pathlib import Path
+
 from configuration.wells import get_wells
 from networks.networks import PINN, AlgNN
 
@@ -278,7 +280,13 @@ def get_model_paths(well_name: str, base_dir="../../well_models"):
     # Extract number from "P1" -> "1"
     well_id = well_name.replace("P", "")
 
-    well_folder = Path(base_dir) / f"well_{well_id}"
+    # directory of this file
+    this_file = Path(__file__).resolve()
+
+    # project root = parent of utilities/
+    project_root = this_file.parent.parent
+
+    well_folder = project_root / "well_models" / f"well_{well_id}"
 
     pinn_path = well_folder / "PINN" / f"PINN_{well_name}.pth"
     algnn_path = well_folder / "Alg" / f"AlgNN_{well_name}.pth"

@@ -52,7 +52,7 @@ if __name__ == "__main__":
     from application.plotting_engine import plot_surface
 
     wells = get_wells()
-    well_name = "P2"
+    well_name = "P1"
     well_list = wells[well_name]
 
     y_min = well_list["y_min"]
@@ -63,8 +63,8 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # --- Paths (adjust if yours are different) ---
-    pinn_path = "../../well_models/well_2/PINN/PINN_P2.pth"
-    algnn_path = "../../well_models/well_2/Alg/AlgNN_P2.pth"  # <-- change if needed
+    pinn_path = "../../well_models/well_1/PINN/PINN_P1.pth"
+    algnn_path = "../../well_models/well_1/Alg/AlgNN_P1.pth"  # <-- change if needed
 
     pinn = rebuild_pinn_from_weights(pinn_path,
                                      y_min=y_min,
