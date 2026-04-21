@@ -19,7 +19,7 @@ def get_solver_configs():
         "enforce_stable":True,
         "Delta":1.0,
         "gamma_c":0.4,
-        "gamma_e":2.0,
+        "gamma_e":1.5,
         "gamma_f":0.01,
         "gamma_theta":0.01,
         "k_theta":0.01,

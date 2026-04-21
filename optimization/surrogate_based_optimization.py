@@ -119,9 +119,9 @@ class SurrogateBasedOptimization:
             print(f"=============== ITERATION {k} ======================")
             print("=====================================================")
             print("u_k =", self.u_k)
-            print("type(u_k) =", type(self.u_k))
-            print("u_k shape =", np.shape(self.u_k))
-            print("expected shape =", (self.N * self.nu,))
+            # print("type(u_k) =", type(self.u_k))
+            # print("u_k shape =", np.shape(self.u_k))
+            # print("expected shape =", (self.N * self.nu,))
 
             # -------------------------------
             # 1. Evaluate surrogate + plant at current accepted point
@@ -129,31 +129,31 @@ class SurrogateBasedOptimization:
             z_surr_k_list, J_surr_k_list = self._eval_surrogates_with_jac(self.u_k) #This is ready
             z_plant_k_list, J_plant_k_list = self._eval_plant_models(self.u_k) # we need to build this API from scratch!
 
-            print("\n----- SURROGATE LOCAL MODEL -----")
-            print("r_k(u_k) = [P_bh_bar, P_tb_b_bar, w_G_inj, w_res, w_L_res, w_G_res, w_w_out, w_o_out]:")
-            print(z_surr_k_list)
-
-            print("\n∇r_k(u_k)  (Jacobian dy/du)")
-            print(J_surr_k_list)
-
-            print("\nInterpretation:")
-            print("Rows  = outputs [P_bh_bar, P_tb_b_bar, w_G_inj, w_res, w_L_res, w_G_res, w_w_out, w_o_out]")
-            print("Cols  = controls [u1,u2]")
-            print("Entry (i,j) = ∂y_i / ∂u_j")
-            print("-------------------------------------\n")
-
-            print("\n----- PLANT VALUES -----")
-            print("S(u_k) = [P_bh_bar, P_tb_b_bar, w_G_inj, w_res, w_L_res, w_G_res, w_w_out, w_o_out]:")
-            print(z_plant_k_list)
-
-            print("\n∇r_k(u_k)  (Jacobian dy/du)")
+            # print("\n----- SURROGATE LOCAL MODEL -----")
+            # print("r_k(u_k) = [P_bh_bar, P_tb_b_bar, w_G_inj, w_res, w_L_res, w_G_res, w_w_out, w_o_out]:")
+            # print(z_surr_k_list)
+            #
+            # print("\n∇r_k(u_k)  (Jacobian dy/du)")
+            # print(J_surr_k_list)
+            #
+            # print("\nInterpretation:")
+            # print("Rows  = outputs [P_bh_bar, P_tb_b_bar, w_G_inj, w_res, w_L_res, w_G_res, w_w_out, w_o_out]")
+            # print("Cols  = controls [u1,u2]")
+            # print("Entry (i,j) = ∂y_i / ∂u_j")
+            # print("-------------------------------------\n")
+            #
+            # print("\n----- PLANT VALUES -----")
+            # print("S(u_k) = [P_bh_bar, P_tb_b_bar, w_G_inj, w_res, w_L_res, w_G_res, w_w_out, w_o_out]:")
+            # print(z_plant_k_list)
+            #
+            # print("\n∇r_k(u_k)  (Jacobian dy/du)")
             print(J_plant_k_list)
-
-            print("\nInterpretation:")
-            print("Rows  = outputs [P_bh_bar, P_tb_b_bar, w_G_inj, w_res, w_L_res, w_G_res, w_w_out, w_o_out]")
-            print("Cols  = controls [u1,u2]")
-            print("Entry (i,j) = ∂y_i / ∂u_j")
-            print("-------------------------------------\n")
+            #
+            # print("\nInterpretation:")
+            # print("Rows  = outputs [P_bh_bar, P_tb_b_bar, w_G_inj, w_res, w_L_res, w_G_res, w_w_out, w_o_out]")
+            # print("Cols  = controls [u1,u2]")
+            # print("Entry (i,j) = ∂y_i / ∂u_j")
+            # print("-------------------------------------\n")
 
             # -------------------------------
             # 2. Initialize the filter
@@ -574,13 +574,28 @@ class SurrogateBasedOptimization:
         Model mismatch measure for the filter.
         Here we use the Euclidean norm of the stacked mismatch vector.
         """
+        scale = np.array([
+            1 / 100,  # P_bh_bar
+            1 / 100,  # P_tb_b_bar
+            10.0,  # w_G_inj
+            1.0,  # w_res
+            1.0,  # w_L_res
+            1.0,  # w_G_res
+            1.0,  # w_w_out
+            1.0,  # w_o_out
+        ],dtype=float)
+
         err_blocks = []
         theta_per_well=[]
 
         for z_p_j, z_m_j in zip(z_plant_list, z_model_list):
             err_j = np.array(z_p_j).reshape((-1,)) - np.array(z_m_j).reshape((-1,))
-            err_blocks.append(err_j)
-            theta_per_well.append(float(np.linalg.norm(err_j, ord=2)))
+
+            err_j_scaled = scale * err_j
+
+            err_blocks.append(err_j_scaled)
+
+            theta_per_well.append(float(np.linalg.norm(err_j_scaled, ord=2)))
 
         err = np.concatenate(err_blocks) if err_blocks else np.array([0.0])
         theta_total=float(np.linalg.norm(err, ord=2))

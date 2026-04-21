@@ -31,7 +31,7 @@ def get_wells():
             "z_max":[130.0,124.0,3.75,24.50],
 
             "optima": {
-                "surrogate" : {
+                "rigorous" : {
                     "total_unconstrained": {
                         "u": [0.69731703, 1.00000000],
                         "w_o_out": 13.9474,
@@ -69,7 +69,7 @@ def get_wells():
             "z_min": [81.0,75.0,0.55,1.70],
             "z_max": [155.0,149.0,9.75,23.50],
             "optima": {
-                "surrogate": {
+                "rigorous": {
                     "total_unconstrained": {
                         "u": [1.00000000, 0.68918338],
                         "w_o_out": 18.4135,
