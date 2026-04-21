@@ -37,148 +37,209 @@ TOL_EIG = 1e-8
 
 
 ################################ SELECT THE PLOTS YOU WANT #####################################
-pinn_wells=False
-surrogate_wells=True
+pinn_wells=True
+surrogate_wells=False
 #################################################################################################
 
 
 wells = get_wells()
+sweeps=[]
+zmin = np.inf
+zmax = -np.inf
 
-if pinn_wells:
-    for well, params in wells.items():
-        well_name = well
-        well_list = params
+import matplotlib.ticker as ticker
 
-        model_NN = build_casadi_surrogate_u2z_for_well(well_name)
 
-        names = [
-            "P_bh_bar",   # 0
-            "P_tb_b_bar", # 1
-            "w_G_inj",    # 2
-            "w_res",      # 3
-            "w_L_res",    # 4
-            "w_G_res",    # 5
-            "w_w_out",    # 6
-            "w_o_out"     # 7
-        ]
+# if pinn_wells:
+for well, params in wells.items():
+    well_name = well
+    well_list = params
 
-        j = 0
+    model_NN = build_casadi_surrogate_u2z_for_well(well_name)
 
-        U1_NN, U2_NN, Z_NN = run_sweep_PINN(
-            model_NN,
-            U1_MIN=U1_MIN,
-            U2_MIN=U2_MIN,
-            U_SIM_SIZE=U_SIM_SIZE
-        )
+    names = [
+        "P_bh_bar",   # 0
+        "P_tb_b_bar", # 1
+        "w_G_inj",    # 2
+        "w_res",      # 3
+        "w_L_res",    # 4
+        "w_G_res",    # 5
+        "w_w_out",    # 6
+        "w_o_out"     # 7
+    ]
 
-        ax = plot_contour(
+    j = 7
+
+    U1_NN, U2_NN, Z_NN = run_sweep_PINN(
+        model_NN,
+        U1_MIN=U1_MIN,
+        U2_MIN=U2_MIN,
+        U_SIM_SIZE=U_SIM_SIZE
+    )
+    Zj=Z_NN[:, :, j]
+
+    sweeps.append((well_name,U1_NN,U2_NN,Zj))
+
+    zmin = min(zmin, np.nanmin(Zj))
+    zmax = max(zmax, np.nanmax(Zj))
+
+fill_levels = np.linspace(zmin, zmax, 30)   # smooth color
+line_levels = np.linspace(zmin, zmax, 30)    # few clean lines
+
+fig,axes=plt.subplots(
+    2, 1,
+    figsize=(6.5, 8.5),
+    sharex=True,
+    sharey=True,
+    constrained_layout=True
+)
+
+mappable=None
+
+for ax, (well_name,U1_NN,U2_NN,Zj) in zip(axes,sweeps):
+        u1_opt=wells[well_name]["optima"]["rigorous"]["total_unconstrained"][("u")][0]
+        u2_opt=wells[well_name]["optima"]["rigorous"]["total_unconstrained"][("u")][1]
+        z_opt=wells[well_name]["optima"]["rigorous"]["total_unconstrained"][("w_o_out")]
+        ax,cf = plot_contour(
             U1=U1_NN,
             U2=U2_NN,
-            Z=Z_NN[:, :, j],
-            title=f"{well_name}: {names[j]}(u1,u2)",
+            Z=Zj,
+            u1_opt=u1_opt,
+            u2_opt=u2_opt,
+            z_opt=z_opt,
+            title=f"$w_{{out,o}}$($u_1$,$u_2$) - Poço {well_name}",
             zlabel=names[j],
-            levels=40,
-        )
-
-        overlay_common_boundaries(
+            fill_levels=fill_levels,
+            line_levels=line_levels,
+            mark_optimum=True,
             ax=ax,
-            U1=U1_NN,
-            U2=U2_NN,
-            P_bh=Z_NN[:, :, 0],
-            P_tb_b=Z_NN[:, :, 1],
-            coeff_stability=well_list["coeff_stability"],
-            u1_min=U1_MIN,
-            u1_max=1.0,
-            pbh_min=90.0,
-            ptb_max=120.0,
-            deg=2,
+            add_colorbar=False,
+            vmin=zmin,
+            vmax=zmax
         )
+        mappable=cf
+# one shared colorbar
+# -------------------------
+# Create a dedicated colorbar axis
+# -------------------------
+cbar_ax = fig.add_axes([0.82, 0.10, 0.025, 0.8])
+# [left, bottom, width, height] in figure coordinates
 
-        ax.set_xlim(U1_MIN, 1.0001)
-        ax.set_ylim(U2_MIN, 1.0001)
-        ax.figure.tight_layout()
-        plt.show()
+cbar = fig.colorbar(mappable, cax=cbar_ax)
 
-if surrogate_wells:
-    for well, params in wells.items():
-        well_name = well
-        well_list = params
+cbar.set_label(r"$w_{out,o}$", fontsize=24)
 
-        model_sur = make_model(
-            "surrogate",
-            BSW=well_list["BSW"],
-            GOR=well_list["GOR"],
-            PI=well_list["PI"],
-            K_gs=well_list["K_gs_sur"],
-            K_inj=well_list["K_inj_sur"],
-            K_pr=well_list["K_pr_sur"],
-        )
-
-        results = run_sweep(
-            model_sur,
-            U1_MIN=U1_MIN,
-            U2_MIN=U2_MIN,
-            U_SIM_SIZE=U_SIM_SIZE,
-            y_guess_init=np.array(well_list["y_guess_sur"], dtype=float),
-            z_guess_init=None,
-        )
-
-        U1_SUR = np.asarray(results["U1"], dtype=float)
-        U2_SUR = np.asarray(results["U2"], dtype=float)
-
-        W_o_out = np.asarray(results["OUT"]["w_o_out"], dtype=float)
-        P_bh = np.asarray(results["OUT"]["P_bh_bar"], dtype=float)
-        P_tb_b = np.asarray(results["OUT"]["P_tb_b_bar"], dtype=float)
-        w_inj=np.asarray(results["OUT"]["w_G_inj"], dtype=float)
-
-        ax = plot_contour(
-            U1=U1_SUR,
-            U2=U2_SUR,
-            Z=W_o_out,
-            title=f"{well_name}: w_o_out(u1,u2)",
-            zlabel="w_o_out",
-            levels=40,
-        )
-
-        ax = plot_contour(
-            U1=U1_SUR,
-            U2=U2_SUR,
-            Z=P_bh,
-            title=f"{well_name}: P_bh(u1,u2)",
-            zlabel="w_o_out",
-            levels=40,
-        )
+cbar.locator = ticker.MaxNLocator(nbins=5)
+cbar.update_ticks()
+cbar.ax.tick_params(labelsize=20)
+plt.savefig("unconstrained_colormap.pdf", bbox_inches="tight",pad_inches=0.02)
+plt.show()
+from matplotlib.lines import Line2D
 
 
-        ax = plot_contour(
-            U1=U1_SUR,
-            U2=U2_SUR,
-            Z=w_inj,
-            title=f"{well_name}: w_inj(u1,u2)",
-            zlabel="w_inj",
-            levels=40,
-        )
-
-        # overlay_common_boundaries(
-        #     ax=ax,
-        #     U1=U1_SUR,
-        #     U2=U2_SUR,
-        #     P_bh=P_bh,
-        #     P_tb_b=P_tb_b,
-        #     coeff_stability=well_list["coeff_stability"],
-        #     u1_min=U1_MIN,
-        #     u1_max=1.0,
-        #     pbh_min=90.0,
-        #     ptb_max=120.0,
-        #     deg=2,
-        # )
-
-        ax.set_xlim(U1_MIN, 1.0001)
-        ax.set_ylim(U2_MIN, 1.0001)
-        ax.figure.tight_layout()
-        plt.show()
+# legend_elements = [
+#     Line2D(
+#         [0], [0],
+#         marker="*",
+#         color="w",
+#         label="Ótimo irrestrito",
+#         markerfacecolor="blue",
+#         markersize=12
+#     )
+# ]
+#
+# fig.legend(
+#     handles=legend_elements,
+#     loc="lower center",
+#     bbox_to_anchor=(-0.20, -0.02),
+#     ncol=1,
+#     frameon=False,
+#     fancybox=True,
+#     fontsize=18
+# )
 
 
+#
+# if surrogate_wells:
+#     for well, params in wells.items():
+#         well_name = well
+#         well_list = params
+#
+#         model_sur = make_model(
+#             "surrogate",
+#             BSW=well_list["BSW"],
+#             GOR=well_list["GOR"],
+#             PI=well_list["PI"],
+#             K_gs=well_list["K_gs_sur"],
+#             K_inj=well_list["K_inj_sur"],
+#             K_pr=well_list["K_pr_sur"],
+#         )
+#
+#         results = run_sweep(
+#             model_sur,
+#             U1_MIN=U1_MIN,
+#             U2_MIN=U2_MIN,
+#             U_SIM_SIZE=U_SIM_SIZE,
+#             y_guess_init=np.array(well_list["y_guess_sur"], dtype=float),
+#             z_guess_init=None,
+#         )
+#
+#         U1_SUR = np.asarray(results["U1"], dtype=float)
+#         U2_SUR = np.asarray(results["U2"], dtype=float)
+#
+#         W_o_out = np.asarray(results["OUT"]["w_o_out"], dtype=float)
+#         P_bh = np.asarray(results["OUT"]["P_bh_bar"], dtype=float)
+#         P_tb_b = np.asarray(results["OUT"]["P_tb_b_bar"], dtype=float)
+#         w_inj=np.asarray(results["OUT"]["w_G_inj"], dtype=float)
+#
+#         ax = plot_contour(
+#             U1=U1_SUR,
+#             U2=U2_SUR,
+#             Z=W_o_out,
+#             title=f"{well_name}: w_o_out(u1,u2)",
+#             zlabel="w_o_out",
+#             levels=40,
+#         )
+#
+#         ax = plot_contour(
+#             U1=U1_SUR,
+#             U2=U2_SUR,
+#             Z=P_bh,
+#             title=f"{well_name}: P_bh(u1,u2)",
+#             zlabel="w_o_out",
+#             levels=40,
+#         )
+#
+#
+#         ax = plot_contour(
+#             U1=U1_SUR,
+#             U2=U2_SUR,
+#             Z=w_inj,
+#             title=f"{well_name}: w_inj(u1,u2)",
+#             zlabel="w_inj",
+#             levels=40,
+#         )
+#
+#         # overlay_common_boundaries(
+#         #     ax=ax,
+#         #     U1=U1_SUR,
+#         #     U2=U2_SUR,
+#         #     P_bh=P_bh,
+#         #     P_tb_b=P_tb_b,
+#         #     coeff_stability=well_list["coeff_stability"],
+#         #     u1_min=U1_MIN,
+#         #     u1_max=1.0,
+#         #     pbh_min=90.0,
+#         #     ptb_max=120.0,
+#         #     deg=2,
+#         # )
+#
+#         ax.set_xlim(U1_MIN, 1.0001)
+#         ax.set_ylim(U2_MIN, 1.0001)
+#         ax.figure.tight_layout()
+#         plt.show()
+#
+#
 
 
 #

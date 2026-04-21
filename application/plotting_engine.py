@@ -3,7 +3,7 @@ from matplotlib.colors import Normalize
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 import matplotlib as mpl
 import numpy as np
-
+from sipbuild.generator.outputs.formatters import value_list
 
 from application.simulation_engine import *
 
@@ -329,13 +329,20 @@ def plot_contour(
         U1,
         U2,
         Z,
+        u1_opt,
+        u2_opt,
+        z_opt,
         title,
         zlabel='Z',
-        levels=40,
+        fill_levels=40,
+        line_levels=40,
         mask=None,
         mark_optimum=True,
         optimum="max",
-        ax=None):
+        ax=None,
+        add_colorbar=True,
+        vmin=None,
+        vmax=None):
 
     Z_plot=np.array(Z,dtype=float,copy=True)
 
@@ -347,43 +354,47 @@ def plot_contour(
     else:
         fig=ax.figure
 
-    cf = ax.contourf(U1, U2, Z_plot, levels=levels)
-    cs = ax.contour(U1, U2, Z_plot, levels=levels, linewidths=0.5)
-    ax.clabel(cs, inline=True, fontsize=8)
+    cf = ax.contourf(U1,
+                     U2,
+                     Z_plot,
+                     levels=fill_levels,
+                     vmin=vmin,
+                     vmax=vmax)
 
-    fig.colorbar(cf, ax=ax, label=zlabel)
+    cs = ax.contour(U1,
+                    U2,
+                    Z_plot,
+                    levels=line_levels,
+                    colors="gray",
+                     linewidths=0.8,
+                    alpha=0.5,
+                    vmin=vmin,
+                    vmax=vmax)
+    # ax.clabel(cs, inline=True, fontsize=24)
+
+    if add_colorbar:
+        cbar=fig.colorbar(cf, ax=ax, label=zlabel)
+        cbar.set_label(zlabel, fontsize=24)
+
+        # tick labels
+        cbar.ax.tick_params(labelsize=20)
 
     if mark_optimum:
-        if np.all(np.isnan(Z_plot)):
-            print("No valid points available to locate optimum.")
-        else:
-            if optimum == "max":
-                flat_idx = np.nanargmax(Z_plot)
-            elif optimum == "min":
-                flat_idx = np.nanargmin(Z_plot)
-            else:
-                raise ValueError(f"optimum must be 'max' or 'min', got {optimum}")
-        i_opt,j_opt=np.unravel_index(flat_idx, Z_plot.shape)
-
-        u1_opt = U1[i_opt, j_opt]
-        u2_opt = U2[i_opt, j_opt]
-        z_opt = Z_plot[i_opt, j_opt]
-
         ax.plot(
             u1_opt,
             u2_opt,
             "b*",
             markersize=14,
-            label=f"Optimum {z_opt:.3f}"
+            label=f"Ótimo irrestrito {z_opt:.2f}"
         )
 
         handles, labels = ax.get_legend_handles_labels()
         if handles:
             leg = ax.legend(
-                loc="best",
+                loc="lower center",
                 frameon=True,
-                fancybox=False,
-                fontsize=12
+                fancybox=True,
+                fontsize=14
             )
             frame = leg.get_frame()
             frame.set_facecolor("white")
@@ -391,11 +402,21 @@ def plot_contour(
             frame.set_alpha(1)
             frame.set_linewidth(1.0)
 
-    ax.set_xlabel("$u_1$")
-    ax.set_ylabel("$u_2$")
-    ax.set_title(title, fontsize=16)
+    ax.set_xlabel(f"$u_1$",fontsize=24)
+    ax.set_ylabel(f"$u_2$",fontsize=24)
+    ax.set_title(title, fontsize=24,pad=12)
+    ax.tick_params(axis="both", which="major", labelsize=20)
+    ax.set_aspect('equal', adjustable='box')
 
-    return ax
+    ticks = [0.25, 0.5, 0.75, 1.0]
+    ax.set_xticks(ticks)
+    ax.set_yticks(ticks)
+    ax.set_xlim(0.10,1.00)
+    ax.set_ylim(0.10,1.00)
+    # optional: nicer formatting
+    ax.set_xticklabels([f"{t:.2f}" for t in ticks])
+    ax.set_yticklabels([f"{t:.2f}" for t in ticks])
+    return ax,cf
 
 ############# We make a wraper for simulation models ##############
 
