@@ -233,7 +233,7 @@ def optimize_field_production(
     else:
         y_lb=[0.0,0.0,0.0]
         y_ub=[INF,INF,INF]
-    u_lb=[0.05,0.10]
+    u_lb=[0.00,0.00]
     u_ub=[1.0,1.0]
 
     # ---------------------
@@ -392,7 +392,7 @@ def optimize_field_production(
     # 7.2) Objective
     # ---------------------
     #
-    obj=total_w_o
+    obj=-total_w_o
 
     # obj=0
 
@@ -569,6 +569,7 @@ if __name__=="__main__":
     sol = optimize_field_production(
         model_type="rigorous",
         wells=wells,
+        u_guess_list=[[0.20699727289545305,0.5249146997717429],[0.6894070850915028,0.24133944946614966]],
         G_available=14.00,
         G_max_export=1.40,
         W_max=11.50,

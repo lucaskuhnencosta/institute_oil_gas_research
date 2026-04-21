@@ -255,15 +255,17 @@ def run_sweep_PINN(
     model,
     U1_MIN,
     U2_MIN,
-    U_SIM_SIZE):
+    U1_MAX=1.0,
+    U2_MAX=1.0,
+    U_SIM_SIZE=20):
     """
     Returns:
       U1, U2 : meshgrids shape (n_u2, n_u1)
       Y      : pinn outputs shape (n_u2, n_u1, 3)
       Z      : algnn outputs shape (n_u2, n_u1, 3) -> [m_o_out, p_bh, p_tb_b]
     """
-    u1 = np.linspace(U1_MIN, 1.001, U_SIM_SIZE, dtype=np.float32)
-    u2 = np.linspace(U2_MIN, 1.001, U_SIM_SIZE, dtype=np.float32)
+    u1 = np.linspace(U1_MIN, U1_MAX, U_SIM_SIZE, dtype=np.float32)
+    u2 = np.linspace(U2_MIN, U2_MAX, U_SIM_SIZE, dtype=np.float32)
     U1, U2 = np.meshgrid(u1, u2, indexing="ij")
 
     # Evaluate one point to get output size

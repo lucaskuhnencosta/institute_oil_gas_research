@@ -49,10 +49,12 @@ import json
 
 history = result["history"]
 
-# extract sequence of accepted u_k
-u_sequence = [h["u"].tolist() for h in history]
+print(history)
 
-with open("u_sequence.json", "w") as f:
+# extract sequence of accepted u_k
+u_sequence = [h["u_trial"].tolist() for h in history]
+
+with open("u_sequence_4.json", "w") as f:
     json.dump(u_sequence, f, indent=2)
 
 step_types = [h["type"] for h in history]
@@ -81,11 +83,11 @@ iters = np.arange(len(history))
 # Global style
 # ============================
 plt.rcParams.update({
-    "font.size": 12,
-    "axes.titlesize": 13,
-    "axes.labelsize": 12,
-    "xtick.labelsize": 11,
-    "ytick.labelsize": 11,
+    "font.size": 14,
+    "axes.titlesize": 18,
+    "axes.labelsize": 16,
+    "xtick.labelsize": 14,
+    "ytick.labelsize": 14,
 })
 
 # ============================
@@ -104,9 +106,9 @@ for i, (x, y) in enumerate(zip(theta, phi)):
     ax.annotate(
         str(i),
         (x, y),
-        xytext=(-4, 4),
+        xytext=(-6, 6),
         textcoords="offset points",
-        fontsize=11
+        fontsize=14
     )
 
 
@@ -144,13 +146,13 @@ ax.annotate(
 )
 
 
-ax.set_xlabel(r"Infactibilidade $\theta$")
-ax.set_ylabel(r"Função objetivo $\phi$")
+ax.set_xlabel(r"Infactibilidade $\theta$",fontsize=16)
+ax.set_ylabel(r"Função objetivo $\phi$",fontsize=16)
 ax.set_xticklabels([])
-ax.set_yticks(np.arange(-28, -21, 2))
-ax.set_ylim(-28, -21.5)
+ax.set_yticks(np.arange(-29, -9, 3))
+ax.set_ylim(-29, -9)
 ax.set_xscale("log")
-ax.set_title(r"Evolução das iterações no plano $(\theta,\phi)$")
+ax.set_title(r"Evolução das iterações no plano $(\theta,\phi)$",fontsize=18)
 
 ax.grid(True, which="both", linestyle="--", linewidth=0.4, alpha=0.5)
 

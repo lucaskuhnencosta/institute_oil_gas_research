@@ -95,7 +95,7 @@ def optimize_field_production_nn(
     # ---------------------
     # 4) Bounds on controls
     # ---------------------
-    u_lb = [0.0, 0.0]
+    u_lb = [0., 0.0]
     u_ub = [1.0, 1.0]
 
     # ---------------------
