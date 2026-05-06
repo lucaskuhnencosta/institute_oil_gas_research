@@ -277,7 +277,7 @@ def overlay_boundary_and_fit(ax,
     u1_dense=np.linspace(0.0,1.01,1000)
     u2_fit=b_hat(u1_dense)
 
-    eq_str=poly_to_string(b_hat,var="$u_1$")
+    eq_str=poly_to_string(b_hat,var="u_1")
 
     ax.plot(u1_dense,
             u2_fit,
@@ -291,7 +291,7 @@ def overlay_boundary_and_fit(ax,
 
     if handles:
         leg = ax.legend(
-            loc="best",
+            loc="upper center",
             frameon=True,
             fancybox=False,
             fontsize=14
@@ -306,7 +306,7 @@ def overlay_boundary_and_fit(ax,
 
     return ax
 
-def poly_to_string(p, var="u1", precision=3):
+def poly_to_string(p, var="u_1", precision=3):
     coef = p.c
     deg = len(coef) - 1
 
@@ -324,7 +324,7 @@ def poly_to_string(p, var="u1", precision=3):
         elif power == 1:
             terms.append(f"{c_str}{var}")
         else:
-            terms.append(f"{c_str}{var}^{power}")
+            terms.append(f"{c_str}{var}^{{{power}}}")
 
     return " + ".join(terms).replace("+ -", "- ")
 ################################################################

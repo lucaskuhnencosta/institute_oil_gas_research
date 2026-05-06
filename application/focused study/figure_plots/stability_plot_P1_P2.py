@@ -26,7 +26,7 @@ color_third     = (183/255, 53/255, 192/255)   # purple (saved)
 
 wells=get_wells()
 
-fig, axes = plt.subplots(2, 1, figsize=(6.5, 11),sharex=True)
+fig, axes = plt.subplots(2, 1, figsize=(6.5, 10),sharex=False)
 
 for i, (ax, well_name) in enumerate(zip(axes, ["P1", "P2"])):
     well_list = wells[well_name]
@@ -82,7 +82,7 @@ for i, (ax, well_name) in enumerate(zip(axes, ["P1", "P2"])):
                              b_hat)
 
     ax.set_aspect('equal', adjustable='box')  # <-- add this
-axes[0].set_xlabel("")
+axes[0].set_xlabel(r"$u_1$")
 axes[1].set_xlabel(r"$u_1$")
 
 
