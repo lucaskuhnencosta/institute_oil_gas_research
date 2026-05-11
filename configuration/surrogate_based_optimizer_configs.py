@@ -17,7 +17,9 @@ def get_solver_configs():
         "unconstrained_well":False,
         "unconstrained_platform":False,
         "enforce_stable":True,
-        "Delta":1.0,
+        "theta_mode": "constraint_infeasibility",
+        "oil_allowance":0.0001,
+        "Delta":4.0,
         "gamma_c":0.4,
         "gamma_e":1.5,
         "gamma_f":0.01,
@@ -27,17 +29,5 @@ def get_solver_configs():
         "eta_1":0.4,
         "eta_2":0.8,
         "theta_tol":1.0e-4,
-        "u_guess_list":np.array([[0.2291931, 0.46663081], [0.01828243, 0.9508729]]),
+        "u_guess_list":np.array([[1.00, 1.00], [1.00, 1.00]]),
         "max_iter": 100}
-    ## need to undestans
-# P1    | u =  | w_o = 0.0000 | P_bh = 160.00 | P_tb = 153.68
-# P2    | u =  | w_o = 0.0000 | P_bh = 160.00 | P_tb = 154.03
-
-# P1    | u = [0.07601119 0.41839114] | w_o = 6.1717 | P_bh = 124.00 | P_tb = 120.00
-# P2    | u = [0.15679138 0.50647729] | w_o = 8.2669 | P_bh = 124.87 | P_tb = 120.00
-
-# "u_guess_list":
-# "u_guess_list": np.array([[0.07601119, 0.41839114], [0.15679138, 0.50647729]]),
-
-
-# "u_guess_list": np.array([[0.13385, 0.4038], [0.31307, 0.5000]]),
