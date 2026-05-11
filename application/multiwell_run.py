@@ -15,7 +15,7 @@ from configuration.surrogate_based_optimizer_configs import get_solver_configs
 from configuration.wells import get_wells
 from application.simulation_engine import make_model
 from utilities.block_builders import build_casadi_surrogate_u2z_for_well
-
+import json
 wells=get_wells()
 config=get_solver_configs()
 model_type = "rigorous"
@@ -39,15 +39,36 @@ for well_name in well_names:
     ))
     F_u2z_models.append(build_casadi_surrogate_u2z_for_well(well_name))
 
-opt=SurrogateBasedOptimization(config=config,
+opt1=SurrogateBasedOptimization(config=config,
                                wells=wells,
                                rigorous_models=rigorous_models,
-                               F_u2z_models=F_u2z_models)
+                               F_u2z_models=F_u2z_models,
+                               refinement=False)
 
-result=opt.solve()
-import json
+result1=opt1.solve()
 
-history = result["history"]
+print(result1["history"])
+
+u_phase1 = result1["u_opt"]
+total_wo_phase1 = result1["phi"]
+
+opt2 = SurrogateBasedOptimization(
+    config=config,
+    wells=wells,
+    rigorous_models=rigorous_models,
+    F_u2z_models=F_u2z_models,
+    refinement=True,
+    u_guess=u_phase1,
+    total_wo=total_wo_phase1,
+)
+
+
+
+result2 = opt2.solve()
+print(result2["history"])
+
+
+history = result2["history"]
 
 print(history)
 
@@ -62,19 +83,47 @@ print(step_types)
 
 theta = np.array([h["theta"] for h in history], dtype=float)
 phi   = np.array([h["phi"] for h in history], dtype=float)
-theta_per_well = []
+
+theta_model_per_well = []
+theta_constraints_per_well = []
+theta_platform = []
+
+
 for h in history:
-    if "theta_per_well" in h:
-        theta_per_well.append(h["theta_per_well"])
-    else:
-        theta_per_well.append(h["theta_k_per_well"])
+    # New format
+    if "theta_details" in h:
+        details = h["theta_details"]
 
-theta_per_well = np.array(theta_per_well, dtype=float)
+        theta_model_per_well.append(
+            details.get("model_mismatch_per_well", [])
+        )
 
-theta_p1 = theta_per_well[:, 0]
-theta_p2 = theta_per_well[:, 1]
-theta_p1= theta_p1 / theta_p1[0]
-theta_p2_rel = theta_p2 / theta_p2[0]
+        theta_constraints_per_well.append(
+            details.get("well_constraint_per_well", [])
+        )
+
+        platform_dict = details.get("platform_constraints", {})
+        theta_platform.append([
+            platform_dict.get("G_available", 0.0),
+            platform_dict.get("G_max_export", 0.0),
+            platform_dict.get("W_max", 0.0),
+            platform_dict.get("L_max", 0.0),
+        ])
+
+theta_model_per_well = np.array(theta_model_per_well, dtype=float)
+theta_constraints_per_well = np.array(theta_constraints_per_well, dtype=float)
+theta_platform = np.array(theta_platform, dtype=float)
+
+theta_model_p1 = theta_model_per_well[:, 0]
+theta_model_p2 = theta_model_per_well[:, 1]
+
+theta_constraint_p1 = theta_constraints_per_well[:, 0]
+theta_constraint_p2 = theta_constraints_per_well[:, 1]
+
+theta_platform_gas_inj = theta_platform[:, 0]
+theta_platform_gas_export = theta_platform[:, 1]
+theta_platform_water = theta_platform[:, 2]
+theta_platform_liquid = theta_platform[:, 3]
 
 iters = np.arange(len(history))
 
@@ -149,8 +198,8 @@ ax.annotate(
 ax.set_xlabel(r"Infactibilidade $\theta$",fontsize=16)
 ax.set_ylabel(r"Função objetivo $\phi$",fontsize=16)
 ax.set_xticklabels([])
-ax.set_yticks(np.arange(-29, -9, 3))
-ax.set_ylim(-29, -9)
+# ax.set_yticks(np.arange(-29, -9, 3))
+# ax.set_ylim(-29, -9)
 ax.set_xscale("log")
 ax.set_title(r"Evolução das iterações no plano $(\theta,\phi)$",fontsize=18)
 
