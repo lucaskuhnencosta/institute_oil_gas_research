@@ -17,7 +17,7 @@ def get_solver_configs():
         "unconstrained_well":False,
         "unconstrained_platform":False,
         "enforce_stable":True,
-        "theta_mode": "constraint_infeasibility",
+        "theta_mode": "model_mismatch",
         "oil_allowance":0.0001,
         "Delta":4.0,
         "gamma_c":0.4,

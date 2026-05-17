@@ -1,11 +1,14 @@
+#GLOBAL SETTING
+from settings import *
 # GENERAL LIBRARIES
 import os
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 # SPECIFIC MODULES
 from application.simulation_engine import make_model, run_sweep, fit_boundary_polynomial, extract_stability_boundary_from_grid
-from application.plotting_engine import plot_stability_map, overlay_boundary_and_fit, plot_w_o_out_contour, plot_surface
+from application.plotting_engine import plot_stability_map, overlay_boundary_and_fit, plot_surface
 
 #Wells
 from configuration.wells import get_wells
@@ -16,18 +19,10 @@ wells=get_wells()
 ######################################################################################
 ############### THIS HERE IS NEVE GOING TO CHANGE ####################################
 MODE = "rigorous"
-RES_TOL_DX = 1e-6 # This could be a global variable
-RES_TOL = 1e-6
-RES_TOL_G = 1e-6 # This could be a global variable
-TOL_EIG = 1e-8
-small_delta=1e-2
 U1_MIN=0.05 #if you ever change this, you need to change inside the black box optimizer
 U2_MIN=0.10 #if you ever change this, you need to change inside the black box optimizer
-U_SIM_SIZE=20
-degree_polynomial = 2
 ######################################################################################
 ######################################################################################
-
 
 
 ######################################################################################
@@ -117,13 +112,13 @@ for well, params in wells.items():
                 ax.figure.savefig(filepath, format="pdf", bbox_inches="tight")
                 plt.show()
 
-    ax=plot_w_o_out_contour(results_all_wells[well],
-                         title=f"Produção de óleo do poço {well}",
-                         only_stable=True,
-                         only_success=True,
-                         levels=40)
-    ax.figure.tight_layout()
-    ax.figure.show()
+    # ax=plot_contour(results_all_wells[well],
+    #                      title=f"Produção de óleo do poço {well}",
+    #                      only_stable=True,
+    #                      only_success=True,
+    #                      levels=40)
+    # ax.figure.tight_layout()
+    # ax.figure.show()
 
     if focused_figures:
         U1=results_all_wells[well]["U1"]

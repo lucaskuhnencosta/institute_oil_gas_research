@@ -1,6 +1,15 @@
+"""
+This simulator is in its final version for the dissertation and adequately described in Appendix C
+No further changes are needed.
+"""
+
+
 from casadi import *
 import numpy as np
 import casadi as ca
+from configuration.parameters import get_parameters
+
+parameters = get_parameters()
 
 def make_glc_well_rigorous(BSW,
                            GOR,
@@ -26,58 +35,46 @@ def make_glc_well_rigorous(BSW,
         k_pos = 20
         eps = 1e-12
 
-        # # Well properties ###
-        # BSW = 0
-        # GOR = 0 # is the gas oil ratio
-        # PI = 3.00e-6  # is the productivity index in kg/(s.Pa)
+        # Annulus
+        V_an = parameters["V_an"]
+        L_an = parameters["L_an"]
 
-        # Geometry and temperature of the wellbore
-        ### Annulus ###
-        V_an = 64.34  # m^3 is the annulus volume
-        L_an = 2048  # m is the length of the annulus
-        T_an = 348  # K is the annulus temperature
+        # Bottom section
+        D_bh=parameters["D_bh"]
+        L_bh=parameters["L_bh"]
+        S_bh=parameters["A_bh"]
+        V_bh =parameters["V_bh"]
 
-        ### Tubing bottom ###
-        D_bh=0.2
-        L_bh=75
-        S_bh=(np.pi*D_bh**2)/4
-        V_bh = S_bh * L_bh
-        T_bh = 371.5
+        # Tubing
+        L_tb = parameters["L_tb"]
+        D_tb = parameters["D_tb"]
+        S_tb = parameters["A_tb"]
+        V_tb =parameters["V_tb"]
 
-        ### Tubing ###
-        L_tb = 1973
-        D_tb = 0.134
-        S_tb = (np.pi*D_tb**2)/4
-        V_tb = S_tb * L_tb
-        T_tb = 369.4  # K is the tubing temperature
+        R = parameters["R"]
+        g = parameters["g"]
 
-        V_tb=V_tb-V_bh
+        mu_o = parameters["mu_o"]
+        mu_w = parameters["mu_w"]
+        rho_o =parameters["rho_o"]
+        rho_w =parameters["rho_w"]
 
-        # Constants (general)
-        R = 8.314  # J/(K*mol) is the universal gas constant
-        g = 9.81  # m/s^2 is the gravity
-        mu_o = 3.64e-3  # Pa.s is the viscosity
-        mu_w = 1.00e-3
-        rho_o = 760  # kg/m^3 is the density of the liquid in the tubing
-        rho_w = 1000
-        rho_L = 1.0 / (BSW / rho_w + (1.0 - BSW) / rho_o)
-        mu = np.exp((1 - BSW) * np.log(mu_o) + BSW * np.log(mu_w))
-        M_G = 0.0167  # (kg/mol) is the gas molecular weight
+        T_an = parameters["T_an"]
+        T_bh = parameters["T_bh"]
+        T_tb = parameters["T_tb"]
+        M_G = parameters["M_G"]
 
         # Pressures
-        P_gs = 140e5  # 140bar is the gas source pressure
-        P_res = 160e5  # 160bar, the constant reservoir pressure
-        P_0 = 20e5  # pressure downstream of choke
-
-        # Chokes
-        # K_gs = 9.98e-5  # is the gas lift choke constant
-        # K_gs=7.5e-4 #5.00e-4 here was the best P1
-        # K_inj = 1.75e-3  # is the injection valve choke constant #7.50 for P1
-        # K_pr = 7.00e-3  # is the production choke constant #was 2.90e-3 for P2
-        K0_int=2.50
+        P_gs = parameters["P_gs"]
+        P_res = parameters["P_res"]
+        P_0 = parameters["P_0"]
 
         # Friction
-        epsilon_tubing = 1e-3
+        K0_int=parameters["K0_int"]
+        epsilon_tubing = parameters["epsilon_tubing"]
+
+        rho_L = 1.0 / (BSW / rho_w + (1.0 - BSW) / rho_o)
+        mu = np.exp((1 - BSW) * np.log(mu_o) + BSW * np.log(mu_w))
 
         # ---------- unpack ----------
         m_G_an=y[0]
@@ -85,6 +82,7 @@ def make_glc_well_rigorous(BSW,
         m_o_t=y[2]
         m_w_t=y[3]
         m_G_b=y[4]
+
         m_o_b=y[5]
         m_w_b =y[6]
         u1=u[0]
@@ -96,7 +94,6 @@ def make_glc_well_rigorous(BSW,
         P_tb_b_g=z[1] # Pressure at the bottom of the tubing, closed at g7
         w_res_g=z[2] # Reservoir flow in kg/s
         w_up_g=z[3] # Flow into the tubing in kg/s
-
 
         # -----------------------
         # PART 1 - RESERVOIR INFLOW
@@ -152,23 +149,11 @@ def make_glc_well_rigorous(BSW,
         V_o_bh_states = m_o_b / rho_o
         V_L_bh_states=V_w_bh_states+V_o_bh_states
 
-        alpha_L_tb=(V_w_tb_states+V_o_tb_states)/V_tb
+        alpha_L_tb=V_L_tb_states/V_tb
         alpha_G_tb=1.0-alpha_L_tb
 
-        alpha_L_bh=(V_w_bh_states+V_o_bh_states)/V_bh
+        alpha_L_bh=V_L_bh_states/V_bh
         alpha_G_bh=1.0-alpha_L_bh
-
-        V_L_bh_states_safe = smooth_max_scaled(V_L_bh_states, 1e-9)
-        V_L_tb_states_safe = smooth_max_scaled(V_L_tb_states, 1e-9)
-
-        # Liquid compositions in each CV (for splitting oil/water)
-        f_w_b = V_w_bh_states / V_L_bh_states_safe
-        f_w_t = V_w_tb_states / V_L_tb_states_safe
-
-        # Densities in each CV (use constant rho_L in spirit of article; you can swap to state-based if desired)
-        # Using constant rho_L keeps consistency with the article’s closure style.
-        rho_L_tb = rho_L
-        rho_L_bh = rho_L
 
         # Mixture density in each CV (volume averaged)
         rho_mix_tb = (m_o_t+m_w_t+m_G_t)/V_tb
@@ -180,14 +165,35 @@ def make_glc_well_rigorous(BSW,
         # PART 5 - Decomposition of w_up
         # -----------------------
 
-        alpha_G_bh_mass = (alpha_G_bh * rho_G_bh) / rho_mix_bh_safe
-        alpha_G_bh_mass = ca.fmin(ca.fmax(alpha_G_bh_mass, 0.0), 1.0)  # keep bounded
+        # Definitions of mass fractions
+        # Bottom hole
 
-        w_G_up = alpha_G_bh_mass * w_up_g
-        w_L_up = (1.0 - alpha_G_bh_mass) * w_up_g
+        m_tot_bh = m_G_b + m_o_b + m_w_b
+        m_L_bh = m_o_b + m_w_b
 
-        w_w_up = f_w_b * w_L_up
-        w_o_up = (1.0 - f_w_b) * w_L_up
+        m_tot_bh_safe = smooth_max_scaled(m_tot_bh, 1e-9)
+        m_L_bh_safe = smooth_max_scaled(m_L_bh, 1e-9)
+
+        x_G_bh = m_G_b / m_tot_bh_safe
+        x_w_bh = m_w_b / m_L_bh_safe
+
+        # Tubing
+
+        m_tot_tb = m_G_t + m_o_t + m_w_t
+        m_L_tb = m_o_t + m_w_t
+
+        m_tot_tb_safe = smooth_max_scaled(m_tot_tb, 1e-9)
+        m_L_tb_safe = smooth_max_scaled(m_L_tb, 1e-9)
+
+        x_G_tb = m_G_t / m_tot_tb_safe
+        x_w_tb = m_w_t / m_L_tb_safe
+
+        ###
+        w_G_up = x_G_bh * w_up_g
+        w_L_up = (1.0 - x_G_bh) * w_up_g
+
+        w_w_up = x_w_bh * w_L_up
+        w_o_up = (1.0 - x_w_bh) * w_L_up
 
         # -----------------------
         # PART 6 - Superficial velocities
@@ -195,11 +201,15 @@ def make_glc_well_rigorous(BSW,
 
         # Superficial velocities bottom
         U_sg_b=w_G_res/(rho_G_bh*S_bh) # 4.1
-        U_sl_b=w_L_res/(rho_L_bh*S_bh) # 4.2
+        # U_sl_b=w_L_res/(rho_L*S_bh) # 4.2
+        rho_L_bh=1/((x_w_bh/rho_w)+((1-x_w_bh)/rho_o))
+        U_sl_b=w_L_res/(rho_L_bh*S_bh)
 
         # Superficial velocities top
         U_sg_t=(w_G_up+w_G_inj)/(rho_G_tb*S_tb) # 4.3
-        U_sl_t=(w_L_up)/(rho_L_tb*S_tb) # 4.4
+        # U_sl_t=(w_L_up)/(rho_L*S_tb) # 4.4
+        rho_L_tb=1/((x_w_tb/rho_w)+((1-x_w_tb)/rho_o))
+        U_sl_t = (w_L_up) / (rho_L_tb * S_tb)
 
         U_avg_b=U_sg_b+U_sl_b # 4.5
         U_avg_t=U_sg_t+U_sl_t # 4.6
@@ -208,8 +218,10 @@ def make_glc_well_rigorous(BSW,
         # PART 7 - Friction and gravity
         # -----------------------
 
+        mu_tb =np.exp((1 - x_w_tb) * np.log(mu_o) + x_w_tb * np.log(mu_w))
+        mu_bh=np.exp((1 - x_w_bh) * np.log(mu_o) + x_w_bh * np.log(mu_w))
         # In the top section
-        Re_tb = rho_mix_tb_safe*U_avg_t*D_tb/mu
+        Re_tb = rho_mix_tb_safe*U_avg_t*D_tb/mu_tb
         Re_tb_safe=smooth_max_scaled(Re_tb,1.0)  # keep >0 for 6.9/Re
 
         log_arg_tb = (epsilon_tubing / (D_tb * 3.7)) ** 1.11 + 6.9 / Re_tb_safe
@@ -224,17 +236,17 @@ def make_glc_well_rigorous(BSW,
         g1=P_tb_b-P_tb_b_g # Here we close the loop for the tubing bottom pressure
 
         # In the bottom section
-        Re_bh = rho_mix_bh_safe*U_avg_b*D_bh/mu
+        Re_bh = rho_mix_bh_safe*U_avg_b*D_bh/mu_bh
         Re_bh_safe=smooth_max_scaled(Re_bh, 1.0)
 
         log_arg_bh=(epsilon_tubing/(D_bh*3.7))**1.11+6.9/Re_bh_safe
         log_arg_bh_safe=fmax(log_arg_bh, 1e-12)
         lambda_bh=(1.0/(1.8*log10(log_arg_bh_safe)))**2
 
-        F_bh=(lambda_bh*rho_mix_bh*U_avg_b**2*L_bh)/(2.0*D_bh)
+        F_bh=(alpha_L_bh*lambda_bh*rho_mix_bh*U_avg_b**2*L_bh)/(2.0*D_bh)
 
         dP_bh_seg=rho_mix_bh*g*L_bh+F_bh
-        P_bh=P_tb_b+dP_bh_seg
+        P_bh=P_bh_t+dP_bh_seg
 
         g2= P_bh-P_bh_g
 
@@ -262,21 +274,20 @@ def make_glc_well_rigorous(BSW,
 
         rho_G_tb_b=P_tb_b*M_G/(R*T_tb)
 
-        denom_alpha_b=(w_L_up*rho_G_tb_b+(w_G_inj+w_G_up)*rho_L_tb)
+        denom_alpha_b=(w_L_up*rho_G_tb_b+(w_G_inj+w_G_up)*rho_L_bh)
         denom_alpha_b_safe=smooth_max_scaled(denom_alpha_b, 1e-9)
 
         alpha_L_tb_b=w_L_up*rho_G_tb_b/denom_alpha_b_safe
         alpha_L_tb_t = 2 * alpha_L_tb - alpha_L_tb_b
 
         # Equation 30 - Mixture density at the top
-        rho_mix_tb_t = alpha_L_tb_t * rho_L + (1 - alpha_L_tb_t) * rho_G_tb
+        rho_mix_tb_t = alpha_L_tb_t * rho_L_tb + (1 - alpha_L_tb_t) * rho_G_tb
         rho_mix_tb_t_safe = smooth_max_scaled(rho_mix_tb_t, 1e-9)
 
         dP_tb_choke = P_tb_t - P_0
-        rho_G_tb_b=P_tb_b*M_G/(R*T_tb)
         w_out = K_pr * u1 * ca.sqrt(rho_mix_tb_t_safe * smooth_pos_scaled(dP_tb_choke) + eps)
 
-        denom_alpha_t = alpha_L_tb_t * rho_L + (1.0 - alpha_L_tb_t) * rho_G_tb
+        denom_alpha_t = alpha_L_tb_t * rho_L_tb + (1.0 - alpha_L_tb_t) * rho_G_tb
         denom_alpha_t_safe = fmax(denom_alpha_t, 1e-12)
 
         # Equation 33 - Gas Mass Fraction at top of tubing
@@ -286,8 +297,12 @@ def make_glc_well_rigorous(BSW,
 
         w_L_out = (1.0 - alpha_G_tb_t) * w_out
 
-        w_w_out = f_w_t * w_L_out
-        w_o_out = (1.0 - f_w_t) * w_L_out
+        # Liquid mass fraction of water in tubing
+        Y_w_L_t = m_w_t/smooth_max_scaled(m_w_t + m_o_t, 1e-9)
+        Y_w_L_t = ca.fmin(ca.fmax(Y_w_L_t, 0.0), 1.0)
+
+        w_w_out = Y_w_L_t * w_L_out
+        w_o_out = (1.0 - Y_w_L_t) * w_L_out
 
         # ============================================================
         # PART 8 — ODEs (states evolve)

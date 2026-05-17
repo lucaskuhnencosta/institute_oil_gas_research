@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
-from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
+from mpl_toolkits.mplot3d import Axes3D
 import matplotlib as mpl
 import numpy as np
-from sipbuild.generator.outputs.formatters import value_list
+import matplotlib.pyplot as plt
 
 from application.simulation_engine import *
 
@@ -334,9 +334,6 @@ def poly_to_string(p, var="u_1", precision=3):
 ########################  HEATMAP  #############################
 
 ############# We start with a generic plot_contour ##############
-import numpy as np
-import matplotlib.pyplot as plt
-
 
 def plot_contour(
     U1,
@@ -692,7 +689,7 @@ def overlay_boundary_curve(
     color="k",
     linewidth=2.2,
     linestyle="-",
-):
+    ):
     u1_dense = np.linspace(u1_min, u1_max, 1000)
     u2_fit = b_hat(u1_dense)
 

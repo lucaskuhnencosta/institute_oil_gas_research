@@ -68,7 +68,7 @@ Indeed, here are some gaps that need to be closed, little by little, from basic 
 All that for 2 wells so we can go to the Energy Congress with a version of the dissertation ready and heavily under review by professor Camponogara  
 We will do a symbolic push on May 18th with a dissertation-ready version of the two-well problem
 
-### THINGS NEED TO BE DONE JUST BEFORE SUBMITTING TO THE COMMITEE (May 25th through June 15th)
+### THINGS NEED TO BE DONE JUST BEFORE SUBMITTING TO THE COMMITEE (June 8th through June 15th)
 1) Improve the model splitting, I think it is inconsistent  
 2) Define the model (compressible, valves), look at Marcelo's work or other related works  
 3) Understand exactly why does the model have two or more solutions, improve the PINN algorithm (data/physics logic)  
@@ -78,3 +78,4 @@ We will do a symbolic push on May 18th with a dissertation-ready version of the 
 7) Improve run sweep so that it is more robust  
 8) Systemitize the search for 16 different well types  
 9) Define a subset of wells and constraints for robust results (2, 6, 16 wells)
+10) Figure of methods classification 

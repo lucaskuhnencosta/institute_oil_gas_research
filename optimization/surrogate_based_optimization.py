@@ -220,7 +220,7 @@ class SurrogateBasedOptimization:
     # PUBLIC API
     # =========================================================
     def solve(self):
-
+        print(f"self.N is: {self.N}")
         phase_zero_success=self.run_phase_zero()
         if not phase_zero_success:
             return {
@@ -264,6 +264,8 @@ class SurrogateBasedOptimization:
                 phi_k=self._compute_phi(z_plant_k_list)
                 if self.refinement:
                     print("Starting at production of gas:",phi_k)
+                else:
+                    print("Starting at production of oil:",-phi_k)
                 # -------------------------------
                 # 2.2 Compute theta
                 # -------------------------------
@@ -276,7 +278,7 @@ class SurrogateBasedOptimization:
                 # -------------------------------
                 # 2.3 Initialize the filter
                 # -------------------------------
-                self._filter_update(theta_k,phi_k)
+                # self._filter_update(theta_k,phi_k)
 
                 self.history.append({
                     "phase": "refinement" if self.refinement else "oil_maximization",
@@ -308,7 +310,7 @@ class SurrogateBasedOptimization:
                     "filter_list": self.filter_list,
                 })
 
-                print("\n--- FILTER INITIALIZATION ---")
+                print("\n--- FILTER VALUES ---")
                 print("u0      =", self.u_k)
                 print("phi_0   =", phi_k)
                 print("theta_0 =", theta_k)
@@ -316,7 +318,7 @@ class SurrogateBasedOptimization:
             # -------------------------------
             # 3. Convergence test at current accepted point
             # -------------------------------
-            if self.theta_k <= self.theta_tol:
+            if self.theta_k<self.theta_tol:
                 if not self.refinement:
                     oil_total = -self.phi_k
                     print("\n=== CONVERGENCE ACHIEVED ===")
@@ -725,17 +727,17 @@ class SurrogateBasedOptimization:
                        z_plant_list,
                        z_model_list,
                        u):
-        ### THIS BLOCK WILL BE DECOMISSIONED SOON
+
         if self.theta_mode=="model_mismatch":
             return self._compute_theta_model_mismatch(z_plant_list,
                                                       z_model_list)
-        ####
+        ### THIS BLOCK WILL BE DECOMISSIONED SOON
         elif self.theta_mode=="constraint_infeasibility":
             return self._compute_theta_constraint_infeasibility(z_plant_list=z_plant_list,
                                                                 z_model_list=z_model_list,
                                                                 u=u,
                                                                 include_model_mismatch=True)
-            raise ValueError(f"Unknown theta mode: {self.theta_mode}")
+        raise ValueError(f"Unknown theta mode: {self.theta_mode}")
 
     def _positive_part(self, x):
         return max(0.0, float(x))
@@ -782,8 +784,6 @@ class SurrogateBasedOptimization:
         # -------------------------------
         # 1. Model infeasibility
         # ------------------------------
-
-
 
         if include_model_mismatch:
             if z_model_list is None:
@@ -1232,7 +1232,15 @@ class SurrogateBasedOptimization:
                        theta,
                        phi):
 
-        for e in self.filter_list:
+        test_entries=list(self.filter_list)
+
+        if self.theta_k is not None and self.phi_k is not None:
+            test_entries.append({
+                "theta": float(self.theta_k),
+                "phi": float(self.phi_k),
+            })
+
+        for e in test_entries:
             cond_theta = theta <= (1 - self.gamma_theta) * e["theta"]
             cond_phi   = phi <= e["phi"] - self.gamma_f * e["theta"]
 
@@ -1242,7 +1250,30 @@ class SurrogateBasedOptimization:
         return True
 
     def _filter_update(self, theta, phi):
-        self.filter_list.append({"theta": theta, "phi": phi})
+        """
+        Add a new filter entry and remove entries dominated by it
+        no worse in both theta and phi, and strictly better in at least one
+        """
+        new_entry = {
+            "theta": float(theta),
+            "phi": float(phi),
+        }
+
+        updated_filter=[]
+
+        for e in self.filter_list:
+            dominated=(
+                new_entry["theta"] <= e["theta"]
+                and new_entry["phi"] <= e["phi"]
+                and (new_entry["theta"] < e["theta"]
+                     or new_entry["phi"] < e["phi"]
+                     )
+            )
+
+            if not dominated:
+                updated_filter.append(e)
+        updated_filter.append(new_entry)
+        self.filter_list = updated_filter
 
     # =========================================================
     # STEP HANDLING
