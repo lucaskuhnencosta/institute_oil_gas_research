@@ -1,7 +1,7 @@
 import torch
 
 from networks.networks import PINN
-from simulators.surrogate_simulator.surrogate_model_torch import glc_surrogate_dx_torch_nostuck
+from simulators.surrogate_simulator.surrogate_model_torch import glc_surrogate_dx_torch
 
 # Import your patched trainer
 from training.glc_pinn_trainer import SteadyStatePINNTrainer
@@ -29,7 +29,7 @@ net = PINN(hidden_units=[64, 64, 64],
 # 2) Trainer
 trainer = SteadyStatePINNTrainer(
     net=net,
-    surrogate_function=glc_surrogate_dx_torch_nostuck,
+    surrogate_function=glc_surrogate_dx_torch,
     well_list=well_list,
     N_col=5000,
     N_data=30,

@@ -1,14 +1,16 @@
 #GLOBAL SETTING
+from matplotlib.pyplot import title
+
 from settings import *
 # GENERAL LIBRARIES
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-
+from application.dissertation_figures.chapter4.Feasibility_start import plot_feasible_region_pretty
 
 # SPECIFIC MODULES
 from application.simulation_engine import make_model, run_sweep, fit_boundary_polynomial, extract_stability_boundary_from_grid
-from application.plotting_engine import plot_stability_map, overlay_boundary_and_fit, plot_surface
+from application.plotting_engine import plot_stability_map, overlay_boundary_and_fit, plot_surface, plot_contour_wraper
 
 #Wells
 from configuration.wells import get_wells
@@ -32,7 +34,7 @@ all_plots=False #TBB
 stability_map=True
 stability_plot=True
 
-focused_figures=True
+focused_figures=False
 heatmap_w_out=True
 ######################################################################################
 ######################################################################################
@@ -112,13 +114,92 @@ for well, params in wells.items():
                 ax.figure.savefig(filepath, format="pdf", bbox_inches="tight")
                 plt.show()
 
-    # ax=plot_contour(results_all_wells[well],
-    #                      title=f"Produção de óleo do poço {well}",
-    #                      only_stable=True,
-    #                      only_success=True,
-    #                      levels=40)
-    # ax.figure.tight_layout()
-    # ax.figure.show()
+    if heatmap_w_out:
+
+        plt.rcParams.update({
+            "font.size": 14,
+            "axes.titlesize": 18,
+            "axes.labelsize": 16,
+            "xtick.labelsize": 14,
+            "ytick.labelsize": 14,
+        })
+
+        ax, cf = plot_contour_wraper(
+            results_all_wells[well],
+            key="P_bh_bar",
+            title=f"Countor plot for well {well}",
+            zlabel="P_bh",
+            only_stable=False,
+            only_success=True,
+            levels=[60,65,70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92,
+                        93, 94, 95, 96, 97, 98, 99, 100, 110, 120, 130, 140, 150],
+            mark_optimum=False)
+        ax.figure.tight_layout()
+        ax.figure.show()
+
+        # ax, cf = plot_contour_wraper(
+        #     results_all_wells[well],
+        #     key="w_o_out",
+        #     title=f"Countor plot for well {well}",
+        #     zlabel="w_o_out",
+        #     only_stable=False,
+        #     only_success=True,
+        #     levels=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25],
+        #     mark_optimum=False)
+        # ax.figure.tight_layout()
+        # ax.figure.show()
+
+        # ax, cf = plot_contour_wraper(
+        #     results_all_wells[well],
+        #     key="w_w_out",
+        #     title=f"Countor plot for well {well}",
+        #     zlabel="w_w_out",
+        #     only_stable=False,
+        #     only_success=True,
+        #     levels=[0,1,2,3,4,5,6,7,8,9,10],
+        #     mark_optimum=False)
+        # ax.figure.tight_layout()
+        # ax.figure.show()
+        #
+        # ax, cf = plot_contour_wraper(
+        #     results_all_wells[well],
+        #     key="w_G_inj",
+        #     title=f"Countor plot for well {well}",
+        #     zlabel="w_G_inj",
+        #     only_stable=False,
+        #     only_success=True,
+        #     levels=100,
+        #     mark_optimum=False)
+        # ax.figure.tight_layout()
+        # ax.figure.show()
+
+        # ax, cf = plot_contour_wraper(
+        #     results_all_wells[well],
+        #     key="w_out",
+        #     title=f"Countor plot for well {well}",
+        #     zlabel="w_out",
+        #     only_stable=False,
+        #     only_success=True,
+        #     levels=100,
+        #     mark_optimum=False)
+        # ax.figure.tight_layout()
+        # ax.figure.show()
+
+        fig, ax, feasible = plot_feasible_region_pretty(
+            u1_grid=results_all_wells[well]["u1_grid"],
+            u2_grid=results_all_wells[well]["u2_grid"],
+            bottomhole_pressure_values=results_all_wells[well]["OUT"]["P_bh_bar"],
+            tubing_pressure_values=results_all_wells[well]["OUT"]["P_tb_b_bar"],
+            p_tb_max=120.0,
+            p_bh_min=80.0,
+            instability_coef_dict=coeff_stability[well],
+            instability_side="above",
+            n_fine=500,
+            save_path="feasible_region.pdf",
+        )
+
+        ax.figure.tight_layout()
+        # ax.figure.show()
 
     if focused_figures:
         U1=results_all_wells[well]["U1"]
@@ -134,8 +215,8 @@ for well, params in wells.items():
             fig1.add_subplot(2, 2, 4, projection="3d")
         ]
         plot_surface(fig1,axes[0], U1, U2, results_all_wells[well]["OUT"]["P_bh_bar"], "Bottomhole Pressure", "Bottomhole Pressure (bar)")
-        plot_surface(fig1, axes[1], U1, U2, results_all_wells[well]["OUT"]["P_an_bar"], "Annulus Pressure", "Annulus Pressure(bar)")
-        plot_surface(fig1,axes[2], U1, U2, results_all_wells[well]["OUT"]["P_tb_b_bar"],  "Tubing Pressure", "Tubing Pressure (bar)")
+        plot_surface(fig1, axes[1], U1, U2, results_all_wells[well]["OUT"]["F_t_bar"], "Tubing friction(bar)","friction")
+        plot_surface(fig1,axes[2], U1, U2, results_all_wells[well]["OUT"]["P_hidro_tb_bar"],  "Hydrosctatic", "Hrdro")
         plot_surface(fig1,axes[3], U1, U2, results_all_wells[well]["OUT"]["w_G_inj"], "Gas Lift", "Gas Lift (kg/s)")
         axes[0].view_init(elev=40, azim=45)
         axes[1].view_init(elev=40,azim=45)# opposite view
@@ -183,21 +264,21 @@ print(f"coeff_stability: {coeff_stability}")
 #     plt.tight_layout()
 #     plt.show()
 #
-#     print(f"Minimum m_G_an is {np.min(results_all["surrogate"]["OUT"]["m_G_an"])}")
-#     print(f"Minimum m_G_tb is {np.min(results_all["surrogate"]["OUT"]["m_G_t"])}")
-#     print(f"Minimum m_L_tb is {np.min(results_all["surrogate"]["OUT"]["m_o_t"])}")
-#
-#     print(f"Maximum m_G_an is {np.max(results_all["surrogate"]["OUT"]["m_G_an"])}")
-#     print(f"Maximum m_G_tb is {np.max(results_all["surrogate"]["OUT"]["m_G_t"])}")
-#     print(f"Maximum m_L_tb is {np.max(results_all["surrogate"]["OUT"]["m_o_t"])}")
-#
-#     print(f"Minimum P_bh_bar is {np.min(results_all["surrogate"]["OUT"]["P_bh_bar"])}")
-#     print(f"Minimum P_tb_b_bar is {np.min(results_all["surrogate"]["OUT"]["P_tb_b_bar"])}")
-#     print(f"Minimum mass of oil produced is {np.min(results_all["surrogate"]["OUT"]["w_o_out"])}")
-#
-#     print(f"MaximumP_bh_bar is {np.max(results_all["surrogate"]["OUT"]["P_bh_bar"])}")
-#     print(f"Maximum P_tb_b_bar is {np.max(results_all["surrogate"]["OUT"]["P_tb_b_bar"])}")
-#     print(f"Maximum mass of oil produced is {np.max(results_all["surrogate"]["OUT"]["w_o_out"])}")
+    # print(f"Minimum m_G_an is {np.min(results_all["surrogate"]["OUT"]["m_G_an"])}")
+    # print(f"Minimum m_G_tb is {np.min(results_all["surrogate"]["OUT"]["m_G_t"])}")
+    # print(f"Minimum m_L_tb is {np.min(results_all["surrogate"]["OUT"]["m_o_t"])}")
+    #
+    # print(f"Maximum m_G_an is {np.max(results_all["surrogate"]["OUT"]["m_G_an"])}")
+    # print(f"Maximum m_G_tb is {np.max(results_all["surrogate"]["OUT"]["m_G_t"])}")
+    # print(f"Maximum m_L_tb is {np.max(results_all["surrogate"]["OUT"]["m_o_t"])}")
+    #
+    # print(f"Minimum P_bh_bar is {np.min(results_all["surrogate"]["OUT"]["P_bh_bar"])}")
+    # print(f"Minimum P_tb_b_bar is {np.min(results_all["surrogate"]["OUT"]["P_tb_b_bar"])}")
+    # print(f"Minimum mass of oil produced is {np.min(results_all["surrogate"]["OUT"]["w_o_out"])}")
+    #
+    # print(f"MaximumP_bh_bar is {np.max(results_all["surrogate"]["OUT"]["P_bh_bar"])}")
+    # print(f"Maximum P_tb_b_bar is {np.max(results_all["surrogate"]["OUT"]["P_tb_b_bar"])}")
+    # print(f"Maximum mass of oil produced is {np.max(results_all["surrogate"]["OUT"]["w_o_out"])}")
 #
 #
 # elif MODE == "both":

@@ -86,17 +86,11 @@ def solve_equilibrium_ipopt(
 
     w_min=1e-4
     Vmin_g = 1e-12  # gas cushion
-    rho_o = 760.0
-    rho_w = 1000.0
-    D_bh = 0.2
-    L_bh = 75.0
-    S_bh = ca.pi * D_bh ** 2 / 4.0
-    V_bh = S_bh * L_bh
+    V_tb =24.99334640648408
+    V_bh = 2.356194490192345
+    rho_o = 760
+    rho_w = 1000
 
-    D_tb = 0.134
-    L_tb = 1973.0
-    S_tb = ca.pi * D_tb ** 2 / 4.0
-    V_tb = S_tb * L_tb
 
     V_L_t = m_o_t / rho_o + m_w_t / rho_w
     V_L_b = m_o_b / rho_o + m_w_b / rho_w
@@ -119,17 +113,23 @@ def solve_equilibrium_ipopt(
     lbg.extend([0] * nx)
     ubg.extend([0] * nx)
 
+
+    # if not is_dae:
+    #     # enforce: V_L <= V - Vmin_g
+    #     g_list.append(V_L_t)
+    #     lbg.append(0.0)
+    #     ubg.append(float(V_tb+V_bh - Vmin_g))
+
     if is_dae:
         g_list.append(g_var)
         lbg.extend([0] * nz)
         ubg.extend([0] * nz)
 
-    # enforce: V_L <= V - Vmin_g
-    g_list.append(V_L_t)
-    lbg.append(0.0)
-    ubg.append(float(V_tb - Vmin_g))
+        # enforce: V_L <= V - Vmin_g
+        g_list.append(V_L_t)
+        lbg.append(0.0)
+        ubg.append(float(V_tb - Vmin_g))
 
-    if is_dae:
         g_list.append(V_L_b)
         lbg.append(0.0)
         ubg.append(float(V_bh - Vmin_g))

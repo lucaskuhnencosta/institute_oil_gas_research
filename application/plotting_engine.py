@@ -191,12 +191,16 @@ def plot_stability_map(U1,
                        STABLE,
                        U1_MIN,
                        U2_MIN,
-                       title,
+                       title=None,
+                        CONSULTED=None,
+                       show_boundary=False,
+                       u1_grid=None,
+                       u2_grid=None,
                        ax=None):
     ######################################################################################
-    color_primary = (54 / 255, 32 / 255, 229 / 255)  # blue
-    color_secondary = (240 / 255, 101 / 255, 74 / 255)  # orange
-    color_third = (183 / 255, 53 / 255, 192 / 255)  # purple (saved)
+    color_stable = (0.00, 0.45, 0.00)  # dark green
+    color_unstable = (0.75, 0.00, 0.00)  # dark red
+    color_boundary = (0.00, 0.20, 0.80) #blue
     #####################################################################
     """
         U1, U2: meshgrid arrays (same shape)
@@ -207,43 +211,142 @@ def plot_stability_map(U1,
         """
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=(8, 8))
+        fig, ax = plt.subplots(figsize=(6, 6))
+    else:
+        fig = ax.figure
 
-
-    xlim=(U1_MIN-0.05,1.05),
-    ylim=(U2_MIN-0.05,1.05),
+    xlim=(U1_MIN-0.05,1.05)
+    ylim=(U2_MIN-0.05,1.05)
 
     U1=np.asarray(U1,dtype=float)
     U2=np.asarray(U2,dtype=float)
-
     STABLE=np.asarray(STABLE,dtype=float)
 
     # fig,ax=plt.subplots(figsize=(8, 8))
 
+    if CONSULTED is None:
+        CONSULTED = np.ones_like(STABLE,dtype=bool)
+    else:
+        CONSULTED = np.asarray(CONSULTED,dtype=bool)
+
     stable_mask=(STABLE==1.0)
     unstab_mask=(STABLE==0.0)
 
+    stable_light=stable_mask &(~CONSULTED)
+    stable_dark=stable_mask &CONSULTED
 
-    if np.any(stable_mask):
-        ax.scatter(U1[stable_mask],
-                   U2[stable_mask],
-                   marker='o',
-                   s=80,
-                   facecolors="none",
-                   edgecolors=color_primary,
-                   linewidths=1.5,
-                   label="Equilíbrio estável")
-    if np.any(unstab_mask):
-        ax.scatter(U1[unstab_mask],
-                   U2[unstab_mask],
-                   marker='x',
-                   s=80,
-                   c=color_secondary,
-                   linewidths=1.5,
-                   label="Equilíbrio instável"
-                   )
-    ax.set_xlabel("$u_1$",fontsize=16)
-    ax.set_ylabel("$u_2$",fontsize=16)
+    unstable_light=unstab_mask &(~CONSULTED)
+    unstable_dark=unstab_mask &(CONSULTED)
+
+    # -------------------------------------------------------------------------
+    # Non-consulted points: light shades
+    # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # Non-consulted points: light shades
+    # -------------------------------------------------------------------------
+    if np.any(stable_light):
+        ax.scatter(
+            U1[stable_light],
+            U2[stable_light],
+            marker="o",
+            s=70,
+            facecolors="none",
+            edgecolors=color_stable,
+            linewidths=1.0,
+            alpha=0.25,
+            # label="Equilíbrio estável não consultado",
+            zorder=1,
+        )
+
+    if np.any(unstable_light):
+        ax.scatter(
+            U1[unstable_light],
+            U2[unstable_light],
+            marker="x",
+            s=70,
+            c=[color_unstable],
+            linewidths=1.0,
+            alpha=0.25,
+            # label="Equilíbrio instável não consultado",
+            zorder=1,
+        )
+
+    # -------------------------------------------------------------------------
+    # Consulted points: strong shades
+    # -------------------------------------------------------------------------
+    if np.any(stable_dark):
+        ax.scatter(
+            U1[stable_dark],
+            U2[stable_dark],
+            marker="o",
+            s=90,
+            facecolors="none",
+            edgecolors=color_stable,
+            linewidths=1.8,
+            alpha=1.0,
+            label="Stable",
+            zorder=3,
+        )
+
+    if np.any(unstable_dark):
+        ax.scatter(
+            U1[unstable_dark],
+            U2[unstable_dark],
+            marker="x",
+            s=90,
+            c=[color_unstable],
+            linewidths=1.8,
+            alpha=1.0,
+            label="Unstable",
+            zorder=3,
+        )
+    if show_boundary:
+        if u1_grid is None or u2_grid is None:
+            raise ValueError("u1_grid and u2_grid must be provided when show_boundary=True.")
+
+        boundary_u1, boundary_u2 = extract_stability_boundary_from_grid(
+            u1_grid=u1_grid,
+            u2_grid=u2_grid,
+            STABLE=STABLE,
+        )
+
+        if boundary_u1.size > 0:
+            ax.scatter(
+                boundary_u1,
+                boundary_u2,
+                marker="o",
+                s=90,
+                facecolors="none",
+                edgecolors=color_boundary,
+                linewidths=2.0,
+                alpha=1.0,
+                label="Stability frontier set $\mathcal{F}_s$",
+                zorder=4,
+            )
+
+    #
+    #
+    #
+    # if np.any(stable_mask):
+    #     ax.scatter(U1[stable_mask],
+    #                U2[stable_mask],
+    #                marker='o',
+    #                s=80,
+    #                facecolors="none",
+    #                edgecolors=color_primary,
+    #                linewidths=1.5,
+    #                label="Equilíbrio estável")
+    # if np.any(unstab_mask):
+    #     ax.scatter(U1[unstab_mask],
+    #                U2[unstab_mask],
+    #                marker='x',
+    #                s=80,
+    #                c=color_secondary,
+    #                linewidths=1.5,
+    #                label="Equilíbrio instável"
+    #                )
+    ax.set_xlabel("Production choke opening $u_1$",fontsize=16)
+    ax.set_ylabel("Gas-lift choke opening $u_2$",fontsize=16)
     ax.set_xlim(*xlim)
     ax.set_ylim(*ylim)
     ax.grid(True, alpha=0.35)
@@ -278,16 +381,15 @@ def overlay_boundary_and_fit(ax,
     u2_fit=b_hat(u1_dense)
 
     eq_str=poly_to_string(b_hat,var="u_1")
-
     ax.plot(u1_dense,
             u2_fit,
             "k-",
             linewidth=2.2,
-            label=rf"$u_2={eq_str}$")
+            label=f"$u_2={eq_str}$")
     handles, labels = ax.get_legend_handles_labels()
 
-    ax.set_xlabel("$u_1$",fontsize=16)
-    ax.set_ylabel("$u_2$",fontsize=16)
+    ax.set_xlabel("Production choke opening $u_1$",fontsize=16)
+    ax.set_ylabel("Gas-lift choke opening $u_2$",fontsize=16)
 
     if handles:
         leg = ax.legend(
@@ -327,13 +429,70 @@ def poly_to_string(p, var="u_1", precision=3):
             terms.append(f"{c_str}{var}^{{{power}}}")
 
     return " + ".join(terms).replace("+ -", "- ")
-################################################################
 
 
 ################################################################
-########################  HEATMAP  #############################
+################################################################
+######################### HEATMAP START  #######################
+################################################################
+################################################################
+################################################################
 
-############# We start with a generic plot_contour ##############
+def plot_contour_wraper(
+    results,
+    key="w_o_out",
+    title="Contour plot",
+    zlabel=None,
+    only_stable=False,
+    only_success=True,
+    levels=40,
+    mark_optimum=False,
+    u1_opt=None,
+    u2_opt=None,
+    z_opt=None,
+):
+    """
+    FINAL DISSERTATION VERSION
+
+    Project-specific wrapper for contour plots from simulation results.
+
+    This function extracts U1, U2, Z and builds the mask.
+    All figure-level customization is delegated to plot_contour through **plot_kwargs.
+    """
+
+    U1 = np.asarray(results["U1"], dtype=float)
+    U2 = np.asarray(results["U2"], dtype=float)
+    Z = np.asarray(results["OUT"][key], dtype=float)
+
+    mask = np.zeros_like(Z, dtype=bool)
+
+    if only_success:
+        SUCCESS = np.asarray(results["SUCCESS"], dtype=bool)
+        mask |= ~SUCCESS
+
+    if only_stable:
+        STABLE = np.asarray(results["STABLE"], dtype=float)
+        mask |= ~(STABLE == 1.0)
+
+    if zlabel is None:
+        zlabel = key
+
+    return plot_contour(
+        U1=U1,
+        U2=U2,
+        Z=Z,
+        title=title,
+        zlabel=zlabel,
+        u1_opt=u1_opt,
+        u2_opt=u2_opt,
+        z_opt=z_opt,
+        fill_levels=levels,
+        line_levels=levels,
+        mask=mask,
+        mark_optimum=mark_optimum,
+    )
+
+
 
 def plot_contour(
     U1,
@@ -362,14 +521,37 @@ def plot_contour(
     ylim=None,
     xticks=None,
     yticks=None,
+    xlabel=r"$u_1$",
+    ylabel=r"$u_2$",
 ):
     """
+    FINAL DISSERTATION VERSION
+
     Generic contour plot utility.
+
+    Parameters
+    ----------
+    U1, U2 : array-like
+        Meshgrid coordinates.
+    Z : array-like
+        Quantity to plot.
+    title : str
+        Plot title.
+    zlabel : str
+        Colorbar label.
+    u1_opt, u2_opt, z_opt : float, optional
+        Optional point to mark on the plot.
+    fill_levels, line_levels : int or array-like
+        Levels for filled and line contours.
+    mask : array-like of bool, optional
+        True values are masked from the plot.
+    just_contour : bool
+        If True, only contour lines are plotted.
 
     Returns
     -------
     ax : matplotlib axis
-    mappable : contourf object if available, otherwise contour object
+    mappable : matplotlib contour object
     """
 
     Z_plot = np.array(Z, dtype=float, copy=True)
@@ -394,20 +576,28 @@ def plot_contour(
             vmin=vmin,
             vmax=vmax,
         )
-
-    # Line contour
-    cs = ax.contour(
-        U1,
-        U2,
-        Z_plot,
-        levels=line_levels,
-        cmap=cmap if just_contour else None,
-        colors=contour_color if not just_contour else None,
-        linewidths=linewidths,
-        alpha=alpha,
-        vmin=vmin,
-        vmax=vmax,
-    )
+    if just_contour:
+        cs = ax.contour(
+            U1,
+            U2,
+            Z_plot,
+            levels=line_levels,
+            cmap=cmap,
+            linewidths=linewidths,
+            alpha=alpha,
+            vmin=vmin,
+            vmax=vmax,
+        )
+    else:
+        cs = ax.contour(
+            U1,
+            U2,
+            Z_plot,
+            levels=line_levels,
+            colors=contour_color,
+            linewidths=linewidths,
+            alpha=alpha,
+        )
 
     # Colorbar
     if add_colorbar:
@@ -446,8 +636,8 @@ def plot_contour(
             frame.set_linewidth(1.0)
 
     # Labels and title
-    ax.set_xlabel(r"$u_1$", fontsize=16)
-    ax.set_ylabel(r"$u_2$", fontsize=16)
+    ax.set_xlabel(xlabel, fontsize=16)
+    ax.set_ylabel(ylabel, fontsize=16)
     ax.set_title(title, fontsize=18, pad=10)
     ax.tick_params(axis="both", which="major", labelsize=12)
 
@@ -473,143 +663,14 @@ def plot_contour(
     # Return the right mappable for external colorbar use
     mappable = cf if cf is not None else cs
     return ax, mappable
-# def plot_contour(
-#         U1,
-#         U2,
-#         Z,
-#         u1_opt,
-#         u2_opt,
-#         z_opt,
-#         title,
-#         zlabel='Z',
-#         fill_levels=40,
-#         line_levels=40,
-#         mask=None,
-#         mark_optimum=True,
-#         optimum="max",
-#         ax=None,
-#         add_colorbar=True,
-#         vmin=None,
-#         vmax=None,
-#         just_contour=False):
-#
-#     Z_plot=np.array(Z,dtype=float,copy=True)
-#
-#     if mask is not None:
-#         Z_plot[np.asarray(mask,dtype=bool)] = np.nan
-#
-#     if ax is None:
-#         fig, ax = plt.subplots(figsize=(8, 8))
-#     else:
-#         fig=ax.figure
-#
-#     if not just_contour:
-#         cf = ax.contourf(U1,
-#                          U2,
-#                          Z_plot,
-#                          levels=fill_levels,
-#                          vmin=vmin,
-#                          vmax=vmax)
-#
-#     cs = ax.contour(U1,
-#                     U2,
-#                     Z_plot,
-#                     levels=line_levels,
-#                     cmap="viridis",
-#                      linewidths=2.0,
-#                     alpha=0.9,
-#                     vmin=vmin,
-#                     vmax=vmax)
-#
-#     # ax.clabel(cs, inline=True, fontsize=24)
-#
-#     if add_colorbar:
-#         cbar=fig.colorbar(cf, ax=ax, label=zlabel)
-#         cbar.set_label(zlabel, fontsize=16)
-#
-#         # tick labels
-#         cbar.ax.tick_params(labelsize=14)
-#
-#     if mark_optimum:
-#         ax.plot(
-#             u1_opt,
-#             u2_opt,
-#             "b*",
-#             markersize=14,
-#             label=f"Ótimo irrestrito {z_opt:.2f}"
-#         )
-#
-#         handles, labels = ax.get_legend_handles_labels()
-#         if handles:
-#             leg = ax.legend(
-#                 loc="lower center",
-#                 frameon=True,
-#                 fancybox=True,
-#                 fontsize=14
-#             )
-#             frame = leg.get_frame()
-#             frame.set_facecolor("white")
-#             frame.set_edgecolor("black")
-#             frame.set_alpha(1)
-#             frame.set_linewidth(1.0)
-#
-#     ax.set_xlabel(f"$u_1$",fontsize=16)
-#     ax.set_ylabel(f"$u_2$",fontsize=16)
-#     ax.set_title(title, fontsize=18,pad=12)
-#     ax.tick_params(axis="both", which="major", labelsize=14)
-#     ax.set_aspect('equal', adjustable='box')
-#
-#     ticks = [0.25, 0.5, 0.75, 1.0]
-#     ax.set_xticks(ticks)
-#     ax.set_yticks(ticks)
-#     ax.set_xlim(0.10,1.00)
-#     ax.set_ylim(0.10,1.00)
-#     # optional: nicer formatting
-#     ax.set_xticklabels([f"{t:.2f}" for t in ticks])
-#     ax.set_yticklabels([f"{t:.2f}" for t in ticks])
-#     return ax,cs
 
-############# We make a wraper for simulation models ##############
+################################################################
+################################################################
+######################### HEATMAP END  #######################
+################################################################
+################################################################
+################################################################
 
-def plot_surrogate_contour(
-    results,
-    key="w_o_out",
-    title="Contour plot",
-    zlabel=None,
-    only_stable=True,
-    only_success=True,
-    levels=40,
-    mark_optimum=True,
-    optimum="max",
-):
-    U1 = np.asarray(results["U1"], dtype=float)
-    U2 = np.asarray(results["U2"], dtype=float)
-    Z = np.asarray(results["OUT"][key], dtype=float)
-
-    mask = np.zeros_like(Z, dtype=bool)
-
-    if only_success:
-        SUCCESS = np.asarray(results["SUCCESS"], dtype=bool)
-        mask |= ~SUCCESS
-
-    if only_stable:
-        STABLE = np.asarray(results["STABLE"], dtype=float)
-        mask |= ~(STABLE == 1.0)
-
-    if zlabel is None:
-        zlabel = key
-
-    return plot_contour(
-        U1=U1,
-        U2=U2,
-        Z=Z,
-        title=title,
-        zlabel=zlabel,
-        levels=levels,
-        mask=mask,
-        mark_optimum=mark_optimum,
-        optimum=optimum,
-    )
 
 def overlay_common_boundaries(
         ax,
@@ -1031,3 +1092,99 @@ def overlay_boundary_curve(
     #
     #
 
+
+# def plot_contour(
+#         U1,
+#         U2,
+#         Z,
+#         u1_opt,
+#         u2_opt,
+#         z_opt,
+#         title,
+#         zlabel='Z',
+#         fill_levels=40,
+#         line_levels=40,
+#         mask=None,
+#         mark_optimum=True,
+#         optimum="max",
+#         ax=None,
+#         add_colorbar=True,
+#         vmin=None,
+#         vmax=None,
+#         just_contour=False):
+#
+#     Z_plot=np.array(Z,dtype=float,copy=True)
+#
+#     if mask is not None:
+#         Z_plot[np.asarray(mask,dtype=bool)] = np.nan
+#
+#     if ax is None:
+#         fig, ax = plt.subplots(figsize=(8, 8))
+#     else:
+#         fig=ax.figure
+#
+#     if not just_contour:
+#         cf = ax.contourf(U1,
+#                          U2,
+#                          Z_plot,
+#                          levels=fill_levels,
+#                          vmin=vmin,
+#                          vmax=vmax)
+#
+#     cs = ax.contour(U1,
+#                     U2,
+#                     Z_plot,
+#                     levels=line_levels,
+#                     cmap="viridis",
+#                      linewidths=2.0,
+#                     alpha=0.9,
+#                     vmin=vmin,
+#                     vmax=vmax)
+#
+#     # ax.clabel(cs, inline=True, fontsize=24)
+#
+#     if add_colorbar:
+#         cbar=fig.colorbar(cf, ax=ax, label=zlabel)
+#         cbar.set_label(zlabel, fontsize=16)
+#
+#         # tick labels
+#         cbar.ax.tick_params(labelsize=14)
+#
+#     if mark_optimum:
+#         ax.plot(
+#             u1_opt,
+#             u2_opt,
+#             "b*",
+#             markersize=14,
+#             label=f"Ótimo irrestrito {z_opt:.2f}"
+#         )
+#
+#         handles, labels = ax.get_legend_handles_labels()
+#         if handles:
+#             leg = ax.legend(
+#                 loc="lower center",
+#                 frameon=True,
+#                 fancybox=True,
+#                 fontsize=14
+#             )
+#             frame = leg.get_frame()
+#             frame.set_facecolor("white")
+#             frame.set_edgecolor("black")
+#             frame.set_alpha(1)
+#             frame.set_linewidth(1.0)
+#
+#     ax.set_xlabel(f"$u_1$",fontsize=16)
+#     ax.set_ylabel(f"$u_2$",fontsize=16)
+#     ax.set_title(title, fontsize=18,pad=12)
+#     ax.tick_params(axis="both", which="major", labelsize=14)
+#     ax.set_aspect('equal', adjustable='box')
+#
+#     ticks = [0.25, 0.5, 0.75, 1.0]
+#     ax.set_xticks(ticks)
+#     ax.set_yticks(ticks)
+#     ax.set_xlim(0.10,1.00)
+#     ax.set_ylim(0.10,1.00)
+#     # optional: nicer formatting
+#     ax.set_xticklabels([f"{t:.2f}" for t in ticks])
+#     ax.set_yticklabels([f"{t:.2f}" for t in ticks])
+#     return ax,cs

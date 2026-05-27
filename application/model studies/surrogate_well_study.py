@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 from plotly.graph_objs import heatmap
 
 # SPECIFIC MODULES
-from application.simulation_engine import make_model, run_sweep, fit_boundary_polynomial, extract_stability_boundary_from_grid
-from application.plotting_engine import plot_stability_map, overlay_boundary_and_fit, plot_contour, plot_surface
+from application.simulation_engine import *
+from application.plotting_engine import *
 
 #Wells
 from configuration.wells import get_wells
@@ -35,11 +35,11 @@ degree_polynomial = 2
 ### PLEASE INPUT HERE WHAT KIND OF PLOTS DO YOU WANT #################################
 state_plots=False
 
-stability_map=False
+stability_map=True
 stability_plot=False
 
-focused_figures=True
-heatmap_w_out=False
+focused_figures=False
+heatmap_w_out=True
 ######################################################################################
 ######################################################################################
 
@@ -56,14 +56,13 @@ for well, params in wells.items():
     BSW = params["BSW"]
     GOR = params["GOR"]
     PI = params["PI"]
-    K_gs = params["K_gs_sur"]
-    K_inj = params["K_inj_sur"]
-    K_pr = params["K_pr_sur"]
+    K_gs = params["K_gs"]
+    K_inj = params["K_inj"]
+    K_pr = params["K_pr"]
     y_guess_rig = params["y_guess_rig"]
     z_guess_rig = params["z_guess_rig"]
     y_guess_sur = params["y_guess_sur"]
-
-    model_rig = make_model(MODE,
+    model= make_model(MODE,
                        BSW=BSW,
                        GOR=GOR,
                        PI=PI,
@@ -79,12 +78,11 @@ for well, params in wells.items():
         z_guess=None
     else:
         raise ValueError("The MODE is not valid")
-    if y_guess.size != model_rig["nx"]:
+    if y_guess.size != model["nx"]:
         raise ValueError(f"y_guess_init has size {y_guess.size}, but model nx={model_rig["nx"]}")
 
 
-
-    results_all_wells[well] = run_sweep(model_rig,
+    results_all_wells[well] = run_sweep(model,
                                   U1_MIN=U1_MIN,
                                   U2_MIN=U2_MIN,
                                   U_SIM_SIZE=U_SIM_SIZE,
@@ -108,13 +106,28 @@ for well, params in wells.items():
             "coef": b_hat.c,
             "poly": b_hat
         }
-        if stability_plot:
-                ax=plot_stability_map(U1=results_all_wells[well]["U1"],
-                                   U2=results_all_wells[well]["U2"],
-                                   STABLE=results_all_wells[well]["STABLE"],
-                                   U1_MIN=U1_MIN,
-                                   U2_MIN=U2_MIN,
-                                   title=f"Mapa de estabilidade para o poço {well}")
+        if stability_map:
+            boundary_u1, boundary_u2 = extract_stability_boundary_from_grid(
+                results_all_wells[well]["u1_grid"],
+                results_all_wells[well]["u2_grid"],
+                results_all_wells[well]["STABLE"]
+            )
+            b_hat = fit_boundary_polynomial(boundary_u1,
+                                            boundary_u2,
+                                            deg=degree_polynomial)
+            print(boundary_u1, boundary_u2)
+            print(b_hat)
+            coeff_stability[well] = {
+                "coef": b_hat.c,
+                "poly": b_hat
+            }
+            if stability_plot:
+                ax = plot_stability_map(U1=results_all_wells[well]["U1"],
+                                        U2=results_all_wells[well]["U2"],
+                                        STABLE=results_all_wells[well]["STABLE"],
+                                        U1_MIN=U1_MIN,
+                                        U2_MIN=U2_MIN,
+                                        title=f"Mapa de estabilidade para o poço {well}")
                 overlay_boundary_and_fit(ax,
                                          b_hat)
                 plt.tight_layout()
@@ -127,68 +140,144 @@ for well, params in wells.items():
 
                 ax.figure.savefig(filepath, format="pdf", bbox_inches="tight")
                 plt.show()
-        print(f"coeff_stability: {coeff_stability}")
 
-    if heatmap_w_out:
-        ax=plot_w_o_out_contour(results_all_wells[well],
-                             title=f"Produção de óleo do poço {well}",
-                             only_stable=False,
-                             only_success=True,
-                             levels=40)
-        ax.figure.tight_layout()
-        ax.figure.show()
+        if heatmap_w_out:
+            plt.rcParams.update({
+                "font.size": 14,
+                "axes.titlesize": 18,
+                "axes.labelsize": 16,
+                "xtick.labelsize": 14,
+                "ytick.labelsize": 14,
+            })
 
-    if focused_figures:
-        U1=results_all_wells[well]["U1"]
-        U2=results_all_wells[well]["U2"]
-
-        fig1 = plt.figure(figsize=(9,9))
-        fig1.suptitle("Variáveis de interesse para definição do problema de otimização", fontsize=20)
-
-        axes = [
-            fig1.add_subplot(2, 2, 1, projection="3d"),
-            fig1.add_subplot(2, 2, 2, projection="3d"),
-            fig1.add_subplot(2, 2, 3, projection="3d"),
-            fig1.add_subplot(2, 2, 4, projection="3d")
-        ]
-        plot_surface(fig1,axes[0], U1, U2, results_all_wells[well]["OUT"]["P_bh_bar"], "Bottomhole Pressure", "Bottomhole Pressure (bar)")
-        plot_surface(fig1, axes[1], U1, U2, results_all_wells[well]["OUT"]["alpha_L_tb_t"], "Annulus Pressure", "Annulus Pressure(bar)")
-        plot_surface(fig1,axes[2], U1, U2, results_all_wells[well]["OUT"]["P_tb_b_bar"],  "Tubing Pressure", "Tubing Pressure (bar)")
-        plot_surface(fig1,axes[3], U1, U2, results_all_wells[well]["OUT"]["w_G_inj"], "Gas Lift", "Gas Lift (kg/s)")
-        axes[0].view_init(elev=40, azim=45)
-        axes[1].view_init(elev=40,azim=45)# opposite view
-        axes[2].view_init(elev=40,azim=45)# opposite view
-        axes[3].view_init(elev=40,azim=45)# opposite view
-        plt.tight_layout()
-        plt.show()
+            ax, cf = plot_contour_wraper(
+                results_all_wells[well],
+                key="P_bh_bar",
+                title=f"Countor plot for well {well}",
+                zlabel="P_bh",
+                only_stable=False,
+                only_success=True,
+                levels=[60,65,70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92,
+                        93, 94, 95, 96, 97, 98, 99, 100, 110, 120, 130, 140, 150],
+                mark_optimum=False)
+            ax.figure.tight_layout()
+            ax.figure.show()
 
 
+            ax.figure.tight_layout()
+            # ax.figure.show()
 
-    if state_plots:
-        OUT = results_all_wells[well]["OUT"]
-        U1=results_all_wells[well]["U1"]
-        U2=results_all_wells[well]["U2"]
-        Y = np.stack([
-            OUT["m_G_an"],
-            OUT["m_G_t"],
-            OUT["m_o_t"],
-        ], axis=2)
-        for j in range(3):
-            fig = plt.figure()
-            ax = fig.add_subplot(111, projection="3d")
+        if focused_figures:
+            U1 = results_all_wells[well]["U1"]
+            U2 = results_all_wells[well]["U2"]
 
-            plot_surface(
-                fig=fig,
-                ax=ax,
-                U1=U1,
-                U2=U2,
-                Z=Y[:, :, j],
-                title=f"y{j + 1}(u1,u2)",
-                zlabel=f"y{j + 1}",
-            )
+            fig1 = plt.figure(figsize=(9, 9))
+            fig1.suptitle("Variáveis de interesse para definição do problema de otimização", fontsize=20)
 
+            axes = [
+                fig1.add_subplot(2, 2, 1, projection="3d"),
+                fig1.add_subplot(2, 2, 2, projection="3d"),
+                fig1.add_subplot(2, 2, 3, projection="3d"),
+                fig1.add_subplot(2, 2, 4, projection="3d")
+            ]
+            plot_surface(fig1, axes[0], U1, U2, results_all_wells[well]["OUT"]["P_bh_bar"], "Bottomhole Pressure",
+                         "Bottomhole Pressure (bar)")
+            plot_surface(fig1, axes[1], U1, U2, results_all_wells[well]["OUT"]["F_t_bar"], "Tubing friction(bar)",
+                         "friction")
+            plot_surface(fig1, axes[2], U1, U2, results_all_wells[well]["OUT"]["P_hidro_tb_bar"], "Hydrosctatic",
+                         "Hrdro")
+            plot_surface(fig1, axes[3], U1, U2, results_all_wells[well]["OUT"]["w_G_inj"], "Gas Lift",
+                         "Gas Lift (kg/s)")
+            axes[0].view_init(elev=40, azim=45)
+            axes[1].view_init(elev=40, azim=45)  # opposite view
+            axes[2].view_init(elev=40, azim=45)  # opposite view
+            axes[3].view_init(elev=40, azim=45)  # opposite view
             plt.tight_layout()
             plt.show()
+
+    print(f"coeff_stability: {coeff_stability}")
+
+        #     if stability_plot:
+        #             ax=plot_stability_map(U1=results_all_wells[well]["U1"],
+        #                                U2=results_all_wells[well]["U2"],
+        #                                STABLE=results_all_wells[well]["STABLE"],
+        #                                U1_MIN=U1_MIN,
+        #                                U2_MIN=U2_MIN,
+        #                                title=f"Mapa de estabilidade para o poço {well}")
+        #             overlay_boundary_and_fit(ax,
+        #                                      b_hat)
+        #             plt.tight_layout()
+        #
+        #             save_dir = os.path.join("results", "figures", "stability_maps")
+        #             os.makedirs(save_dir, exist_ok=True)
+        #
+        #             filename = f"stability_map_{well}.pdf"
+        #             filepath = os.path.join(save_dir, filename)
+        #
+        #             ax.figure.savefig(filepath, format="pdf", bbox_inches="tight")
+        #             plt.show()
+        #     print(f"coeff_stability: {coeff_stability}")
+        #
+        # if heatmap_w_out:
+        #     ax=plot_w_o_out_contour(results_all_wells[well],
+        #                          title=f"Produção de óleo do poço {well}",
+        #                          only_stable=False,
+        #                          only_success=True,
+        #                          levels=40)
+        #     ax.figure.tight_layout()
+        #     ax.figure.show()
+        #
+        # if focused_figures:
+        #     U1=results_all_wells[well]["U1"]
+        #     U2=results_all_wells[well]["U2"]
+        #
+        #     fig1 = plt.figure(figsize=(9,9))
+        #     fig1.suptitle("Variáveis de interesse para definição do problema de otimização", fontsize=20)
+        #
+        #     axes = [
+        #         fig1.add_subplot(2, 2, 1, projection="3d"),
+        #         fig1.add_subplot(2, 2, 2, projection="3d"),
+        #         fig1.add_subplot(2, 2, 3, projection="3d"),
+        #         fig1.add_subplot(2, 2, 4, projection="3d")
+        #     ]
+        #     plot_surface(fig1,axes[0], U1, U2, results_all_wells[well]["OUT"]["P_bh_bar"], "Bottomhole Pressure", "Bottomhole Pressure (bar)")
+        #     plot_surface(fig1, axes[1], U1, U2, results_all_wells[well]["OUT"]["alpha_L_tb_t"], "Annulus Pressure", "Annulus Pressure(bar)")
+        #     plot_surface(fig1,axes[2], U1, U2, results_all_wells[well]["OUT"]["P_tb_b_bar"],  "Tubing Pressure", "Tubing Pressure (bar)")
+        #     plot_surface(fig1,axes[3], U1, U2, results_all_wells[well]["OUT"]["w_G_inj"], "Gas Lift", "Gas Lift (kg/s)")
+        #     axes[0].view_init(elev=40, azim=45)
+        #     axes[1].view_init(elev=40,azim=45)# opposite view
+        #     axes[2].view_init(elev=40,azim=45)# opposite view
+        #     axes[3].view_init(elev=40,azim=45)# opposite view
+        #     plt.tight_layout()
+        #     plt.show()
+        #
+        #
+        #
+        # if state_plots:
+        #     OUT = results_all_wells[well]["OUT"]
+        #     U1=results_all_wells[well]["U1"]
+        #     U2=results_all_wells[well]["U2"]
+        #     Y = np.stack([
+        #         OUT["m_G_an"],
+        #         OUT["m_G_t"],
+        #         OUT["m_o_t"],
+        #     ], axis=2)
+        #     for j in range(3):
+        #         fig = plt.figure()
+        #         ax = fig.add_subplot(111, projection="3d")
+        #
+        #         plot_surface(
+        #             fig=fig,
+        #             ax=ax,
+        #             U1=U1,
+        #             U2=U2,
+        #             Z=Y[:, :, j],
+        #             title=f"y{j + 1}(u1,u2)",
+        #             zlabel=f"y{j + 1}",
+        #         )
+        #
+        #         plt.tight_layout()
+        #         plt.show()
 
 
         ####################################

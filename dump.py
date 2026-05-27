@@ -561,8 +561,8 @@
 # )
 #
 # fig.show()
-
-import numpy as np
+#
+# import numpy as np
 # import matplotlib.pyplot as plt
 # tiny=1e-12
 # eps=1e-12
@@ -1275,3 +1275,531 @@ from casadi import *
 # #         "Z_NAMES": Z_NAMES,
 # #         "F_all": F_all,
 # #     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# MODEL MISMATCH
+
+# # -------------------------------
+# # 1. Model infeasibility
+# # ------------------------------
+#
+# if include_model_mismatch:
+#     if z_model_list is None:
+#         raise ValueError("z_model_list must not be None")
+#
+#     scale = np.array([
+#         1 / 10,  # P_bh_bar
+#         1 / 10,  # P_tb_b_bar
+#         1.0,  # w_G_inj
+#         1.0,  # w_res
+#         1.0,  # w_L_res
+#         1.0,  # w_G_res
+#         1.0,  # w_w_out
+#         1.0,  # w_o_out
+#     ], dtype=float)
+#
+#     for z_p_j, z_m_j in zip(z_plant_list, z_model_list):
+#         err_j = np.array(z_p_j).reshape((-1,)) - np.array(z_m_j).reshape((-1,))
+#         err_j_scaled = scale * err_j
+#
+#         theta_model_j = float(np.linalg.norm(err_j_scaled, ord=2))
+#
+#         theta_vector.append(theta_model_j)
+#         theta_details["model_mismatch_per_well"].append(theta_model_j)
+
+
+
+#Garbage dumper
+
+# import casadi as ca
+# from application.simulation_engine import make_model
+# from utilities.block_builders import *
+# from networks.networks import *
+#
+#
+# def optimize_single_well_production_NN(
+#         F_u2z,
+#         F_pinn,
+#         u_guess=(0.5,0.5),
+#         P_max_tb_b_bar=120,
+#         P_min_bh_bar=90,
+#         ):
+#     ipopt_opts = {
+#         "ipopt.print_level": 0,
+#         "print_time": 0,
+#         "ipopt.max_iter": 6000,
+#         "ipopt.tol": 1e-10,
+#         "ipopt.constr_viol_tol": 1e-8,
+#         "ipopt.mu_strategy": "adaptive",
+#         "ipopt.linear_solver": "mumps",
+#     }
+#
+#     # ---------------------
+#     # Decision variable (single well)
+#     # ---------------------
+#     u = ca.MX.sym("u", 2)  # [u1,u2]
+#
+#     u1 = u[0]
+#     u2 = u[1]
+#
+#     # Evaluate NN surrogate
+#     z = F_u2z(u=u)["z"] if isinstance(F_u2z(u=u), dict) else F_u2z(u)  # robust
+#     m_o_out = z[0]
+#     P_bh = z[1]
+#     P_tb_b = z[2]
+#
+#     # ---------------------
+#     # Objective: maximize oil
+#     # ---------------------
+#     obj = -m_o_out
+#
+#     # ---------------------
+#     # Constraints
+#     #   P_bh >= P_min
+#     #   P_tb_b <= P_max
+#     # ---------------------
+#     b_hat = -0.3268*u1*u1 + 0.5116*u1 + 0.01914
+#     g_stab = u2 - b_hat
+#
+#
+#     g = ca.vertcat(P_bh, P_tb_b,g_stab)
+#     lbg = ca.DM([float(P_min_bh_bar), -ca.inf,0.0])
+#     ubg = ca.DM([ca.inf, float(P_max_tb_b_bar),ca.inf])
+#
+#     # ---------------------
+#     # Bounds / initial guess
+#     # ---------------------
+#     lbx = ca.DM([0.05, 0.10])
+#     ubx = ca.DM([1.0, 1.0])
+#     x0 = ca.DM(list(u_guess))
+#
+#     # ---------------------
+#     # Solve NLP
+#     # ---------------------
+#     nlp = {"x": u, "f": obj, "g": g}
+#     solver = ca.nlpsol("single_well_solver", "ipopt", nlp, ipopt_opts)
+#
+#     sol = solver(x0=x0, lbx=lbx, ubx=ubx, lbg=lbg, ubg=ubg)
+#     stats = solver.stats()
+#
+#     u_star = ca.DM(sol["x"]).full().flatten()
+#     y_star = ca.DM(F_pinn(u=u_star)["y"]).full().flatten()
+#     z_star = ca.DM(F_u2z(u=u_star)["z"] if isinstance(F_u2z(u=u_star), dict) else F_u2z(u_star)).full().flatten()
+#
+#     return {
+#         "stats": stats,
+#         "u_star": u_star,  # [u1*, u2*]
+#         "y_star": y_star,
+#         "z_star": z_star,  # [m_o_out*, P_bh*, P_tb_b*]
+#         "m_o_out": float(z_star[0]),
+#         "P_bh": float(z_star[1]),
+#         "P_tb_b": float(z_star[2]),
+#     }
+# #
+# #
+# from pathlib import Path
+# from configuration.wells import get_wells
+#
+#
+#
+#
+#
+#
+#
+#
+# ### Change well name here
+# well_name="P2"
+# ###########################
+# wells=get_wells()
+# well_list=wells[well_name]
+#
+#
+# pinn_path, alg_path=get_model_paths(well_name)
+#
+# BSW=well_list["BSW"]
+# GOR=well_list["GOR"]
+# PI=well_list["PI"]
+# K_gs_sur=well_list["K_gs_sur"]
+# K_inj_sur=well_list["K_inj_sur"]
+# K_pr_sur=well_list["K_pr_sur"]
+# y_guess_sur=well_list["y_guess_sur"]
+# y_min=well_list["y_min"]
+# y_max=well_list["y_max"]
+# z_min=well_list["z_min"]
+# z_max=well_list["z_max"]
+#
+#
+# pinn = PINN(hidden_units=[64,64,64],
+#             y_min=y_min,
+#             y_max=y_max)
+#
+#
+# algnn = AlgNN(hidden_units=[64,64,64,64],
+#               y_min=y_min,
+#               y_max=y_max,
+#               z_min=z_min,
+#               z_max=z_max)
+#
+#
+# # 1) Load your torch models
+# # from your_code import PINN, AlgNN, load_model_weights
+# pinn = load_model_weights(pinn, pinn_path)
+# algnn  = load_model_weights(algnn, alg_path)
+#
+# # 2) Extract weights
+# pinn_w = extract_pinn_standard_weights(pinn)
+# alg_w  = extract_algnn_standard_weights(algnn)
+#
+# # 3) IMPORTANT: use the SAME scaling constants as the trained models
+# # You can read them from buffers:
+# pinn_y_min = pinn.y_min.cpu().numpy().tolist()
+# pinn_y_max = pinn.y_max.cpu().numpy().tolist()
+# pinn_u_min = pinn.u_min.cpu().numpy().tolist()
+# pinn_u_max = pinn.u_max.cpu().numpy().tolist()
+#
+# alg_y_min = algnn.y_min.cpu().numpy().tolist()
+# alg_y_max = algnn.y_max.cpu().numpy().tolist()
+# alg_u_min = algnn.u_min.cpu().numpy().tolist()
+# alg_u_max = algnn.u_max.cpu().numpy().tolist()
+# alg_z_min = algnn.z_min.cpu().numpy().tolist()
+# alg_z_max = algnn.z_max.cpu().numpy().tolist()
+#
+# F_u2z = build_casadi_surrogate_u2z(
+#     pinn_weights=pinn_w,
+#     algnn_weights=alg_w,
+#     pinn_y_min=pinn_y_min, pinn_y_max=pinn_y_max,
+#     pinn_u_min=pinn_u_min, pinn_u_max=pinn_u_max,
+#     alg_y_min=alg_y_min,   alg_y_max=alg_y_max,
+#     alg_u_min=alg_u_min,   alg_u_max=alg_u_max,
+#     alg_z_min=alg_z_min,   alg_z_max=alg_z_max,
+#     BSW=BSW,
+#     GOR=GOR,
+# )
+#
+# # # F_u2z is your chained CasADi surrogate (u -> [m_o_out, P_bh, P_tb_b])
+# # res = optimize_single_well_production_NN(
+# #     F_u2z=F_u2z,
+# #     F_pinn=F_pinn,
+# #     u_guess=(0.8, 0.8),
+# #     P_min_bh_bar=90.0,
+# #     P_max_tb_b_bar=120.0,
+# # )
+# #
+# # print("Solver success:", res["stats"]["success"])
+# # print("u* =", res["u_star"])
+# # print("y* =", res["y_star"])
+# # print("m_o_out* =", res["m_o_out"])
+# # print("P_bh* =", res["P_bh"])
+# # print("P_tb_b* =", res["P_tb_b"])
+# #
+# # from solvers.steady_state_solver import solve_equilibrium_ipopt
+# # u1=res["u_star"][0]
+# # u2=res["u_star"][1]
+# #
+# # y_guess=res["y_star"]
+# #
+# # y_guess_rig = [3679.08033973,
+# #                289.73390193,
+# #                3167.56224658,
+# #                1041.96126532,
+# #                50.46858403,
+# #                759.52720527,
+# #                249.84447542]
+# #
+# # z_guess_rig = [8.75897957e+06,
+# # 8.42155186e+06,
+# # 2.17230613e+01,
+# # 2.17230613e+01]
+# #
+# # print('\n\n')
+# # print(f"Now we take this control and apply to the plant...")
+# # model=make_model("rigorous",BSW=0.20,GOR=0.05,PI=3.0e-6)
+# # y_star, z_star, dx_star, g_star, out_star, eig, stable, stats= solve_equilibrium_ipopt(
+# #     model=model,
+# #     u_val=[u1, u2],
+# #     y_guess=y_guess_rig,
+# #     z_guess=z_guess_rig
+# # )
+# # print(f"y_star of the model used to train this NN at u*={y_star}")
+# # print(f"And the pressure bottomhole is p_bh={out_star[15]} and w_out={out_star[38]}")
+
+
+
+# def flatten_sweep_results_to_batch_full(results: dict, only_success: bool = True):
+#     """
+#     Like flatten_sweep_results_to_batch, but also returns z targets from OUT.
+#
+#     Assumes:
+#       - first 3 Z_NAMES are states y = [y1,y2,y3]
+#       - next 3 Z_NAMES are targets z = [p_bh_bar, p_tb_b_bar] (or whatever order is in Z_NAMES)
+#     """
+#     import numpy as np
+#     import torch
+#
+#     u1_grid = np.asarray(results["u1_grid"], dtype=float)
+#     u2_grid = np.asarray(results["u2_grid"], dtype=float)
+#
+#     Z_NAMES = list(results["Z_NAMES"])
+#     OUT = results["OUT"]
+#
+#     SUCCESS = np.asarray(results["SUCCESS"], dtype=bool)
+#     RES_DX = np.asarray(results["RES_DX"], dtype=float)
+#
+#     Nu1 = len(u1_grid)
+#     Nu2 = len(u2_grid)
+#
+#     # u grid
+#     U1, U2 = np.meshgrid(u1_grid, u2_grid, indexing="ij")
+#     u_flat = np.stack([U1.reshape(-1), U2.reshape(-1)], axis=1)
+#
+#     # y (first 3)
+#     y_cols = []
+#     for name in Z_NAMES[:3]:
+#         arr = np.asarray(OUT[name], dtype=float)
+#         y_cols.append(arr.reshape(-1))
+#     y_flat = np.stack(y_cols, axis=1)
+#
+#     # z targets (next 3)
+#     z_cols = []
+#     names=["P_bh_bar", "P_tb_b_bar"]
+#     for name in names:
+#         arr = np.asarray(OUT[name], dtype=float)
+#         z_cols.append(arr.reshape(-1))
+#     z_flat = np.stack(z_cols, axis=1)
+#
+#     success_flat = SUCCESS.reshape(-1)
+#     res_dx_flat = RES_DX.reshape(-1)
+#
+#     finite_y = np.all(np.isfinite(y_flat), axis=1)
+#     finite_z = np.all(np.isfinite(z_flat), axis=1)
+#     finite_all = finite_y & finite_z
+#
+#     mask = (success_flat & finite_all) if only_success else finite_all
+#
+#     u_np = u_flat[mask]
+#     y_np = y_flat[mask]
+#     z_np = z_flat[mask]
+#     res_dx_np = res_dx_flat[mask]
+#
+#     # Torch tensors
+#     u_t = torch.tensor(u_np, dtype=torch.float32)
+#     y_t = torch.tensor(y_np, dtype=torch.float32)
+#     z_t = torch.tensor(z_np, dtype=torch.float32)
+#     res_dx_t = torch.tensor(res_dx_np, dtype=torch.float32)
+#
+#     return {
+#         "Z_NAMES": Z_NAMES,
+#         "u_np": u_np, "y_np": y_np, "z_np": z_np,
+#         "u_t": u_t, "y_t": y_t, "z_t": z_t,
+#         "res_dx_t": res_dx_t,
+#         "Nu1": Nu1, "Nu2": Nu2,
+#         "mask_np": mask,
+#     }
+
+# if __name__ == "__main__":
+#     N_data = 20  # -> total grid points = 100
+#
+#     wells=get_wells()
+#     well="P2"
+#
+#     BSW = wells[well]["BSW"]
+#     GOR = wells[well]["GOR"]
+#     PI = wells[well]["PI"]
+#     K_gs = wells[well]["K_gs_sur"]
+#     K_inj = wells[well]["K_inj_sur"]
+#     K_pr = wells[well]["K_pr_sur"]
+#     y_guess_sur = wells[well]["y_guess_sur"]
+#
+#     # Choose your bounds (edit these!)
+#     u1_min, u1_max = 0.05, 1.00
+#     u2_min, u2_max = 0.10, 1.00
+#
+#     # Your initial guess for the solver (edit if needed)
+#     # Must match model nx (for your surrogate it's 3)
+#
+#     y_guess_sur = np.array(y_guess_sur, dtype=float)
+#     RES_TOL_DX=1e-6
+#     RES_TOL_G=1e-6
+#     TOL_EIG=1e-8
+#     print("Running sweep...")
+#     results = build_and_run_surrogate_sweep(
+#         u1_min=u1_min,
+#         u2_min=u2_min,
+#         N_data=N_data,
+#         y_guess_init=y_guess_sur,
+#         BSW=BSW,
+#         GOR=GOR,
+#         PI=PI,
+#         K_gs=K_gs,
+#         K_inj=K_inj,
+#         K_pr=K_pr
+#     )
+#
+#     print("\nFlattening to batch...")
+#     batch = flatten_sweep_results_to_batch(results,
+#                                            only_success=True)
+#
+#     device='cpu'
+#
+#     y_np = batch["y_np"]
+#
+#     y_min = np.min(y_np, axis=0)
+#     y_max = np.max(y_np, axis=0)
+#
+#     margin = 0.15  # 15%
+#
+#     y_span = y_max - y_min
+#     y_min_loose = y_min - margin * y_span
+#     y_max_loose = y_max + margin * y_span
+#
+#     print("\n--- State ranges (loose) ---")
+#     for i, name in enumerate(batch["Z_NAMES"][:3]):
+#         print(f"{name}: min = {y_min_loose[i]:.6f}, max = {y_max_loose[i]:.6f}")
+#
+#
+#     u = batch["u_t"].to(device)
+#     y = batch["y_t"].to(device)
+#     # z = batch["z_t"].to(device)  # <- ground truth for AlgNN
+#     print("Z_NAMES:", batch["Z_NAMES"][:3])
+#     print(u.shape, y.shape)
+#
+#     print("\n--- Sweep summary ---")
+#     Nu1, Nu2 = batch["Nu1"], batch["Nu2"]
+#     total = Nu1 * Nu2
+#     success_total = int(np.sum(results["SUCCESS"]))
+#     print(f"Grid: {Nu1} x {Nu2} = {total} points")
+#     print(f"SUCCESS count (raw): {success_total}")
+#     print(f"Batch size (finite OUT & success): {batch['u_np'].shape[0]}")
+#     print(f"Z_NAMES: {batch['Z_NAMES']}")
+#
+#     # Torch shapes
+#     print("\n--- Torch tensors ---")
+#     print("u_t:", tuple(batch["u_t"].shape), batch["u_t"].dtype)
+#     print("res_dx_t:", tuple(batch["res_dx_t"].shape), batch["res_dx_t"].dtype)
+#
+#     # Print a few samples
+#     print("\n--- First all samples ---")
+#     for k in range(batch["u_np"].shape[0]):
+#         u_k = batch["u_np"][k]
+#         rd_k = batch["res_dx_np"][k]
+#         y_k = batch["y_np"][k]
+#         print(f"{k:02d} | u={u_k}  | res_dx={rd_k:.2e} | y={y_k} ")
+
+
+######################################################
+
+#
+#
+# def flatten_sweep_results_to_batch(results: dict,
+#                                    only_success: bool = True):
+#     """
+#     Convert run_sweep() output dict into a flat batch.
+#
+#     Uses ONLY:
+#       - u = [u1, u2]
+#       - y = first 3 entries of Z_NAMES (assumed states)
+#       - success mask (stable is ignored)
+#
+#     Returns:
+#       u_np : (N,2)
+#       y_np : (N,3)
+#       success_np : (N,) bool
+#       res_dx_np : (N,) float
+#       u_t : torch.FloatTensor (N,2)
+#       y_t : torch.FloatTensor (N,3)
+#       res_dx_t : torch.FloatTensor (N,)
+#     """
+#     import numpy as np
+#     import torch
+#
+#     u1_grid = np.asarray(results["u1_grid"], dtype=float)
+#     u2_grid = np.asarray(results["u2_grid"], dtype=float)
+#
+#     Z_NAMES = list(results["Z_NAMES"])
+#     OUT = results["OUT"]
+#
+#     SUCCESS = np.asarray(results["SUCCESS"], dtype=bool)
+#     RES_DX = np.asarray(results["RES_DX"], dtype=float)
+#
+#     Nu1 = len(u1_grid)
+#     Nu2 = len(u2_grid)
+#
+#     # Build u grid (Nu1,Nu2) -> (Nu1*Nu2,2)
+#     U1=results["U1"]
+#     U2=results["U2"]
+#
+#     # U1, U2 = np.meshgrid(u1_grid, u2_grid, indexing="ij")
+#     u_flat = np.stack([U1.reshape(-1), U2.reshape(-1)], axis=1)
+#
+#     # Extract ONLY first 3 outputs (states) in Z_NAMES order
+#     if len(Z_NAMES) < 3:
+#         raise ValueError(f"Expected at least 3 Z_NAMES entries, got {len(Z_NAMES)}")
+#
+#     y_cols = []
+#     for name in Z_NAMES[:3]:
+#         arr = np.asarray(OUT[name], dtype=float)   # (Nu1,Nu2)
+#         y_cols.append(arr.reshape(-1))
+#     y_flat = np.stack(y_cols, axis=1)  # (Nu1*Nu2, 3)
+#
+#     success_flat = SUCCESS.reshape(-1)
+#     res_dx_flat = RES_DX.reshape(-1)
+#
+#     # Valid rows: success AND finite y
+#     finite_y = np.all(np.isfinite(y_flat), axis=1)
+#     mask = success_flat & finite_y if only_success else finite_y
+#
+#     u_np = u_flat[mask]
+#     y_np = y_flat[mask]
+#     success_np = success_flat[mask]
+#     res_dx_np = res_dx_flat[mask]
+#
+#     # Torch tensors
+#     u_t = torch.tensor(u_np, dtype=torch.float32)
+#     y_t = torch.tensor(y_np, dtype=torch.float32)
+#     res_dx_t = torch.tensor(res_dx_np, dtype=torch.float32)
+#
+#     return {
+#         "Z_NAMES": Z_NAMES,
+#         "u_np": u_np,
+#         "y_np": y_np,
+#         "success_np": success_np,
+#         "res_dx_np": res_dx_np,
+#         "u_t": u_t,
+#         "y_t": y_t,
+#         "res_dx_t": res_dx_t,
+#         "Nu1": Nu1,
+#         "Nu2": Nu2,
+#         "mask_np": mask,
+#     }
+#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

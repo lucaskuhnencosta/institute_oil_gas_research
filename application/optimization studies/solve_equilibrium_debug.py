@@ -12,7 +12,7 @@ from solvers.steady_state_solver import solve_equilibrium_ipopt
 wells = get_wells()
 well="P1"
 BSW = wells[well]["BSW"]
-GOR = wells[well]["GOR"]
+GOR =wells[well]["GOR"]
 PI = wells[well]["PI"]
 K_gs = wells[well]["K_gs"]
 K_inj = wells[well]["K_inj"]
@@ -20,8 +20,10 @@ K_pr = wells[well]["K_pr"]
 y_guess_rig = wells[well]["y_guess_rig"]
 z_guess_rig = wells[well]["z_guess_rig"]
 y_guess_sur = wells[well]["y_guess_sur"]
-sim_kind="rigorous"
-#
+sim_kind="surrogate"
+
+y_guess_sur=[3831.085225,268.543668,2809.292629]
+
 # well_func = make_glc_well_rigorous(BSW=BSW,
 
 #
@@ -36,7 +38,7 @@ sim_kind="rigorous"
 
 from application.simulation_engine import make_model
 
-model=make_model(sim_kind="rigorous",
+model=make_model(sim_kind=sim_kind,
                         BSW=BSW,
                         GOR=GOR,
                         PI=PI,
@@ -45,13 +47,13 @@ model=make_model(sim_kind="rigorous",
                         K_pr=K_pr)
 
 
-u_P1 = np.array([0.20699727289545305, 0.5249146997717429])
-u_P2=[0.6894070850915028, 0.24133944946614966]
-y_star, z_star, dx_star, g_star, out_star, eig, stable, stats= solve_equilibrium_ipopt(
+u_P1 = np.array([1.0,0.85])
+# u_P2=[0.6894070850915028, 0.24133944946614966]
+y_star, dx_star, out_star, eig, stable, stats= solve_equilibrium_ipopt(
 model=model,
 u_val=u_P1,
-y_guess=y_guess_rig,
-z_guess=z_guess_rig
+y_guess=y_guess_sur,
+z_guess=None
 )
 
 # Pretty-print the OUT vector by name (uses model["Z_names"])

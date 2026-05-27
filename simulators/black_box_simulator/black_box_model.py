@@ -3,7 +3,6 @@ This simulator is in its final version for the dissertation and adequately descr
 No further changes are needed.
 """
 
-
 from casadi import *
 import numpy as np
 import casadi as ca
@@ -73,8 +72,8 @@ def make_glc_well_rigorous(BSW,
         K0_int=parameters["K0_int"]
         epsilon_tubing = parameters["epsilon_tubing"]
 
-        rho_L = 1.0 / (BSW / rho_w + (1.0 - BSW) / rho_o)
-        mu = np.exp((1 - BSW) * np.log(mu_o) + BSW * np.log(mu_w))
+
+
 
         # ---------- unpack ----------
         m_G_an=y[0]

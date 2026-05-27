@@ -23,7 +23,9 @@ import numpy as np
 from application.simulation_engine import make_model
 import numpy as np
 from configuration.wells import get_wells
+from configuration.parameters import get_parameters
 
+parameters = get_parameters()
 
 def print_solution(sol, show_states=False, show_algebraic=False):
     Z_NAMES = sol["Z_NAMES"]
@@ -129,7 +131,7 @@ def optimize_field_production(
         # Individual well constraints
         # -------------------------
         P_max_tb_b_bar=120,
-        P_min_bh_bar=90,
+        P_min_bh_bar=80,
         # -------------------------
         # User definition
         # -------------------------
@@ -183,29 +185,19 @@ def optimize_field_production(
     # ---------------------
     models = {}
 
-    if is_dae:
-        for well_name, well_data in wells.items():
-            models[well_name] = make_model(
-                model_type,
-                BSW=well_data["BSW"],
-                GOR=well_data["GOR"],
-                PI=well_data["PI"],
-                K_gs=well_data["K_gs"],
-                K_inj=well_data["K_inj"],
-                K_pr=well_data["K_pr"]
-            )
 
-    else:
-        for well_name, well_data in wells.items():
-            models[well_name] = make_model(
-                model_type,
-                BSW=well_data["BSW"],
-                GOR=well_data["GOR"],
-                PI=well_data["PI"],
-                K_gs=well_data["K_gs_sur"],
-                K_inj=well_data["K_inj_sur"],
-                K_pr=well_data["K_pr_sur"]
-            )
+    for well_name, well_data in wells.items():
+        models[well_name] = make_model(
+            model_type,
+            BSW=well_data["BSW"],
+            GOR=well_data["GOR"],
+            PI=well_data["PI"],
+            K_gs=well_data["K_gs"],
+            K_inj=well_data["K_inj"],
+            K_pr=well_data["K_pr"]
+        )
+
+
 
     # ---------------------
     # 4) Ipopt_opts
@@ -335,17 +327,14 @@ def optimize_field_production(
             ubg.append(1.0)
 
         Vmin_g = 1e-12 # minimum gas cushion
-        rho_o = 760.0
-        rho_w = 1000.0
+        # Tubing
+        V_bh =parameters["V_bh"]
+        V_tb =parameters["V_tb"]
+        rho_o =parameters["rho_o"]
+        rho_w =parameters["rho_w"]
+
+
         rho_L=rho_o*(1-BSW)+BSW*rho_w
-        D_bh = 0.2
-        L_bh = 75.0
-        S_bh = ca.pi * D_bh ** 2 / 4.0
-        V_bh = S_bh * L_bh
-        D_tb = 0.134
-        L_tb = 1973.0
-        S_tb = ca.pi * D_tb ** 2 / 4.0
-        V_tb = S_tb * L_tb
 
         if is_dae:
             V_L_t = outD["m_o_t"] / rho_o + outD["m_w_t"] / rho_w
@@ -565,17 +554,19 @@ def optimize_field_production(
 if __name__=="__main__":
 
     wells =get_wells()
+    # model_type="rigorous"
+    model_type="surrogate"
 
     sol = optimize_field_production(
-        model_type="rigorous",
+        model_type=model_type,
         wells=wells,
-        u_guess_list=[[0.20699727289545305,0.5249146997717429],[0.6894070850915028,0.24133944946614966]],
+        u_guess_list=[[1.0,1.0]],
         G_available=14.00,
         G_max_export=1.40,
         W_max=11.50,
         L_max=40,
-        unconstrained_well=False,
-        unconstrained_platform=False,
+        unconstrained_well=True,
+        unconstrained_platform=True,
         enforce_stable=True
     )
 

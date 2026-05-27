@@ -69,11 +69,7 @@ All that for 2 wells so we can go to the Energy Congress with a version of the d
 We will do a symbolic push on May 18th with a dissertation-ready version of the two-well problem
 
 ### THINGS NEED TO BE DONE JUST BEFORE SUBMITTING TO THE COMMITEE (June 8th through June 15th)
-1) Improve the model splitting, I think it is inconsistent  
-2) Define the model (compressible, valves), look at Marcelo's work or other related works  
-3) Understand exactly why does the model have two or more solutions, improve the PINN algorithm (data/physics logic)  
-4) Variables that are going to be changed from well to well - define the space of search for different wells  
-5) Train in just a round these two PINNs. Validate results. Also adapt for these variables that will change from well to well  
+3) Understand exactly why does the model have two or more solutions, improve the PINN algorithm (data/physics logic)
 6) Need to think the variables that will change with time and change the PINNs accordingly  
 7) Improve run sweep so that it is more robust  
 8) Systemitize the search for 16 different well types  

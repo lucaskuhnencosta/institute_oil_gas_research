@@ -45,8 +45,8 @@ TOL_EIG = 1e-8
 import matplotlib.ticker as ticker
 
 ################################ SELECT THE PLOTS YOU WANT #####################################
-first_figure=False
-second_figure=True
+first_figure=True
+second_figure=False
 #################################################################################################
 
 

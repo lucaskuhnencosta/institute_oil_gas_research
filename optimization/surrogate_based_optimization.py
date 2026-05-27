@@ -24,8 +24,9 @@ class SurrogateBasedOptimization:
         # -------------------------------
         # Only for refinement
         # -------------------------------
-        self.total_wo=total_wo
-        self.oil_allowance=config["oil_allowance"]
+        if self.refinement:
+            self.total_wo=total_wo
+            self.oil_allowance=config["oil_allowance"]
 
         # -------------------------------
         # Models and wells passed to the solver
@@ -89,6 +90,13 @@ class SurrogateBasedOptimization:
         self.eta_2=config["eta_2"]
         self.theta_tol=config["theta_tol"]
 
+        self.Delta_restoration=config["Delta_restoration"]
+        self.gamma_c_restoration=config["gamma_c_restoration"]
+        self.gamma_e_restoration=config["gamma_e_restoration"]
+
+        self.scale_pressure = 1#1 / 100
+        self.scale_gas = 1#10.0
+
         # -------------------------------
         # Here we import the only external API
         # -------------------------------
@@ -151,19 +159,47 @@ class SurrogateBasedOptimization:
             z_surr_k_list, J_surr_k_list = self._eval_surrogates_with_jac(self.u_k)
             z_plant_k_list, J_plant_k_list = self._eval_plant_models(self.u_k)
 
+            if k0==0:
+                violation_k, violation_details_k = self._compute_violation(
+                    z_plant_list=z_plant_k_list,
+                    u=self.u_k,
+                )
 
-            theta_comp_k, theta_comp_details_k = self._compute_theta_constraint_infeasibility(
-                z_plant_list=z_plant_k_list,
-                z_model_list=None,
-                u=self.u_k,
-                include_model_mismatch=False
-            )
 
-            print("theta_compatibility =", theta_comp_k)
+            print("violation =", violation_k)
 
-            if theta_comp_k <= self.theta_compat_tol:
+            if violation_k <= self.theta_compat_tol:
                 print("\nPHASE ZERO CONVERGED")
-                print("theta_compatibility =", theta_comp_k)
+                print("violation=", violation_k)
+                self.history.append({
+                    "phase": "restoration",
+
+                    "iteration":k0,
+
+                    "z_surr": z_surr_k_list,
+                    "J_surr": J_surr_k_list,
+                    "z_plant": z_plant_k_list,
+                    "J_plant": J_plant_k_list,
+
+                    "debug_corrected": None,
+
+                    "u": self.u_k.copy(),
+                    "u_trial": self.u_k.copy(),
+
+                    "Delta": self.Delta_restoration,
+                    "trsp": None,
+
+                    "accepted": True,
+                    "rejected": None,
+                    "rejected_reason": None,
+
+                    "theta_k": violation_k,
+                    "theta_details": violation_details_k,
+                    "phi_k": None,
+                    "type": "init_restoration",
+
+                    "filter_list": self.filter_list,
+                })
                 return True
 
             F_corr_models, debug_corrected_models = self._build_corrected_models(
@@ -176,12 +212,41 @@ class SurrogateBasedOptimization:
 
 
             phase0 = self._solve_phase_zero_subproblem(F_corr_models)
-            # print(phase0)
+            print(phase0)
 
             if not phase0["success"]:
                 print("Phase-zero TRSP failed.")
                 print("status =", phase0["stats"].get("return_status", "unknown"))
-                self.Delta *= self.gamma_e
+                self.history.append({
+                    "phase": "restoration",
+
+                    "iteration": k0,
+
+                    "z_surr": z_surr_k_list,
+                    "J_surr": J_surr_k_list,
+                    "z_plant": z_plant_k_list,
+                    "J_plant": J_plant_k_list,
+
+                    "debug_corrected": None,
+
+                    "u": self.u_k.copy(),
+                    "u_trial": self.u_k.copy(),
+
+                    "Delta": self.Delta_restoration,
+                    "trsp": phase0,
+
+                    "accepted": None,
+                    "rejected": True,
+                    "rejected_reason": "TRRSP failure",
+
+                    "theta_k": violation_k,
+                    "theta_details": violation_details_k,
+                    "phi_k": None,
+                    "type": "restoration",
+
+                    "filter_list": self.filter_list,
+                })
+                self.Delta_restoration *= self.gamma_e_restoration
                 continue
 
             u_trial = phase0["x_star"]
@@ -192,24 +257,111 @@ class SurrogateBasedOptimization:
                 print("Plant evaluation failed at phase-zero trial.")
                 print("u_trial =", u_trial)
                 print("error =", e)
-                self.Delta *= self.gamma_c
+                self.history.append({
+                    "phase": "restoration",
+
+                    "iteration": k0,
+
+                    "z_surr": z_surr_k_list,
+                    "J_surr": J_surr_k_list,
+                    "z_plant": z_plant_k_list,
+                    "J_plant": J_plant_k_list,
+
+                    "debug_corrected": True,
+
+                    "u": self.u_k.copy(),
+                    "u_trial": self.u_k.copy(),
+
+                    "Delta": self.Delta_restoration,
+                    "trsp": phase0,
+
+                    "accepted": None,
+                    "rejected": True,
+                    "rejected_reason": "Simulator failure",
+
+                    "theta_k": violation_k,
+                    "theta_details": violation_details_k,
+                    "phi_k": None,
+                    "type": "restoration",
+
+                    "filter_list": self.filter_list,
+                })
+                self.Delta_restoration *= self.gamma_c_restoration
                 continue
 
-            theta_comp_trial, theta_comp_details_trial = self._compute_theta_constraint_infeasibility(
+            violation_trial, violation_details_trial = self._compute_violation(
                 z_plant_list=z_plant_trial_list,
-                z_model_list=None,
-                u=u_trial,
-                include_model_mismatch=False
+                u=u_trial
             )
 
-            print("theta_comp_trial =", theta_comp_trial)
-            print("dtheta_comp      =", theta_comp_trial - theta_comp_k)
+            print("violation_trial =", violation_trial)
+            print("dviolation      =", violation_trial - violation_k)
 
-            if theta_comp_trial< theta_comp_k:
+            if violation_trial< violation_k:
+                self.history.append({
+                    "phase": "restoration",
+
+                    "iteration": k0,
+
+                    "z_surr": z_surr_k_list,
+                    "J_surr": J_surr_k_list,
+                    "z_plant": z_plant_k_list,
+                    "J_plant": J_plant_k_list,
+
+                    "debug_corrected": False,
+
+                    "u": self.u_k.copy(),
+                    "u_trial": self.u_k.copy(),
+
+                    "Delta": self.Delta_restoration,
+                    "trsp": phase0,
+
+                    "accepted": True,
+                    "rejected": None,
+                    "rejected_reason": None,
+
+                    "theta_k": violation_k,
+                    "theta_details": violation_details_k,
+                    "phi_k": None,
+                    "type": "restoration",
+
+                    "filter_list": self.filter_list,
+                })
                 self.u_k = u_trial
-                self.Delta *= self.gamma_e
+                self.Delta_restoration *= self.gamma_e_restoration
+                violation_k=violation_trial
             else:
-                self.Delta *= self.gamma_c
+                self.history.append({
+                    "phase": "restoration",
+
+                    "iteration": k0,
+
+                    "z_surr": z_surr_k_list,
+                    "J_surr": J_surr_k_list,
+                    "z_plant": z_plant_k_list,
+                    "J_plant": J_plant_k_list,
+
+                    "debug_corrected": True,
+
+                    "u": self.u_k.copy(),
+                    "u_trial": self.u_k.copy(),
+
+                    "Delta": self.Delta_restoration,
+                    "trsp": phase0,
+
+                    "accepted": None,
+                    "rejected": True,
+                    "rejected_reason": "No reduction",
+
+                    "theta_k": violation_k,
+                    "theta_details": violation_details_k,
+                    "phi_k": None,
+                    "type": "restoration",
+
+                    "filter_list": self.filter_list,
+                })
+
+                self.Delta_restoration *= self.gamma_c_restoration
 
         print("\nPHASE ZERO FAILED TO REACH COMPATIBILITY")
         return False
@@ -222,12 +374,12 @@ class SurrogateBasedOptimization:
     def solve(self):
         print(f"self.N is: {self.N}")
         phase_zero_success=self.run_phase_zero()
-        if not phase_zero_success:
-            return {
-                "success": False,
-                "status": "phase_zero_failed",
-                "history": self.history,
-            }
+        # if not phase_zero_success:
+        return {
+            "success": phase_zero_success,
+            "status": "phase_zero_failed",
+            "history": self.history,
+        }
 
         k=0
         while k<self.max_iter:
@@ -407,8 +559,7 @@ class SurrogateBasedOptimization:
 
             phi_trial = self._compute_phi(z_plant_trial_list)
             theta_trial,theta_trial_per_well = self._compute_theta(z_plant_trial_list,
-                                                                   z_surr_trial_list,
-                                                                   u=u_trial)
+                                                                   z_surr_trial_list)
 
             print("\n--- EVALUATING ACCEPTANCE ---")
             print("theta_trial =", theta_trial)
@@ -723,52 +874,32 @@ class SurrogateBasedOptimization:
                 total_w_G_inj += float(z_j[2])
             return total_w_G_inj
 
-    def _compute_theta(self,
-                       z_plant_list,
-                       z_model_list,
-                       u):
 
-        if self.theta_mode=="model_mismatch":
-            return self._compute_theta_model_mismatch(z_plant_list,
-                                                      z_model_list)
-        ### THIS BLOCK WILL BE DECOMISSIONED SOON
-        elif self.theta_mode=="constraint_infeasibility":
-            return self._compute_theta_constraint_infeasibility(z_plant_list=z_plant_list,
-                                                                z_model_list=z_model_list,
-                                                                u=u,
-                                                                include_model_mismatch=True)
-        raise ValueError(f"Unknown theta mode: {self.theta_mode}")
 
     def _positive_part(self, x):
         return max(0.0, float(x))
 
 
 
-    def _compute_theta_constraint_infeasibility(self,
-                                                z_plant_list,
-                                                z_model_list,
-                                                u,
-                                                include_model_mismatch):
+    def _compute_violation(self,
+                            z_plant_list,
+                            u):
         """
         Constraint infeasibility measure.
 
         Per-well constraints have weight 1.
         Global/platform constraint block has weight N.
 
-        Pressure residuals are divided by 100.
-        Flow residuals are left unscaled.
-
         Returns
         -------
-        theta_total: float
-        theta_blocks: dict
+        violation_total: float
+        violation_blocks: dict
             Diagnostic infeasibility values per block
         """
 
-        theta_vector=[]
+        violation_vector=[]
 
-        theta_details={
-            "model_mismatch_per_well":[],
+        violation_details={
             "well_constraint_per_well":[],
             "platform_constraints":{},
         }
@@ -780,37 +911,8 @@ class SurrogateBasedOptimization:
         total_w_g_res=0.0
         total_w_l_out=0.0
 
-
-        # -------------------------------
-        # 1. Model infeasibility
-        # ------------------------------
-
-        if include_model_mismatch:
-            if z_model_list is None:
-                raise ValueError("z_model_list must not be None")
-
-            scale = np.array([
-                1 / 100,  # P_bh_bar
-                1 / 100,  # P_tb_b_bar
-                10.0,  # w_G_inj
-                1.0,  # w_res
-                1.0,  # w_L_res
-                1.0,  # w_G_res
-                1.0,  # w_w_out
-                1.0,  # w_o_out
-            ], dtype=float)
-
-            for z_p_j, z_m_j in zip(z_plant_list, z_model_list):
-                err_j = np.array(z_p_j).reshape((-1,)) - np.array(z_m_j).reshape((-1,))
-                err_j_scaled = scale * err_j
-
-                theta_model_j = float(np.linalg.norm(err_j_scaled, ord=2))
-
-                theta_vector.append(theta_model_j)
-                theta_details["model_mismatch_per_well"].append(theta_model_j)
-
         # =====================================================
-        # 2. Per-well infeasibility blocks
+        # 1. Per-well infeasibility blocks
         # =====================================================
         for j, z_j in enumerate(z_plant_list):
             z_j=np.array(z_j).reshape((-1,))
@@ -835,12 +937,12 @@ class SurrogateBasedOptimization:
             if not self.unconstrained_well:
                 # P_bh_bar >= P_min_bh
                 violations_j.append(
-                    self._positive_part(self.P_min_bh - P_bh_bar) / 100.0
+                    self._positive_part(self.P_min_bh - P_bh_bar)*self.scale_pressure
                 )
 
                 # P_tb_b_bar <= P_max_tb_b
                 violations_j.append(
-                    self._positive_part(P_tb_b_bar - self.P_max_tb_b) / 100.0
+                    self._positive_part(P_tb_b_bar - self.P_max_tb_b)*self.scale_pressure
                 )
 
             if self.enforce_stable:
@@ -862,8 +964,8 @@ class SurrogateBasedOptimization:
                 else 0.0
             )
 
-            theta_vector.append(theta_well_j)
-            theta_details["well_constraint_per_well"].append(theta_well_j)
+            violation_vector.append(theta_well_j)
+            violation_details["well_constraint_per_well"].append(theta_well_j)
 
         # =====================================================
         # 3. Platform constraints
@@ -871,42 +973,44 @@ class SurrogateBasedOptimization:
         if not self.unconstrained_platform:
             if self.G_available is not None:
                 v = self._positive_part(total_w_g_inj - self.G_available)
-                theta_vector.append(self.N * v)
-                theta_details["platform_constraints"]["G_available"] = v
+                violation_vector.append(self.N * v)
+                violation_details["platform_constraints"]["G_available"] = v
 
             if self.G_max_export is not None:
                 v = self._positive_part(total_w_g_res - self.G_max_export)
-                theta_vector.append(self.N * v)
-                theta_details["platform_constraints"]["G_max_export"] = v
+                violation_vector.append(self.N * v)
+                violation_details["platform_constraints"]["G_max_export"] = v
 
             if self.W_max is not None:
                 v = self._positive_part(total_w_w - self.W_max)
-                theta_vector.append(self.N * v)
-                theta_details["platform_constraints"]["W_max"] = v
+                violation_vector.append(self.N * v)
+                violation_details["platform_constraints"]["W_max"] = v
 
             if self.L_max is not None:
                 v = self._positive_part(total_w_l_out - self.L_max)
-                theta_vector.append(self.N * v)
-                theta_details["platform_constraints"]["L_max"] = v
+                violation_vector.append(self.N * v)
+                violation_details["platform_constraints"]["L_max"] = v
 
-        theta_vector = np.array(theta_vector, dtype=float)
-        theta_total = float(np.linalg.norm(theta_vector, ord=2))
+        violation_vector = np.array(violation_vector, dtype=float)
+        violation_total = float(np.linalg.norm(violation_vector, ord=2))
 
-        theta_details["theta_vector"] = theta_vector
-        theta_details["theta_total"] = theta_total
+        violation_details["theta_vector"] = violation_vector
+        violation_details["theta_total"] = violation_total
 
-        return theta_total, theta_details
+        return violation_total, violation_details
 
 
-    def _compute_theta_model_mismatch(self,z_plant_list,z_model_list):
+    def _compute_theta(self,
+                       z_plant_list,
+                       z_model_list):
         """
         Model mismatch measure for the filter.
         Here we use the Euclidean norm of the stacked mismatch vector.
         """
         scale = np.array([
-            1 / 100,  # P_bh_bar
-            1 / 100,  # P_tb_b_bar
-            10.0,  # w_G_inj
+            self.scale_pressure,  # P_bh_bar
+            self.scale_pressure,  # P_tb_b_bar
+            self.scale_gas,  # w_G_inj
             1.0,  # w_res
             1.0,  # w_L_res
             1.0,  # w_G_res
@@ -1308,8 +1412,6 @@ class SurrogateBasedOptimization:
         subject only to:
             - variable bounds
             - trust-region constraint
-
-        This avoids ca.fmax(...) and gives IPOPT a smooth NLP.
         """
 
         # ---------------------
@@ -1372,7 +1474,7 @@ class SurrogateBasedOptimization:
                 slack_ubx.append(self.INF)
                 slack_x0.append(0.0)
 
-                g_list.append(P_bh_bar + 100.0 * s_pbh)
+                g_list.append(P_bh_bar + s_pbh)
                 lbg.append(self.P_min_bh)
                 ubg.append(self.INF)
 
@@ -1383,7 +1485,7 @@ class SurrogateBasedOptimization:
                 slack_ubx.append(self.INF)
                 slack_x0.append(0.0)
 
-                g_list.append(P_tb_b_bar - 100.0 * s_ptb)
+                g_list.append(P_tb_b_bar -  s_ptb)
                 lbg.append(-self.INF)
                 ubg.append(self.P_max_tb_b)
 
@@ -1478,7 +1580,7 @@ class SurrogateBasedOptimization:
 
         g_list.append(ca.dot(dx, dx))
         lbg.append(-self.INF)
-        ubg.append(float(self.Delta ** 2))
+        ubg.append(float(self.Delta_restoration ** 2))
 
         # ---------------------
         # 3) Full NLP variable vector
@@ -1491,7 +1593,7 @@ class SurrogateBasedOptimization:
             x_full = x
 
         # ---------------------
-        # 4) Objective: weighted slack norm
+        # 4) Objective: unweighted slack norm
         # ---------------------
         if slack_vars:
             obj = ca.dot(s, s)
@@ -1556,7 +1658,7 @@ class SurrogateBasedOptimization:
         dx_star = x_star - x_k_flat
 
         tr_norm_sq = float(dx_star @ dx_star)
-        tr_radius_sq = float(self.Delta ** 2)
+        tr_radius_sq = float(self.Delta_restoration ** 2)
         tr_violation = max(0.0, tr_norm_sq - tr_radius_sq)
         tr_feasible = tr_violation <= 1e-6
         tr_active = tr_feasible and tr_norm_sq >= 0.999 * tr_radius_sq

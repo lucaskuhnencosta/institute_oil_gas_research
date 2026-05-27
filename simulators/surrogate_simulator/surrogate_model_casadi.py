@@ -1,6 +1,10 @@
 from casadi import *
 import numpy as np
 import casadi as ca
+from configuration.parameters import get_parameters
+
+parameters = get_parameters()
+
 
 def make_glc_well_surrogate(BSW,
                             GOR,
@@ -25,56 +29,57 @@ def make_glc_well_surrogate(BSW,
             # smooth approximation of max(z,zmin))
             return zmin + smooth_pos_scaled(z - zmin,scale)
 
+        # if GOR == 0.01:
+        #     alpha= 0.85
+        # elif GOR == 0.05:
+        #     alpha = 0.54
+        # elif GOR == 0.10:
+        #     alpha= 0.36
+        # else:
+        alpha=1.0
         k_pos=20
         eps=1e-12
 
         # Well properties ###
-        w_avg_res = 18 #kg/s is an average flow from reservoir to compute the friction terms and model bottomhole pressure to calculate the actual flow from reservoir
+        w_avg_res = 22 #kg/s is an average flow from reservoir to compute the friction terms and model bottomhole pressure to calculate the actual flow from reservoir
 
-        # Geometry and temperature of the wellbore
-        ### Annulus ###
-        V_an = 64.34  # m^3 is the annulus volume
-        L_an = 2048  # m is the length of the annulus
-        T_an = 348  # K is the annulus temperature
+        # Annulus
+        V_an = parameters["V_an"]
+        L_an = parameters["L_an"]
 
-        ### Tubing bottom ###
-        D_bh=0.2
-        L_bh=75
-        S_bh=(np.pi*D_bh**2)/4
-        V_bh = S_bh * L_bh
-        T_bh = 371.5
+        # Bottom section
+        D_bh=parameters["D_bh"]
+        L_bh=parameters["L_bh"]
+        S_bh=parameters["A_bh"]
+        V_bh =parameters["V_bh"]
 
-        ### Tubing ###
-        L_tb = 1973
-        D_tb = 0.134
-        S_tb = (np.pi*D_tb**2)/4
-        V_tb = S_tb * L_tb
-        T_tb = 369.4  # K is the tubing temperature
+        # Tubing
+        L_tb = parameters["L_tb"]
+        D_tb = parameters["D_tb"]
+        V_tb =parameters["V_tb"]
 
-        # Constants (general)
-        R = 8.314  # J/(K*mol) is the universal gas constant
-        g = 9.81  # m/s^2 is the gravity
-        mu_o = 3.64e-3  # Pa.s is the viscosity
-        mu_w = 1.00e-3
-        rho_o = 760  # kg/m^3 is the density of the liquid in the tubing
-        rho_w = 1000
-        rho_L = BSW*rho_w+(1-BSW)*rho_o
-        mu = np.exp((1 - BSW) * np.log(mu_o) + BSW * np.log(mu_w))
-        M_G = 0.0167  # (kg/mol) is the gas molecular weight
+        R = parameters["R"]
+        g = parameters["g"]
+
+        mu_o = parameters["mu_o"]
+        mu_w = parameters["mu_w"]
+        rho_o =parameters["rho_o"]
+        rho_w =parameters["rho_w"]
+
+        T_an = parameters["T_an"]
+        T_tb = parameters["T_tb"]
+        M_G = parameters["M_G"]
 
         # Pressures
-        P_gs = 140e5  # 140bar is the gas source pressure
-        P_res = 160e5  # 160bar, the constant reservoir pressure
-        P_0 = 20e5  # pressure downstream of choke
-
-        # Chokes
-        # K_gs = 9.98e-5  # is the gas lift choke constant
-        # K_inj = 1.40e-4  # is the injection valve choke constant
-        # K_pr = 2.90e-3  # is the production choke constant
+        P_gs = parameters["P_gs"]
+        P_res = parameters["P_res"]
+        P_0 = parameters["P_0"]
 
         # Friction
-        epsilon_tubing = 1e-3
+        epsilon_tubing = parameters["epsilon_tubing"]
 
+        rho_L = 1.0 / (BSW / rho_w + (1.0 - BSW) / rho_o)
+        mu = np.exp((1 - BSW) * np.log(mu_o) + BSW * np.log(mu_w))
         # ---------- unpack ----------
         m_G_an = y[0]
         m_G_tb = y[1]
@@ -92,9 +97,6 @@ def make_glc_well_surrogate(BSW,
         dP_gs_an=P_gs-P_an_t
         w_G_in=K_gs*u2*sqrt(rho_G_in*smooth_pos_scaled(dP_gs_an,scale=1)+eps)
 
-        ###
-        ###
-
         # -----------------------
         # PART 3 - DENSITIES USING STATES
         # -----------------------
@@ -103,32 +105,22 @@ def make_glc_well_surrogate(BSW,
         V_gas_tb_t_safe = smooth_max_scaled(V_gas_tb_t, 1e-6)
 
         rho_G_tb_t=m_G_tb/V_gas_tb_t_safe
-
-        ###
-        ###
-
-        ###
-
         P_tb_t = rho_G_tb_t * R * T_tb / M_G
-        ###
 
         # -----------------------
         # PART 4 - Hold-ups from states
         # -----------------------
 
-        alpha_avg_L_tb = (m_L_tb - rho_L * S_bh * L_bh) / (V_tb * rho_L)
-
-
         # Equation 8 - Average mixture density inside tubing (above injection point)
-        rho_avg_mix_tb=(m_G_tb+m_L_tb-rho_L*S_bh*L_bh)/V_tb
+        rho_avg_mix_tb=(m_G_tb+m_L_tb-alpha*rho_L*S_bh*L_bh)/V_tb
 
         # Equation 9 - Average liquid volume fraction inside tubing (above injection point)
+        alpha_avg_L_tb = (m_L_tb - alpha*rho_L * S_bh * L_bh) / (V_tb * rho_L)
+
 
 
         # Equation 10 - Gas mass fraction at bottom-hole, as the GOR is constant this is also constant and not an algebraic equation
         alpha_G_tb_b = GOR / (GOR + 1)
-
-        ###
 
         # Equation 11 - Average superficial velocity of liquid phase in tubing
         U_avg_L_tb=(4*(1-alpha_G_tb_b)*w_avg_res/(rho_L*np.pi*D_tb**2))
