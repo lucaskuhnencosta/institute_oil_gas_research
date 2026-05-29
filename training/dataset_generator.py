@@ -1,9 +1,255 @@
 import numpy as np
+from pathlib import Path
+import pickle
+import numpy as np
+
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
+
 
 from application.simulation_engine import run_sweep
 from application.simulation_engine import make_model
 
 from configuration.wells import get_wells
+
+from pathlib import Path
+import pickle
+import numpy as np
+
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
+
+
+from pathlib import Path
+import pickle
+import numpy as np
+
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score
+
+from settings import U1_MIN
+
+####################################################################################################
+# THIS PART HERE HAS ALREADY BEEN USED AND WILL NOT BE USED AGAIN
+####################################################################################################
+
+def poly_dataset(
+    sweep_result,
+    well_name,
+    poly_output_names=("P_bh_bar", "P_tb_b_bar", "w_G_inj"),
+    pinn_output_names=("m_G_an","m_G_t","m_o_t"),
+    save=True,
+):
+    U_scale = np.array([
+        [-1.0, -1.0],
+        [-1.0,  1.0],
+        [ 1.0, -1.0],
+        [ 1.0,  1.0],
+
+        [-1.0,  0.0],
+        [ 1.0,  0.0],
+        [ 0.0, -1.0],
+        [ 0.0,  1.0],
+
+        [-0.5,  0.0],
+        [ 0.5,  0.0],
+        [ 0.0, -0.5],
+        [ 0.0,  0.5],
+
+        [-0.5, -0.5],
+        [-0.5,  0.5],
+        [ 0.5, -0.5],
+        [ 0.5,  0.5],
+
+        [ 0.0,  0.0],
+    ], dtype=float)
+
+    OUT = sweep_result["OUT"]
+    u1_grid = np.asarray(sweep_result["u1_grid"], dtype=float)
+    u2_grid = np.asarray(sweep_result["u2_grid"], dtype=float)
+
+    u1_min = float(u1_grid[0])
+    u1_max = float(u1_grid[-1])
+    u2_min = float(u2_grid[0])
+    u2_max = float(u2_grid[-1])
+
+    # Convert hardcoded scaled points to physical input values
+    U_target = np.zeros_like(U_scale)
+    U_target[:, 0] = u1_min + 0.5 * (U_scale[:, 0] + 1.0) * (u1_max - u1_min)
+    U_target[:, 1] = u2_min + 0.5 * (U_scale[:, 1] + 1.0) * (u2_max - u2_min)
+
+    U_grid = []
+    Y_poly = []
+    Y_pinn = []
+    grid_indices = []
+
+    for u1_target, u2_target in U_target:
+        i = int(np.argmin(np.abs(u1_grid - u1_target)))
+        j = int(np.argmin(np.abs(u2_grid - u2_target)))
+
+        U_grid.append([u1_grid[i], u2_grid[j]])
+        grid_indices.append([i, j])
+
+        Y_poly.append([
+            OUT[name][i, j]
+            for name in poly_output_names
+        ])
+
+        Y_pinn.append([
+            OUT[name][i,j]
+            for name in pinn_output_names
+        ])
+
+    U_grid = np.asarray(U_grid, dtype=float)
+    Y_poly = np.asarray(Y_poly, dtype=float)
+    Y_pinn = np.asarray(Y_pinn, dtype=float)
+    grid_indices = np.asarray(grid_indices, dtype=int)
+
+    # Recompute the actual scaled coordinates of the selected grid points.
+    # This matters because the 20-by-20 grid may not contain exactly -0.5, 0, 0.5.
+    U_scale_grid = np.zeros_like(U_grid)
+    U_scale_grid[:, 0] = 2.0 * (U_grid[:, 0] - u1_min) / (u1_max - u1_min) - 1.0
+    U_scale_grid[:, 1] = 2.0 * (U_grid[:, 1] - u2_min) / (u2_max - u2_min) - 1.0
+
+    dataset = {
+        "well_name": well_name,
+        "input_names": ["u1", "u2"],
+
+        "poly_output_names": list(poly_output_names),
+        "pinn_output_names": list(pinn_output_names),
+
+        "U_scale_design": U_scale,
+        "U_target": U_target,
+
+        # These are the actual grid values used for fitting
+        "U": U_grid,
+        "U_scale": U_scale_grid,
+
+        "Y_poly": Y_poly,
+        "Y_pinn": Y_pinn,
+
+        "output_names": list(poly_output_names),
+        "Y": Y_poly,
+
+        "grid_indices": grid_indices,
+
+        "input_scaling": {
+            "u1_min": u1_min,
+            "u1_max": u1_max,
+            "u2_min": u2_min,
+            "u2_max": u2_max,
+        },
+    }
+
+    if save:
+        folder = Path.cwd().parent / "well_models" / str(well_name)
+        folder.mkdir(parents=True, exist_ok=True)
+
+        path = folder / "poly_dataset.pkl"
+        with open(path, "wb") as f:
+            pickle.dump(dataset, f)
+
+        print(f"Saved dataset: {path}")
+
+    return dataset
+
+
+def fit_cubic_polynomial(dataset, save=True):
+    """
+    Fit vector-valued cubic polynomial:
+
+        Y = polynomial(U_scale)
+
+    where U_scale is the actual selected grid point in scaled coordinates.
+    """
+
+    well_name = dataset["well_name"]
+
+    U_scale = np.asarray(dataset["U_scale"], dtype=float)
+    Y = np.asarray(dataset["Y_poly"], dtype=float)
+    output_names = dataset["poly_output_names"]
+
+    poly = PolynomialFeatures(degree=3, include_bias=True)
+    Phi = poly.fit_transform(U_scale)
+
+    reg = LinearRegression(fit_intercept=False)
+    reg.fit(Phi, Y)
+
+    Y_hat = reg.predict(Phi)
+
+    coefficients = reg.coef_.T
+    powers = poly.powers_
+
+    rmse = np.sqrt(np.mean((Y - Y_hat) ** 2, axis=0))
+    max_abs_error = np.max(np.abs(Y - Y_hat), axis=0)
+
+    r2 = np.array([
+        r2_score(Y[:, k], Y_hat[:, k])
+        for k in range(Y.shape[1])
+    ])
+
+    model_dict = {
+        "well_name": well_name,
+        "model_type": "cubic_polynomial",
+        "degree": 3,
+
+        "input_names": dataset["input_names"],
+        "output_names": list(output_names),
+
+        "input_scaling": dataset["input_scaling"],
+
+        "powers": powers.tolist(),
+        "coefficients": coefficients.tolist(),
+
+        "metrics": {
+            "rmse": {
+                name: float(rmse[k])
+                for k, name in enumerate(dataset["output_names"])
+            },
+            "r2": {
+                name: float(r2[k])
+                for k, name in enumerate(dataset["output_names"])
+            },
+            "max_abs_error": {
+                name: float(max_abs_error[k])
+                for k, name in enumerate(dataset["output_names"])
+            },
+        },
+
+        "training_data": {
+            "U": dataset["U"].tolist(),
+            "U_scale": U_scale.tolist(),
+            "Y": Y.tolist(),
+            "Y_hat": Y_hat.tolist(),
+            "grid_indices": dataset["grid_indices"].tolist(),
+        },
+    }
+
+    if save:
+        folder = Path.cwd().parent / "well_models" / str(well_name)
+        folder.mkdir(parents=True, exist_ok=True)
+
+        path = folder / "cubic_polynomial_model.pkl"
+        with open(path, "wb") as f:
+            pickle.dump(model_dict, f)
+
+        print(f"Saved cubic model: {path}")
+
+    print(f"\nCubic polynomial fit: {well_name}")
+    print("-" * 60)
+
+    for name in dataset["output_names"]:
+        print(
+            f"{name:15s} | "
+            f"RMSE = {model_dict['metrics']['rmse'][name]:.6e} | "
+            f"R2 = {model_dict['metrics']['r2'][name]:.8f} | "
+            f"MaxAbs = {model_dict['metrics']['max_abs_error'][name]:.6e}"
+        )
+
+    return model_dict
 
 
 def build_and_run_surrogate_sweep(
@@ -16,7 +262,9 @@ def build_and_run_surrogate_sweep(
     PI: float,
     K_gs: float,
     K_inj: float,
-    K_pr: float
+    K_pr: float,
+    well_name: str,
+    save: bool,
 ):
     """
     Creates the surrogate model, runs run_sweep on an N_data x N_data grid and get the results
@@ -36,8 +284,143 @@ def build_and_run_surrogate_sweep(
         U2_MIN=u2_min,
         U_SIM_SIZE=N_data,
         y_guess_init=y_guess_init)
+
+    if save:
+        if well_name is None:
+            raise ValueError("well_name must be provided when save=True.")
+
+        folder = Path.cwd().parent / "well_models" / str(well_name)
+        folder.mkdir(parents=True, exist_ok=True)
+
+        path = folder / "sweep_results_validation.pkl"
+
+        with open(path, "wb") as f:
+            pickle.dump(results, f)
+
+        print(f"Saved sweep results: {path}")
+
     return results
 
+####################################################################################################
+# END OF THE PART USED
+# ##################################################################################################
+
+
+if __name__ == "__main__":
+    import numpy as np
+    from configuration.wells import get_wells
+    from settings import *
+    N_data = 137
+    wells = get_wells()
+    for well in wells:
+
+        well_name=well
+        BSW = wells[well]["BSW"]
+        GOR = wells[well]["GOR"]
+        PI = wells[well]["PI"]
+        K_gs = wells[well]["K_gs"]
+        K_inj = wells[well]["K_inj"]
+        K_pr = wells[well]["K_pr"]
+        y_guess_sur = wells[well]["y_guess_sur"]
+
+        u1_min, u1_max = U1_MIN, U1_MAX
+        u2_min, u2_max = U2_MIN, U2_MAX
+
+
+
+        y_guess_sur = np.array(y_guess_sur, dtype=float)
+
+        print("Running sweep...")
+        results = build_and_run_surrogate_sweep(
+            u1_min=u1_min,
+            u2_min=u2_min,
+            N_data=N_data,
+            y_guess_init=y_guess_sur,
+            BSW=BSW,
+            GOR=GOR,
+            PI=PI,
+            K_gs=K_gs,
+            K_inj=K_inj,
+            K_pr=K_pr,
+            well_name=well_name,
+            save=True
+        )
+
+        # output_names = ("P_bh_bar", "P_tb_b_bar", "w_G_inj")
+
+        # dataset = poly_dataset(
+        #     sweep_result=results,
+        #     well_name=well_name,
+        # )
+
+        # model = fit_cubic_polynomial(
+        #     dataset=dataset,
+        #     save=True,
+        # )
+
+    #
+    # print("\nFlattening to AlgNN batch...")
+    # batch = flatten_sweep_results_to_batch_full(
+    #     results,
+    #     only_success=True
+    # )
+    #
+    # # -------- State ranges --------
+    # y_np = batch["y_np"]
+    # y_min = np.min(y_np, axis=0)
+    # y_max = np.max(y_np, axis=0)
+    #
+    # margin = 0.05
+    # y_span = y_max - y_min
+    # y_min_loose = y_min - margin * y_span
+    # y_max_loose = y_max + margin * y_span
+    #
+    # print("\n--- State ranges (loose) ---")
+    # for i, name in enumerate(batch["Z_NAMES"][:3]):
+    #     print(f"{name}: min = {y_min_loose[i]:.6f}, max = {y_max_loose[i]:.6f}")
+    #
+    # # -------- Target ranges --------
+    # z_np = batch["z_np"]
+    # z_min = np.min(z_np, axis=0)
+    # z_max = np.max(z_np, axis=0)
+    #
+    # z_span = z_max - z_min
+    # z_min_loose = z_min - margin * z_span
+    # z_max_loose = z_max + margin * z_span
+    #
+    # names=["P_bh_bar", "P_tb_b_bar","w_G_inj","w_res"]
+    #
+    # print("\n--- Target ranges (loose) ---")
+    # for i, name in enumerate(names):
+    #     print(f"{name}: min = {z_min_loose[i]:.6f}, max = {z_max_loose[i]:.6f}")
+    #
+    # # -------- Summary --------
+    # print("\n--- Sweep summary ---")
+    # Nu1, Nu2 = batch["Nu1"], batch["Nu2"]
+    # total = Nu1 * Nu2
+    # success_total = int(np.sum(results["SUCCESS"]))
+    # print(f"Grid: {Nu1} x {Nu2} = {total} points")
+    # print(f"SUCCESS count (raw): {success_total}")
+    # print(f"Batch size (finite OUT & success): {batch['u_np'].shape[0]}")
+    # print(f"State names:  {batch['Z_NAMES'][:3]}")
+    # print(f"Target names: {batch['z_names']}")
+    #
+    # # -------- Tensor shapes --------
+    # print("\n--- Torch tensors ---")
+    # print("u_t:", tuple(batch["u_t"].shape), batch["u_t"].dtype)
+    # print("y_t:", tuple(batch["y_t"].shape), batch["y_t"].dtype)
+    # print("z_t:", tuple(batch["z_t"].shape), batch["z_t"].dtype)
+    # print("res_dx_t:", tuple(batch["res_dx_t"].shape), batch["res_dx_t"].dtype)
+    #
+    # # -------- Sample rows --------
+    # print("\n--- First samples ---")
+    # for k in range(min(1000, batch["u_np"].shape[0])):
+    #     u_k = batch["u_np"][k]
+    #     y_k = batch["y_np"][k]
+    #     z_k = batch["z_np"][k]
+    #     rd_k = batch["res_dx_np"][k]
+    #     print(f"{k:02d} | u={u_k} | res_dx={rd_k:.2e} | y={y_k} | z={z_k}")
+    #
 
 
 def flatten_sweep_results_to_batch_full(results: dict, only_success: bool = True):
@@ -117,101 +500,3 @@ def flatten_sweep_results_to_batch_full(results: dict, only_success: bool = True
         "Nu2": Nu2,
         "mask_np": mask,
     }
-
-if __name__ == "__main__":
-    import numpy as np
-    from configuration.wells import get_wells
-
-    N_data = 20  # -> total grid points = 400
-
-    wells = get_wells()
-    well="P1"
-    BSW = wells[well]["BSW"]
-    GOR = wells[well]["GOR"]
-    PI = wells[well]["PI"]
-    K_gs = wells[well]["K_gs"]
-    K_inj = wells[well]["K_inj"]
-    K_pr = wells[well]["K_pr"]
-    y_guess_sur = wells[well]["y_guess_sur"]
-
-    u1_min, u1_max = 0.05, 1.00
-    u2_min, u2_max = 0.10, 1.00
-
-    y_guess_sur = np.array(y_guess_sur, dtype=float)
-
-    print("Running sweep...")
-    results = build_and_run_surrogate_sweep(
-        u1_min=u1_min,
-        u2_min=u2_min,
-        N_data=N_data,
-        y_guess_init=y_guess_sur,
-        BSW=BSW,
-        GOR=GOR,
-        PI=PI,
-        K_gs=K_gs,
-        K_inj=K_inj,
-        K_pr=K_pr
-    )
-
-    print("\nFlattening to AlgNN batch...")
-    batch = flatten_sweep_results_to_batch_full(
-        results,
-        only_success=True
-    )
-
-    # -------- State ranges --------
-    y_np = batch["y_np"]
-    y_min = np.min(y_np, axis=0)
-    y_max = np.max(y_np, axis=0)
-
-    margin = 0.05
-    y_span = y_max - y_min
-    y_min_loose = y_min - margin * y_span
-    y_max_loose = y_max + margin * y_span
-
-    print("\n--- State ranges (loose) ---")
-    for i, name in enumerate(batch["Z_NAMES"][:3]):
-        print(f"{name}: min = {y_min_loose[i]:.6f}, max = {y_max_loose[i]:.6f}")
-
-    # -------- Target ranges --------
-    z_np = batch["z_np"]
-    z_min = np.min(z_np, axis=0)
-    z_max = np.max(z_np, axis=0)
-
-    z_span = z_max - z_min
-    z_min_loose = z_min - margin * z_span
-    z_max_loose = z_max + margin * z_span
-
-    names=["P_bh_bar", "P_tb_b_bar","w_G_inj","w_res"]
-
-    print("\n--- Target ranges (loose) ---")
-    for i, name in enumerate(names):
-        print(f"{name}: min = {z_min_loose[i]:.6f}, max = {z_max_loose[i]:.6f}")
-
-    # -------- Summary --------
-    print("\n--- Sweep summary ---")
-    Nu1, Nu2 = batch["Nu1"], batch["Nu2"]
-    total = Nu1 * Nu2
-    success_total = int(np.sum(results["SUCCESS"]))
-    print(f"Grid: {Nu1} x {Nu2} = {total} points")
-    print(f"SUCCESS count (raw): {success_total}")
-    print(f"Batch size (finite OUT & success): {batch['u_np'].shape[0]}")
-    print(f"State names:  {batch['Z_NAMES'][:3]}")
-    print(f"Target names: {batch['z_names']}")
-
-    # -------- Tensor shapes --------
-    print("\n--- Torch tensors ---")
-    print("u_t:", tuple(batch["u_t"].shape), batch["u_t"].dtype)
-    print("y_t:", tuple(batch["y_t"].shape), batch["y_t"].dtype)
-    print("z_t:", tuple(batch["z_t"].shape), batch["z_t"].dtype)
-    print("res_dx_t:", tuple(batch["res_dx_t"].shape), batch["res_dx_t"].dtype)
-
-    # -------- Sample rows --------
-    print("\n--- First samples ---")
-    for k in range(min(1000, batch["u_np"].shape[0])):
-        u_k = batch["u_np"][k]
-        y_k = batch["y_np"][k]
-        z_k = batch["z_np"][k]
-        rd_k = batch["res_dx_np"][k]
-        print(f"{k:02d} | u={u_k} | res_dx={rd_k:.2e} | y={y_k} | z={z_k}")
-

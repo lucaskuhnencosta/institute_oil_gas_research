@@ -1,9 +1,13 @@
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib as mpl
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.interpolate import RegularGridInterpolator
+
 
 from application.simulation_engine import *
 
@@ -320,7 +324,7 @@ def plot_stability_map(U1,
                 edgecolors=color_boundary,
                 linewidths=2.0,
                 alpha=1.0,
-                label="Stability frontier set $\mathcal{F}_s$",
+                label="Stability frontier set $F_s$",
                 zorder=4,
             )
 
@@ -450,6 +454,7 @@ def plot_contour_wraper(
     u1_opt=None,
     u2_opt=None,
     z_opt=None,
+    ax=None
 ):
     """
     FINAL DISSERTATION VERSION
@@ -490,6 +495,7 @@ def plot_contour_wraper(
         line_levels=levels,
         mask=mask,
         mark_optimum=mark_optimum,
+        ax=ax,
     )
 
 
@@ -508,15 +514,15 @@ def plot_contour(
     mask=None,
     mark_optimum=True,
     ax=None,
-    add_colorbar=True,
+    add_colorbar=False,
     vmin=None,
     vmax=None,
     just_contour=False,
     cmap="viridis",
     contour_color="k",
-    linewidths=2.0,
+    linewidths=1.0,
     alpha=0.5,
-    equal_aspect=False,
+    equal_aspect=True,
     xlim=None,
     ylim=None,
     xticks=None,
@@ -609,9 +615,9 @@ def plot_contour(
     # Optimum marker
     if mark_optimum and (u1_opt is not None) and (u2_opt is not None):
         if z_opt is None:
-            label = "Optimum"
+            label = "Opt"
         else:
-            label = f"Optimum {z_opt:.3f}"
+            label = f"Opt {z_opt:.3f}"
 
         ax.plot(
             u1_opt,
@@ -624,10 +630,11 @@ def plot_contour(
         handles, labels = ax.get_legend_handles_labels()
         if handles:
             leg = ax.legend(
-                loc="best",
+                loc="lower center",
+                bbox_to_anchor=(0.5, -0.035),
                 frameon=True,
                 fancybox=True,
-                fontsize=12
+                fontsize=11
             )
             frame = leg.get_frame()
             frame.set_facecolor("white")
@@ -783,6 +790,219 @@ def overlay_boundary_curve(
             frame.set_linewidth(1.0)
 
     return ax
+
+def plot_feasible_region_pretty(
+        u1_grid,
+        u2_grid,
+        bottomhole_pressure_values,
+        tubing_pressure_values,
+        p_tb_max,
+        p_bh_min,
+        instability_coef_dict,
+        instability_side="above",
+        n_fine=500,
+        save_path=None,
+        ax=None
+):
+    """
+    Thesis-quality feasible region plot in the (u1, u2) plane.
+
+    The original pressure fields may be coarse, e.g. 20 x 20.
+    This function interpolates them to a finer grid for visualization.
+    """
+
+    # --------------------------------------------------
+    # Convert inputs
+    # --------------------------------------------------
+    u1_grid = np.asarray(u1_grid, dtype=float).reshape(-1)
+    u2_grid = np.asarray(u2_grid, dtype=float).reshape(-1)
+
+    P_BH = np.asarray(bottomhole_pressure_values, dtype=float)
+    P_TB = np.asarray(tubing_pressure_values, dtype=float)
+
+    expected_shape = (len(u1_grid), len(u2_grid))
+
+    if P_BH.shape != expected_shape:
+        raise ValueError(
+            f"bottomhole_pressure_values has shape {P_BH.shape}, "
+            f"but expected {expected_shape}."
+        )
+
+    if P_TB.shape != expected_shape:
+        raise ValueError(
+            f"tubing_pressure_values has shape {P_TB.shape}, "
+            f"but expected {expected_shape}."
+        )
+
+    # --------------------------------------------------
+    # Fine plotting grid
+    # --------------------------------------------------
+    u1_fine = np.linspace(u1_grid.min(), u1_grid.max(), n_fine)
+    u2_fine = np.linspace(u2_grid.min(), u2_grid.max(), n_fine)
+
+    U1, U2 = np.meshgrid(u1_fine, u2_fine, indexing="ij")
+
+    points_fine = np.column_stack([U1.ravel(), U2.ravel()])
+
+    # --------------------------------------------------
+    # Interpolate pressure fields
+    # --------------------------------------------------
+    interp_bh = RegularGridInterpolator(
+        (u1_grid, u2_grid),
+        P_BH,
+        method="linear",
+        bounds_error=False,
+        fill_value=np.nan,
+    )
+
+    interp_tb = RegularGridInterpolator(
+        (u1_grid, u2_grid),
+        P_TB,
+        method="linear",
+        bounds_error=False,
+        fill_value=np.nan,
+    )
+
+    P_BH_fine = interp_bh(points_fine).reshape(U1.shape)
+    P_TB_fine = interp_tb(points_fine).reshape(U1.shape)
+
+    # --------------------------------------------------
+    # Constraints
+    # Feasible convention: G <= 0
+    # --------------------------------------------------
+    G_tb = P_TB_fine - p_tb_max
+    G_bh = p_bh_min - P_BH_fine
+
+    if "poly" in instability_coef_dict:
+        poly = instability_coef_dict["poly"]
+    elif "coef" in instability_coef_dict:
+        poly = np.poly1d(instability_coef_dict["coef"])
+    else:
+        raise ValueError(
+            "instability_coef_dict must contain either 'poly' or 'coef'."
+        )
+
+    U2_inst_boundary = poly(U1)
+
+    if instability_side == "above":
+        G_inst = U2_inst_boundary - U2
+    elif instability_side == "below":
+        G_inst = U2 - U2_inst_boundary
+    else:
+        raise ValueError("instability_side must be either 'above' or 'below'.")
+
+    feasible = (
+            (G_tb <= 0.0)
+            & (G_bh <= 0.0)
+            & (G_inst <= 0.0)
+            & np.isfinite(G_tb)
+            & np.isfinite(G_bh)
+    )
+
+    # --------------------------------------------------
+    # Plot
+    # --------------------------------------------------
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(6.0, 6.0))
+    else:
+        fig = ax.figure
+    color_stable = (0.00, 0.45, 0.00)  # dark green
+    color_unstable = (0.75, 0.00, 0.00)  # dark red
+    color_boundary = (0.00, 0.20, 0.80)  # blue
+
+    # Soft feasible region
+    ax.contourf(
+        U1,
+        U2,
+        feasible.astype(float),
+        levels=[0.5, 1.5],
+        colors=color_stable,
+        alpha=0.95,
+        zorder=1
+    )
+
+    # Constraint boundaries
+    ax.contour(
+        U1,
+        U2,
+        G_tb,
+        levels=[0.0],
+        colors=color_boundary,
+        linewidths=2.2,
+        linestyles="solid",
+        zorder=2
+    )
+
+    ax.contour(
+        U1,
+        U2,
+        G_bh,
+        levels=[0.0],
+        colors=color_boundary,
+        linewidths=2.2,
+        linestyles="dashed",
+        zorder=2
+    )
+
+    ax.contour(
+        U1,
+        U2,
+        G_inst,
+        levels=[0.0],
+        colors=color_boundary,
+        linewidths=2.0,
+        linestyles="dashdot",
+        zorder=2
+    )
+
+    # Optional: plot original grid points lightly to show data source
+    # ax.scatter(U1[::20, ::20], U2[::20, ::20], s=3, color="k", alpha=0.15)
+
+    # --------------------------------------------------
+    # Labels
+    # --------------------------------------------------
+    ax.set_xlabel(r"$u_1$")
+    ax.set_ylabel(r"$u_2$")
+
+    ax.set_xlim(u1_grid.min(), u1_grid.max())
+    ax.set_ylim(u2_grid.min(), u2_grid.max())
+
+    # ax.grid(False, alpha=0.18, linewidth=0.8)
+
+    # Remove top/right visual heaviness
+    # ax.spines["top"].set_alpha(0.5)
+    # ax.spines["right"].set_alpha(0.5)
+
+    # --------------------------------------------------
+    # Legend
+    # --------------------------------------------------
+    legend_elements = [
+        Patch(facecolor=color_stable, edgecolor="none", alpha=0.95,
+              label="Feasible region"),
+        Line2D([0], [0], color=color_boundary, lw=2.2, linestyle="solid",
+               label=r"$p_{\mathrm{tb}}$ constraint"),
+        Line2D([0], [0], color=color_boundary, lw=2.2, linestyle="dashed",
+               label=r"$p_{\mathrm{bh}}$ constraint"),
+        Line2D([0], [0], color=color_boundary, lw=2.0, linestyle="dashdot",
+               label="Instability boundary"),
+    ]
+
+    # ax.legend(
+    #     handles=legend_elements,
+    #     loc="upper center",
+    #     bbox_to_anchor=(0.5, 1.18),
+    #     ncol=2,
+    #     frameon=False,
+    # )
+    # fig.tight_layout()
+    #
+    # if save_path is not None:
+    #     fig.savefig(save_path, format="pdf", bbox_inches="tight")
+    #
+    # plt.show()
+
+    return fig, ax, feasible
 
     #
     # u1_grid = results["u1_grid"]

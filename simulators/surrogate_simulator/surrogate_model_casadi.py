@@ -29,13 +29,6 @@ def make_glc_well_surrogate(BSW,
             # smooth approximation of max(z,zmin))
             return zmin + smooth_pos_scaled(z - zmin,scale)
 
-        # if GOR == 0.01:
-        #     alpha= 0.85
-        # elif GOR == 0.05:
-        #     alpha = 0.54
-        # elif GOR == 0.10:
-        #     alpha= 0.36
-        # else:
         alpha=1.0
         k_pos=20
         eps=1e-12
@@ -112,10 +105,10 @@ def make_glc_well_surrogate(BSW,
         # -----------------------
 
         # Equation 8 - Average mixture density inside tubing (above injection point)
-        rho_avg_mix_tb=(m_G_tb+m_L_tb-alpha*rho_L*S_bh*L_bh)/V_tb
+        rho_avg_mix_tb=(m_G_tb+m_L_tb-rho_L*S_bh*L_bh)/V_tb
 
         # Equation 9 - Average liquid volume fraction inside tubing (above injection point)
-        alpha_avg_L_tb = (m_L_tb - alpha*rho_L * S_bh * L_bh) / (V_tb * rho_L)
+        alpha_avg_L_tb = (m_L_tb - rho_L * S_bh * L_bh) / (V_tb * rho_L)
 
 
 

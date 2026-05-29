@@ -381,7 +381,7 @@ def optimize_field_production(
     # 7.2) Objective
     # ---------------------
     #
-    obj=-total_w_o
+    obj=total_w_w
 
     # obj=0
 
@@ -554,18 +554,18 @@ def optimize_field_production(
 if __name__=="__main__":
 
     wells =get_wells()
-    # model_type="rigorous"
-    model_type="surrogate"
+    model_type="rigorous"
+    # model_type="surrogate"
 
     sol = optimize_field_production(
         model_type=model_type,
         wells=wells,
-        u_guess_list=[[1.0,1.0]],
-        G_available=14.00,
-        G_max_export=1.40,
-        W_max=11.50,
-        L_max=40,
-        unconstrained_well=True,
+        u_guess_list=[[1.0,1.0],[1.0,1.0],[1.0,1.0],[1.0,1.0],[1.0,1.0],[1.0,1.0]],
+        G_available=36.50,
+        G_max_export=1.90,
+        W_max=11.40,
+        L_max=76,
+        unconstrained_well=False,
         unconstrained_platform=True,
         enforce_stable=True
     )

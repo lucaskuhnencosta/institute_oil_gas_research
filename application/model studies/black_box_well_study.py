@@ -21,8 +21,7 @@ wells=get_wells()
 ######################################################################################
 ############### THIS HERE IS NEVE GOING TO CHANGE ####################################
 MODE = "rigorous"
-U1_MIN=0.05 #if you ever change this, you need to change inside the black box optimizer
-U2_MIN=0.10 #if you ever change this, you need to change inside the black box optimizer
+
 ######################################################################################
 ######################################################################################
 

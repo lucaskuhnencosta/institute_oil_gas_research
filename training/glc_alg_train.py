@@ -35,10 +35,10 @@ class AlgTrainer(Trainer):
         self.BSW = well_list["BSW"]
         self.GOR = well_list["GOR"]
         self.PI = well_list["PI"]
-        self.K_gs = well_list["K_gs_sur"]
-        self.K_inj = well_list["K_inj_sur"]
-        self.K_pr = well_list["K_pr_sur"]
-        self.y_guess_sur=np.array(well_list["y_guess_sur"], dtype=float)
+        self.K_gs = well_list["K_gs"]
+        self.K_inj = well_list["K_inj"]
+        self.K_pr = well_list["K_pr"]
+        self.y_guess_sur=np.array(well_list["y_guess"], dtype=float)
         self.y_min_train = np.array(well_list["y_min"])
         self.y_max_train = np.array(well_list["y_max"])
 

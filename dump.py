@@ -1789,7 +1789,338 @@ from casadi import *
 #     }
 #
 
+#
+#
+#     u1_grid_train = np.linspace(float(self.u_min_train[0]), float(self.u_max_train[0]) + 1e-5, int(self.N_data))
+#     u2_grid_train = np.linspace(float(self.u_min_train[1]), float(self.u_max_train[1]) + 1e-5, int(self.N_data))
+#
+#     model_sur = make_model("surrogate",
+#                            BSW=self.BSW,
+#                            GOR=self.GOR,
+#                            PI=self.PI,
+#                            K_gs=self.K_gs,
+#                            K_inj=self.K_inj,
+#                            K_pr=self.K_pr)
+#
+#     results_train = run_sweep(
+#         model_sur,
+#         U1_MIN=self.u1_min,
+#         U2_MIN=self.u2_min,
+#         U_SIM_SIZE=self.N_data,
+#         y_guess_init=self.y_guess_surr)
+#
+#
+#     batch_train = flatten_sweep_results_to_batch(results_train, only_success=True)
+#
+#     # Move to device
+#     self.u_data_train = batch_train["u_t"].to(self.device)
+#     self.y_data_train = batch_train["y_t"].to(self.device)
+#
+#     # ---------------------------------
+#     # 3) Supervised sweep dataset (VAL)
+#     # ---------------------------------
+#     N_data_val = int(self.N_data / 3)
+#     N_data_val = max(3, N_data_val)  # keep a minimum grid so it isn't degenerate
+#
+#     self.l.info(f"Generating VAL sweep dataset with N_data_val={N_data_val} (grid {N_data_val}x{N_data_val}) ...")
+#
+#     u1_grid_val = np.linspace(self.u_min_train[0], self.u_max_train[0] + 1e-5, N_data_val, dtype=float)
+#     u2_grid_val = np.linspace(self.u_min_train[1], self.u_max_train[1] + 1e-5, N_data_val, dtype=float)
+#
+#     results_val = run_sweep(
+#         model_sur,
+#         U1_MIN=self.u1_min,
+#         U2_MIN=self.u2_min,
+#         U_SIM_SIZE=self.N_data,
+#         y_guess_init=self.y_guess_surr,
+#     )
+#
+#     batch_val= flatten_sweep_results_to_batch(results_val, only_success=True)
+#
+#     # Move to device
+#     self.u_data_val = batch_val["u_t"].to(self.device)
+#     self.y_data_val = batch_val["y_t"].to(self.device)
+#
+#     self.y_data_train_norm = (self.y_data_train - self.y_min_t) / (self.y_range_t)
+#     self.print_shapes()
+#
+#
+# def print_shapes(self):
+#     self.l.info(f"Size of self y data train is:{self.y_data_train.shape}")
+#     self.l.info(f"Size of self u data train is:{self.u_data_train.shape}")
+#
+#     self.l.info(f"Size of self y data val is:{self.y_data_val.shape}")
+#
+#     self.l.info(f"Size of the colocation poins is {self.u_col.shape}")
+# # after loss.backward()
+# with torch.no_grad():
+#     # 1) grad norm
+#     g2 = 0.0
+#     for p in self.net.parameters():
+#         if p.grad is not None:
+#             g2 += p.grad.detach().float().norm().item() ** 2
+#     grad_norm = g2 ** 0.5
+#
+#     # 2) step size proxy: parameter norm change if we took a step (approx)
+#     lr = self._optim.param_groups[0]["lr"]
+#     self.l.info(f"[DBG] epoch={self._e} grad_norm={grad_norm:.3e} lr={lr:.3e}")
+# with torch.no_grad():
+#     w2 = 0.0
+#     for p in self.net.parameters():
+#         w2 += p.detach().float().norm().item() ** 2
+#     w_norm = w2 ** 0.5
+#     self.l.info(f"[DBG] epoch={self._e} w_norm={w_norm:.6e}")
+# #STAGE 3 - L-BFGS Block 2
+# self.l.info(f"--- Starting Stage 3: L-BFGS Block 2 (Adam Epochs: {self._e}) ---")
+# # We re-initialize the optimizer to run a new session
+# self.switch_to_lbfgs(max_iter_per_call=lbfgs_iter_per_loop)
+#
+# data_to_log, val_score = self._run_epoch()
+# self._e += lbfgs_iter_per_loop  # Log this as 1000 more "epochs"
+#
+# if self._log_to_wandb:
+#     wandb.log(data_to_log, step=self._e, commit=True)
+#     self.save_checkpoint()
+# if val_score < self.best_val:
+#     self.best_val = val_score
+#     self.train_loss_at_best_val = data_to_log['train/total']
+#     if self._log_to_wandb:
+#         self.save_model(name='model_best')
+#
+# # --- FINISH ---
 
+# def _debug_grad_norm(self):
+#     total = 0.0
+#     count = 0
+#     max_g = 0.0
+#     for p in self.net.parameters():
+#         if p.grad is None:
+#             continue
+#         g = p.grad.detach()
+#         n = torch.norm(g).item()
+#         total += n
+#         max_g = max(max_g, g.abs().max().item())
+#         count += 1
+#     return {"grad_norm_sum": total, "grad_absmax": max_g, "grad_tensors": count}
+
+# def _print_one_time_sanity(self, y_hat_col, dx_col, y_pred_data, loss_data_n, loss_data_raw):
+#     # 1) output scale sanity
+#     with torch.no_grad():
+#         self.l.info("[SANITY] ---- One-time debug ----")
+#         self.l.info(f"[SANITY] y_hat_col mean={y_hat_col.mean(0).detach().cpu().numpy()} "
+#                     f"std={y_hat_col.std(0).detach().cpu().numpy()} "
+#                     f"min={y_hat_col.min(0).values.detach().cpu().numpy()} "
+#                     f"max={y_hat_col.max(0).values.detach().cpu().numpy()}")
+#         self.l.info(f"[SANITY] dx_col mean={dx_col.mean(0).detach().cpu().numpy()} "
+#                     f"std={dx_col.std(0).detach().cpu().numpy()} "
+#                     f"mse_comp={torch.mean(dx_col * dx_col, dim=0).detach().cpu().numpy()}")
+#
+#         self.l.info(f"[SANITY] y_data mean={self.y_data.mean(0).detach().cpu().numpy()} "
+#                     f"std={self.y_data.std(0).detach().cpu().numpy()} "
+#                     f"min={self.y_data.min(0).values.detach().cpu().numpy()} "
+#                     f"max={self.y_data.max(0).values.detach().cpu().numpy()}")
+#
+#         self.l.info(f"[SANITY] y_pred_data mean={y_pred_data.mean(0).detach().cpu().numpy()} "
+#                     f"std={y_pred_data.std(0).detach().cpu().numpy()} "
+#                     f"min={y_pred_data.min(0).values.detach().cpu().numpy()} "
+#                     f"max={y_pred_data.max(0).values.detach().cpu().numpy()}")
+#
+#         self.l.info(f"[SANITY] data_norm={float(loss_data_n.item()):.3e} "
+#                     f"data_raw={float(loss_data_raw.item()):.3e} "
+#                     f"lambda_data={self.lambda_data}")
+#
+#         # probe
+#         y_probe, dx_probe, dxn = self._debug_probe()
+#         self.l.info(
+#             f"[SANITY] u_probe={tuple(self.u_probe.tolist())} y_hat={y_probe} dx_probe={dx_probe} ||dx||={dxn:.3e}")
+#
+#         # last layer stats
+#         stats = self._debug_param_and_grad_stats()
+#         if stats:
+#             self.l.info(f"[SANITY] last layer stats: {stats}")
+#         self.l.info("[SANITY] -----------------------")
+#
+# def _debug_check_ranges_and_nans(self):
+#     # Check u ranges
+#     def _rng(t: torch.Tensor):
+#         return t.min(dim=0).values.detach().cpu().numpy(), t.max(dim=0).values.detach().cpu().numpy()
+#
+#     ucol_min, ucol_max = _rng(self.u_col)
+#     uval_min, uval_max = _rng(self.u_val)
+#     udat_min, udat_max = _rng(self.u_data)
+#
+#     self.l.info(f"[CHECK] u_col min={ucol_min} max={ucol_max}")
+#     self.l.info(f"[CHECK] u_val min={uval_min} max={uval_max}")
+#     self.l.info(f"[CHECK] u_data min={udat_min} max={udat_max}")
+#     self.l.info(f"[CHECK] expected u_min={self.u_min_train} u_max={self.u_max_train}")
+#
+#     # Check y ranges
+#     y_min = self.y_data.min(dim=0).values.detach().cpu().numpy()
+#     y_max = self.y_data.max(dim=0).values.detach().cpu().numpy()
+#     self.l.info(f"[CHECK] y_data min={y_min} max={y_max}")
+#     self.l.info(f"[CHECK] y_mu={self.y_mu.detach().cpu().numpy().reshape(-1)}")
+#     self.l.info(f"[CHECK] y_std={self.y_std.detach().cpu().numpy().reshape(-1)}")
+#
+#     # NaN/inf checks
+#     def _finite(name, t):
+#         ok = torch.isfinite(t).all().item()
+#         self.l.info(f"[CHECK] {name} finite={ok}")
+#         if not ok:
+#             bad = (~torch.isfinite(t)).nonzero(as_tuple=False)[:10].detach().cpu().numpy()
+#             self.l.info(f"[CHECK] {name} first bad idx: {bad}")
+#
+#     _finite("u_col", self.u_col)
+#     _finite("u_val", self.u_val)
+#     _finite("u_data", self.u_data)
+#     _finite("y_data", self.y_data)
+#     _finite("res_dx_data", self.res_dx_data)
+#
+# @torch.no_grad()
+# def _debug_probe(self):
+#     self.net.eval()
+#     y_probe = self.net(self._u_probe_t)
+#     dx_probe = self.physics_f(y_probe, self._u_probe_t)
+#     return (
+#         y_probe.detach().cpu().numpy().reshape(-1),
+#         dx_probe.detach().cpu().numpy().reshape(-1),
+#         float(torch.norm(dx_probe).item()),
+#     )
+#
+# def _debug_param_and_grad_stats(self):
+#     # Params: last layer is usually where scale comes from
+#     last = None
+#     for m in self.net.modules():
+#         if isinstance(m, torch.nn.Linear):
+#             last = m
+#     if last is None:
+#         return {}
+#
+#     with torch.no_grad():
+#         w = last.weight
+#         b = last.bias
+#         stats = {
+#             "last_w_norm": float(torch.norm(w).item()),
+#             "last_b_norm": float(torch.norm(b).item()) if b is not None else 0.0,
+#             "last_w_absmax": float(w.abs().max().item()),
+#             "last_b_absmax": float(b.abs().max().item()) if b is not None else 0.0,
+#         }
+#     return stats
+
+
+# self.l.info("Loading full sweep dataset for validation from:")
+        # self.l.info(str(self.sweep_results_path))
+        #
+        # if not self.sweep_results_path.exists():
+        #     raise FileNotFoundError(
+        #         f"Could not find sweep_results.pkl for well {self.well_name}: "
+        #         f"{self.sweep_results_path}"
+        #     )
+        #
+        # with open(self.sweep_results_path, "rb") as f:
+        #     sweep_results = pickle.load(f)
+        #
+        # output_names = poly_dataset["pinn_output_names"]
+        #
+        # u1_grid = np.asarray(sweep_results["u1_grid"], dtype=float)
+        # u2_grid = np.asarray(sweep_results["u2_grid"], dtype=float)
+        #
+        # u_val_list = []
+        # y_val_list = []
+        #
+        # for i, u1 in enumerate(u1_grid):
+        #     for j, u2 in enumerate(u2_grid):
+        #
+        #         y_row = [
+        #             sweep_results["OUT"][name][i, j]
+        #             for name in output_names
+        #         ]
+        #
+        #         y_row = np.asarray(y_row, dtype=float)
+        #
+        #         if np.all(np.isfinite(y_row)):
+        #             u_val_list.append([u1, u2])
+        #             y_val_list.append(y_row)
+        #
+        # u_data_val_np = np.asarray(u_val_list, dtype=np.float32)
+        # y_data_val_np = np.asarray(y_val_list, dtype=np.float32)
+        #
+        # self.u_data_val = torch.tensor(
+        #     u_data_val_np,
+        #     dtype=torch.float32,
+        #     device=self.device,
+        # )
+        #
+        # self.y_data_val = torch.tensor(
+        #     y_data_val_np,
+        #     dtype=torch.float32,
+        #     device=self.device,
+        # )
+        #
+        # self.y_data_val_norm = (self.y_data_val - self.y_min_t) / self.y_range_t
+
+@torch.no_grad()
+def compute_physics_residual_scan(self, u_scan, y_ref=None, batch_size=2048):
+    """
+    Evaluate PINN physics residual over a full grid.
+
+    Returns a dictionary with:
+        u
+        y_pred
+        dx
+        dx_abs
+        dx_norm
+        point_loss
+        bad_mask
+    """
+
+    self.net.eval()
+
+    u_all = []
+    y_all = []
+    dx_all = []
+
+    for i in range(0, u_scan.shape[0], batch_size):
+        u_b = u_scan[i:i + batch_size]
+        y_b = self.net(u_b)
+
+        physics_out = self.physics_f(
+            y_b,
+            u_b,
+            BSW=self.BSW,
+            GOR=self.GOR,
+            PI=self.PI,
+            K_gs=self.K_gs,
+            K_inj=self.K_inj,
+            K_pr=self.K_pr,
+        )
+
+        if isinstance(physics_out, tuple):
+            dx_b = physics_out[0]
+        else:
+            dx_b = physics_out
+
+        u_all.append(u_b.detach().cpu())
+        y_all.append(y_b.detach().cpu())
+        dx_all.append(dx_b.detach().cpu())
+
+    u_all = torch.cat(u_all, dim=0)
+    y_all = torch.cat(y_all, dim=0)
+    dx_all = torch.cat(dx_all, dim=0)
+
+    dx_abs = torch.abs(dx_all)
+    dx_norm = torch.linalg.norm(dx_all, dim=1)
+
+    # Pointwise raw residual MSE, not scaled by y_range.
+    point_loss = torch.mean(dx_all ** 2, dim=1)
+
+    return {
+        "u": u_all,
+        "y_pred": y_all,
+        "dx": dx_all,
+        "dx_abs": dx_abs,
+        "dx_norm": dx_norm,
+        "point_loss": point_loss,
+    }
 
 
 
