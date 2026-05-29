@@ -5,3 +5,7 @@ venv/
 .idea/
 application/training_pinn/wandb/
 **/wandb/
+application/training_pinn/wandb/
+**/wandb/
+application/training_pinn/wandb/
+**/wandb/
