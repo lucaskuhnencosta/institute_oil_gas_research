@@ -1,3 +1,5 @@
+from pandas.core.arrays import arrow
+
 from settings import *
 from matplotlib.patches import Circle
 from matplotlib.lines import Line2D
@@ -246,7 +248,9 @@ def plot_surrogate_vs_rigorous_contours(
     # --------------------------------------------------
     # Helper: add u0 and trust-region radius
     # --------------------------------------------------
-    def add_trust_region_annotation(ax, color="black"):
+    def add_trust_region_annotation(ax,
+                                    color,
+                                    arrow_direction):
         ax.scatter(
             u0[0],
             u0[1],
@@ -298,12 +302,41 @@ def plot_surrogate_vs_rigorous_contours(
             zorder=6,
         )
 
+        # ---------------------------------------------
+        # Step direction arrow from u_k
+        # ---------------------------------------------
+        arrow_length = 0.15
+
+        if arrow_direction == "east":
+            du = arrow_length
+            dv = 0.0
+        elif arrow_direction == "ne":
+            du = arrow_length / np.sqrt(2)
+            dv = arrow_length / np.sqrt(2)
+        else:
+            raise ValueError("arrow_direction must be either 'east' or 'ne'.")
+
+        ax.annotate(
+            "",
+            xy=(u0[0] + du, u0[1] + dv),
+            xytext=(u0[0], u0[1]),
+            arrowprops=dict(
+                arrowstyle="->",
+                color="blue",
+                linewidth=2.0,
+                shrinkA=4,
+                shrinkB=0,
+            ),
+            zorder=7,
+        )
+
     # --------------------------------------------------
     # Helper: draw one panel using your plot_contour utility
     # --------------------------------------------------
     def draw_panel(ax,
                    W,
-                   title):
+                   title,
+                   arrow_direction,):
         ax, mappable = plot_contour(
             U1=U1,
             U2=U2,
@@ -333,7 +366,9 @@ def plot_surrogate_vs_rigorous_contours(
             # yticks=np.array([0.2, 0.4, 0.6, 0.8, 1.0]),
         )
 
-        add_trust_region_annotation(ax, color="black")
+        add_trust_region_annotation(ax,
+                                    color="black",
+                                    arrow_direction=arrow_direction)
 
         return mappable
 
@@ -343,25 +378,26 @@ def plot_surrogate_vs_rigorous_contours(
     mappable_surr = draw_panel(
         ax_surr,
         W_surr,
-        r"$\tilde{r}(\mathbf{u}) - PINN$"
+        r"$\tilde{r}(\mathbf{u}) - PINN$",
+        arrow_direction="east"
     )
 
     mappable_rig = draw_panel(
         ax_rig,
         W_rig,
         r"$s(\mathbf{u})$",
+        arrow_direction="ne"
     )
 
     mappable_corr = draw_panel(
         ax_bottom,
         W_corr,
-        r"$\tilde{r}_{\mathrm{corr}}(\mathbf{u})$",
+        r"$r_k(\mathbf{u})$",
+        arrow_direction="ne"
     )
 
-    # --------------------------------------------------
-    # Empty bottom panel for corrected model later
-    # --------------------------------------------------
-    ax_bottom.set_title(r"$r_k(\mathbf{u})$", pad=10)
+
+    # ax_bottom.set_title(r"$r_k(\mathbf{u})$", pad=10)
     ax_bottom.set_xlabel(r"$u_1$")
     ax_bottom.set_ylabel(r"$u_2$")
     ax_bottom.set_aspect("equal", adjustable="box")
@@ -372,25 +408,12 @@ def plot_surrogate_vs_rigorous_contours(
     ax_bottom.tick_params(axis="both", which="major", labelsize=12)
     ax_bottom.grid(True, alpha=0.18, linewidth=0.7)
 
-    # ax_bottom.text(
-    #     0.5,
-    #     0.5,
-    #     "Corrected model\nwill be shown here",
-    #     transform=ax_bottom.transAxes,
-    #     ha="center",
-    #     va="center",
-    #     fontsize=12,
-    #     alpha=0.55,
-    # )
-
-    add_trust_region_annotation(ax_bottom, color="black")
+    # add_trust_region_annotation(ax_bottom,
+    #                             color="black")
 
     # --------------------------------------------------
     # Shared colorbar for contour lines
     # # --------------------------------------------------
-    # cb = fig.colorbar(mappable_rig, cax=cax)
-    # cb.set_label(r"$w_{o,\mathrm{out}}$", fontsize=16)
-    # cb.ax.tick_params(labelsize=12)
     norm = mpl.colors.Normalize(vmin=w_min, vmax=w_max)
 
     sm = mpl.cm.ScalarMappable(
@@ -404,46 +427,6 @@ def plot_surrogate_vs_rigorous_contours(
     cb.set_label(r"Oil production rate, $w_{o,\mathrm{out}}$")
     cb.ax.tick_params()
 
-    # --------------------------------------------------
-    # Global title
-    # --------------------------------------------------
-    # if well_name is not None:
-    #     fig.suptitle(
-    #         rf"Oil production contour maps for {well_name}",
-    #         fontsize=13,
-    #         y=0.98,
-    #     )
-
-    # --------------------------------------------------
-    # Legend
-    # --------------------------------------------------
-    # legend_elements = [
-    #     Line2D(
-    #         [0],
-    #         [0],
-    #         marker="o",
-    #         color="none",
-    #         markerfacecolor="black",
-    #         markeredgecolor="white",
-    #         label=r"Expansion point $\mathbf{u}_0$",
-    #     ),
-    #     Line2D(
-    #         [0],
-    #         [0],
-    #         color="black",
-    #         linestyle="--",
-    #         lw=1.5,
-    #         label=r"Illustrative trust region $\Delta_0$",
-    #     ),
-    # ]
-
-    # ax_bottom.legend(
-    #     handles=legend_elements,
-    #     loc="upper right",
-    #     frameon=True,
-    # )
-
-    # fig.tight_layout(rect=[0, 0, 1, 0.95])
 
     if save_path is not None:
         fig.savefig(save_path, format="pdf", bbox_inches="tight")
@@ -468,7 +451,7 @@ if "__main__" == __name__:
 
     rigorous_models = []
     F_u2z_models = []
-    well_name="P1"
+    well_name="P5"
     well_data = wells[well_name]
 
     BSW = well_data["BSW"]
@@ -525,7 +508,7 @@ if "__main__" == __name__:
     # --------------------------------------------------
     # CORRECTED MODEL
     # --------------------------------------------------
-    u0 = np.array([0.6, 0.6], dtype=float)
+    u0 = np.array([0.5, 0.4], dtype=float)
 
     out_names_corr = [
         "P_bh_bar",
@@ -572,7 +555,7 @@ if "__main__" == __name__:
     w_o_out_surr=w_o_out_surr,
     w_o_out_rig=w_o_out_rig,
     w_o_out_corr=w_o_out_corr,
-    u0=np.array([0.6, 0.6]),
+    u0=u0,
     radius=0.15,
     n_levels=90,
     save_path=f"wo_out_surr_vs_rig_{well_name}.pdf",

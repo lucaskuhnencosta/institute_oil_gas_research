@@ -2057,79 +2057,1041 @@ from casadi import *
         # )
         #
         # self.y_data_val_norm = (self.y_data_val - self.y_min_t) / self.y_range_t
-
-@torch.no_grad()
-def compute_physics_residual_scan(self, u_scan, y_ref=None, batch_size=2048):
-    """
-    Evaluate PINN physics residual over a full grid.
-
-    Returns a dictionary with:
-        u
-        y_pred
-        dx
-        dx_abs
-        dx_norm
-        point_loss
-        bad_mask
-    """
-
-    self.net.eval()
-
-    u_all = []
-    y_all = []
-    dx_all = []
-
-    for i in range(0, u_scan.shape[0], batch_size):
-        u_b = u_scan[i:i + batch_size]
-        y_b = self.net(u_b)
-
-        physics_out = self.physics_f(
-            y_b,
-            u_b,
-            BSW=self.BSW,
-            GOR=self.GOR,
-            PI=self.PI,
-            K_gs=self.K_gs,
-            K_inj=self.K_inj,
-            K_pr=self.K_pr,
-        )
-
-        if isinstance(physics_out, tuple):
-            dx_b = physics_out[0]
-        else:
-            dx_b = physics_out
-
-        u_all.append(u_b.detach().cpu())
-        y_all.append(y_b.detach().cpu())
-        dx_all.append(dx_b.detach().cpu())
-
-    u_all = torch.cat(u_all, dim=0)
-    y_all = torch.cat(y_all, dim=0)
-    dx_all = torch.cat(dx_all, dim=0)
-
-    dx_abs = torch.abs(dx_all)
-    dx_norm = torch.linalg.norm(dx_all, dim=1)
-
-    # Pointwise raw residual MSE, not scaled by y_range.
-    point_loss = torch.mean(dx_all ** 2, dim=1)
-
-    return {
-        "u": u_all,
-        "y_pred": y_all,
-        "dx": dx_all,
-        "dx_abs": dx_abs,
-        "dx_norm": dx_norm,
-        "point_loss": point_loss,
-    }
-
-
-
+#
+# @torch.no_grad()
+# def compute_physics_residual_scan(self, u_scan, y_ref=None, batch_size=2048):
+#     """
+#     Evaluate PINN physics residual over a full grid.
+#
+#     Returns a dictionary with:
+#         u
+#         y_pred
+#         dx
+#         dx_abs
+#         dx_norm
+#         point_loss
+#         bad_mask
+#     """
+#
+#     self.net.eval()
+#
+#     u_all = []
+#     y_all = []
+#     dx_all = []
+#
+#     for i in range(0, u_scan.shape[0], batch_size):
+#         u_b = u_scan[i:i + batch_size]
+#         y_b = self.net(u_b)
+#
+#         physics_out = self.physics_f(
+#             y_b,
+#             u_b,
+#             BSW=self.BSW,
+#             GOR=self.GOR,
+#             PI=self.PI,
+#             K_gs=self.K_gs,
+#             K_inj=self.K_inj,
+#             K_pr=self.K_pr,
+#         )
+#
+#         if isinstance(physics_out, tuple):
+#             dx_b = physics_out[0]
+#         else:
+#             dx_b = physics_out
+#
+#         u_all.append(u_b.detach().cpu())
+#         y_all.append(y_b.detach().cpu())
+#         dx_all.append(dx_b.detach().cpu())
+#
+#     u_all = torch.cat(u_all, dim=0)
+#     y_all = torch.cat(y_all, dim=0)
+#     dx_all = torch.cat(dx_all, dim=0)
+#
+#     dx_abs = torch.abs(dx_all)
+#     dx_norm = torch.linalg.norm(dx_all, dim=1)
+#
+#     # Pointwise raw residual MSE, not scaled by y_range.
+#     point_loss = torch.mean(dx_all ** 2, dim=1)
+#
+#     return {
+#         "u": u_all,
+#         "y_pred": y_all,
+#         "dx": dx_all,
+#         "dx_abs": dx_abs,
+#         "dx_norm": dx_norm,
+#         "point_loss": point_loss,
+#     }
+#
 
 
+        # output_names = ("P_bh_bar", "P_tb_b_bar", "w_G_inj")
+
+        # dataset = poly_dataset(
+        #     sweep_result=results,
+        #     well_name=well_name,
+        # )
+
+        # model = fit_cubic_polynomial(
+        #     dataset=dataset,
+        #     save=True,
+        # )
+
+    #
+    # print("\nFlattening to AlgNN batch...")
+    # batch = flatten_sweep_results_to_batch_full(
+    #     results,
+    #     only_success=True
+    # )
+    #
+    # # -------- State ranges --------
+    # y_np = batch["y_np"]
+    # y_min = np.min(y_np, axis=0)
+    # y_max = np.max(y_np, axis=0)
+    #
+    # margin = 0.05
+    # y_span = y_max - y_min
+    # y_min_loose = y_min - margin * y_span
+    # y_max_loose = y_max + margin * y_span
+    #
+    # print("\n--- State ranges (loose) ---")
+    # for i, name in enumerate(batch["Z_NAMES"][:3]):
+    #     print(f"{name}: min = {y_min_loose[i]:.6f}, max = {y_max_loose[i]:.6f}")
+    #
+    # # -------- Target ranges --------
+    # z_np = batch["z_np"]
+    # z_min = np.min(z_np, axis=0)
+    # z_max = np.max(z_np, axis=0)
+    #
+    # z_span = z_max - z_min
+    # z_min_loose = z_min - margin * z_span
+    # z_max_loose = z_max + margin * z_span
+    #
+    # names=["P_bh_bar", "P_tb_b_bar","w_G_inj","w_res"]
+    #
+    # print("\n--- Target ranges (loose) ---")
+    # for i, name in enumerate(names):
+    #     print(f"{name}: min = {z_min_loose[i]:.6f}, max = {z_max_loose[i]:.6f}")
+    #
+    # # -------- Summary --------
+    # print("\n--- Sweep summary ---")
+    # Nu1, Nu2 = batch["Nu1"], batch["Nu2"]
+    # total = Nu1 * Nu2
+    # success_total = int(np.sum(results["SUCCESS"]))
+    # print(f"Grid: {Nu1} x {Nu2} = {total} points")
+    # print(f"SUCCESS count (raw): {success_total}")
+    # print(f"Batch size (finite OUT & success): {batch['u_np'].shape[0]}")
+    # print(f"State names:  {batch['Z_NAMES'][:3]}")
+    # print(f"Target names: {batch['z_names']}")
+    #
+    # # -------- Tensor shapes --------
+    # print("\n--- Torch tensors ---")
+    # print("u_t:", tuple(batch["u_t"].shape), batch["u_t"].dtype)
+    # print("y_t:", tuple(batch["y_t"].shape), batch["y_t"].dtype)
+    # print("z_t:", tuple(batch["z_t"].shape), batch["z_t"].dtype)
+    # print("res_dx_t:", tuple(batch["res_dx_t"].shape), batch["res_dx_t"].dtype)
+    #
+    # # -------- Sample rows --------
+    # print("\n--- First samples ---")
+    # for k in range(min(1000, batch["u_np"].shape[0])):
+    #     u_k = batch["u_np"][k]
+    #     y_k = batch["y_np"][k]
+    #     z_k = batch["z_np"][k]
+    #     rd_k = batch["res_dx_np"][k]
+    #     print(f"{k:02d} | u={u_k} | res_dx={rd_k:.2e} | y={y_k} | z={z_k}")
+    #
 
 
 
 
+
+
+
+
+
+    # @torch.no_grad()
+    # def print_prediction_debug(self, n_train=10, n_val=10, random_val=True):
+    #     """
+    #     Print ground-truth vs PINN prediction for selected training and validation points.
+    #     Useful for checking scale/order/data consistency.
+    #     """
+    #
+    #     self.net.eval()
+    #
+    #     output_names = getattr(
+    #         self,
+    #         "train_output_names",
+    #         ["y0", "y1", "y2"],
+    #     )
+    #
+    #     self.l.info("=" * 80)
+    #     self.l.info(f"Prediction debug for well {self.well_name}")
+    #     self.l.info(f"Output names: {output_names}")
+    #     self.l.info(f"y_min_train: {self.y_min_train}")
+    #     self.l.info(f"y_max_train: {self.y_max_train}")
+    #
+    #     if hasattr(self, "u_col_data"):
+    #         self.l.info(f"u_col_data shape: {tuple(self.u_col_data.shape)}")
+    #
+    #     if hasattr(self, "u_col_extra"):
+    #         self.l.info(f"u_col_extra shape: {tuple(self.u_col_extra.shape)}")
+    #
+    #     self.l.info("=" * 80)
+    #
+    #     # ------------------------------------------------
+    #     # 1. Training points
+    #     # ------------------------------------------------
+    #     y_pred_train = self.net(self.u_data_train)
+    #     err_train = y_pred_train - self.y_data_train
+    #
+    #     y_pred_train_norm = (y_pred_train - self.y_min_t) / self.y_range_t
+    #     err_train_norm = y_pred_train_norm - self.y_data_train_norm
+    #
+    #     train_n = min(n_train, self.u_data_train.shape[0])
+    #
+    #     self.l.info("")
+    #     self.l.info(f"First {train_n} training points:")
+    #     self.l.info("-" * 80)
+    #
+    #     for k in range(train_n):
+    #         u_k = self.u_data_train[k].detach().cpu().numpy()
+    #         y_true_k = self.y_data_train[k].detach().cpu().numpy()
+    #         y_pred_k = y_pred_train[k].detach().cpu().numpy()
+    #         err_k = err_train[k].detach().cpu().numpy()
+    #         err_norm_k = err_train_norm[k].detach().cpu().numpy()
+    #
+    #         self.l.info(
+    #             f"TRAIN k={k:02d} | "
+    #             f"u={u_k} | "
+    #             f"true={y_true_k} | "
+    #             f"pred={y_pred_k} | "
+    #             f"err={err_k} | "
+    #             f"err_norm={err_norm_k}"
+    #         )
+    #
+    #     # ------------------------------------------------
+    #     # 2. Validation points
+    #     # ------------------------------------------------
+    #     y_pred_val = self.net(self.u_data_val)
+    #     err_val = y_pred_val - self.y_data_val
+    #
+    #     y_pred_val_norm = (y_pred_val - self.y_min_t) / self.y_range_t
+    #     err_val_norm = y_pred_val_norm - self.y_data_val_norm
+    #
+    #     val_total = self.u_data_val.shape[0]
+    #     val_n = min(n_val, val_total)
+    #
+    #     if random_val:
+    #         rng = np.random.default_rng(333333)
+    #         val_indices = rng.choice(val_total, size=val_n, replace=False)
+    #     else:
+    #         val_indices = np.linspace(0, val_total - 1, val_n, dtype=int)
+    #
+    #     self.l.info("")
+    #     self.l.info(f"{val_n} validation points:")
+    #     self.l.info("-" * 80)
+    #
+    #     for k in val_indices:
+    #         u_k = self.u_data_val[k].detach().cpu().numpy()
+    #         y_true_k = self.y_data_val[k].detach().cpu().numpy()
+    #         y_pred_k = y_pred_val[k].detach().cpu().numpy()
+    #         err_k = err_val[k].detach().cpu().numpy()
+    #         err_norm_k = err_val_norm[k].detach().cpu().numpy()
+    #
+    #         self.l.info(
+    #             f"VAL k={int(k):03d} | "
+    #             f"u={u_k} | "
+    #             f"true={y_true_k} | "
+    #             f"pred={y_pred_k} | "
+    #             f"err={err_k} | "
+    #             f"err_norm={err_norm_k}"
+    #         )
+    #
+    #     # ------------------------------------------------
+    #     # 3. Summary statistics
+    #     # ------------------------------------------------
+    #     train_rmse = torch.sqrt(torch.mean(err_train ** 2, dim=0))
+    #     train_maxabs = torch.max(torch.abs(err_train), dim=0).values
+    #
+    #     train_mse_norm = torch.mean(err_train_norm ** 2, dim=0)
+    #
+    #     val_rmse = torch.sqrt(torch.mean(err_val ** 2, dim=0))
+    #     val_maxabs = torch.max(torch.abs(err_val), dim=0).values
+    #
+    #     val_mse_norm = torch.mean(err_val_norm ** 2, dim=0)
+    #
+    #     self.l.info("")
+    #     self.l.info("Summary:")
+    #     self.l.info("-" * 80)
+    #     self.l.info(f"Train RMSE by component: {train_rmse.detach().cpu().numpy()}")
+    #     self.l.info(f"Train MaxAbs by component: {train_maxabs.detach().cpu().numpy()}")
+    #     self.l.info(f"Train normalized MSE by component: {train_mse_norm.detach().cpu().numpy()}")
+    #
+    #     self.l.info(f"Val RMSE by component: {val_rmse.detach().cpu().numpy()}")
+    #     self.l.info(f"Val MaxAbs by component: {val_maxabs.detach().cpu().numpy()}")
+    #     self.l.info(f"Val normalized MSE by component: {val_mse_norm.detach().cpu().numpy()}")
+    #     self.l.info("=" * 80)
+    # #
+    # @torch.no_grad()
+    # def print_physics_on_ground_truth_data(self):
+    #     """
+    #     Evaluate physics residual using the true 17 training states directly,
+    #     and also compare with the network prediction at the same points.
+    #     """
+    #
+    #     self.net.eval()
+    #
+    #     # ------------------------------------------------
+    #     # Helper to handle physics_f returning dx or (dx, z)
+    #     # ------------------------------------------------
+    #     def _extract_dx(physics_out):
+    #         if isinstance(physics_out, tuple):
+    #             return physics_out[0]
+    #         return physics_out
+    #
+    #     y_range = (self.y_max_t - self.y_min_t).clamp_min(1e-6)
+    #
+    #     # ------------------------------------------------
+    #     # 1. Physics residual on TRUE 17 training states
+    #     # ------------------------------------------------
+    #     physics_out_true = self.physics_f(
+    #         self.y_data_train,
+    #         self.u_data_train,
+    #         BSW=self.BSW,
+    #         GOR=self.GOR,
+    #         PI=self.PI,
+    #         K_gs=self.K_gs,
+    #         K_inj=self.K_inj,
+    #         K_pr=self.K_pr,
+    #     )
+    #
+    #     dx_true = _extract_dx(physics_out_true)
+    #
+    #     dx_true_scaled = dx_true / y_range
+    #
+    #     mse_true_components = torch.mean(dx_true_scaled ** 2, dim=0)
+    #     mean_abs_true_raw = torch.mean(torch.abs(dx_true), dim=0)
+    #     max_abs_true_raw = torch.max(torch.abs(dx_true), dim=0).values
+    #
+    #     # ------------------------------------------------
+    #     # 2. Physics residual on NETWORK prediction at 17 training points
+    #     # ------------------------------------------------
+    #     y_pred_train = self.net(self.u_data_train)
+    #
+    #     physics_out_pred = self.physics_f(
+    #         y_pred_train,
+    #         self.u_data_train,
+    #         BSW=self.BSW,
+    #         GOR=self.GOR,
+    #         PI=self.PI,
+    #         K_gs=self.K_gs,
+    #         K_inj=self.K_inj,
+    #         K_pr=self.K_pr,
+    #     )
+    #
+    #     dx_pred = _extract_dx(physics_out_pred)
+    #
+    #     dx_pred_scaled = dx_pred / y_range
+    #
+    #     mse_pred_components = torch.mean(dx_pred_scaled ** 2, dim=0)
+    #     mean_abs_pred_raw = torch.mean(torch.abs(dx_pred), dim=0)
+    #     max_abs_pred_raw = torch.max(torch.abs(dx_pred), dim=0).values
+    #
+    #     # ------------------------------------------------
+    #     # 3. Optional: physics residual on extra collocation points
+    #     # ------------------------------------------------
+    #     extra_info = None
+    #
+    #     if hasattr(self, "u_col_extra"):
+    #         y_pred_extra = self.net(self.u_col_extra)
+    #
+    #         physics_out_extra = self.physics_f(
+    #             y_pred_extra,
+    #             self.u_col_extra,
+    #             BSW=self.BSW,
+    #             GOR=self.GOR,
+    #             PI=self.PI,
+    #             K_gs=self.K_gs,
+    #             K_inj=self.K_inj,
+    #             K_pr=self.K_pr,
+    #         )
+    #
+    #         dx_extra = _extract_dx(physics_out_extra)
+    #
+    #         dx_extra_scaled = dx_extra / y_range
+    #
+    #         extra_info = {
+    #             "mse_components": torch.mean(dx_extra_scaled ** 2, dim=0),
+    #             "mean_abs_raw": torch.mean(torch.abs(dx_extra), dim=0),
+    #             "max_abs_raw": torch.max(torch.abs(dx_extra), dim=0).values,
+    #         }
+    #
+    #     # ------------------------------------------------
+    #     # Logging
+    #     # ------------------------------------------------
+    #     self.l.info("=" * 80)
+    #     self.l.info("Physics residual diagnostics")
+    #     self.l.info("-" * 80)
+    #
+    #     self.l.info("Physics residual on TRUE 17 training states:")
+    #     self.l.info(f"Raw mean abs dx: {mean_abs_true_raw.detach().cpu().numpy()}")
+    #     self.l.info(f"Raw max abs dx:  {max_abs_true_raw.detach().cpu().numpy()}")
+    #     self.l.info(f"Scaled MSE components: {mse_true_components.detach().cpu().numpy()}")
+    #
+    #     self.l.info("-" * 80)
+    #     self.l.info("Physics residual on PINN prediction at 17 training points:")
+    #     self.l.info(f"Raw mean abs dx: {mean_abs_pred_raw.detach().cpu().numpy()}")
+    #     self.l.info(f"Raw max abs dx:  {max_abs_pred_raw.detach().cpu().numpy()}")
+    #     self.l.info(f"Scaled MSE components: {mse_pred_components.detach().cpu().numpy()}")
+    #
+    #     if extra_info is not None:
+    #         self.l.info("-" * 80)
+    #         self.l.info("Physics residual on PINN prediction at extra collocation points:")
+    #         self.l.info(f"Raw mean abs dx: {extra_info['mean_abs_raw'].detach().cpu().numpy()}")
+    #         self.l.info(f"Raw max abs dx:  {extra_info['max_abs_raw'].detach().cpu().numpy()}")
+    #         self.l.info(f"Scaled MSE components: {extra_info['mse_components'].detach().cpu().numpy()}")
+    #
+    #     self.l.info("=" * 80)
+
+
+    # @torch.no_grad()
+    # def _log_epoch_info(self, train_losses: dict, val_losses: dict):
+    #     """
+    #     Print compact epoch information during training.
+    #
+    #     train_losses comes from train_pass().
+    #     val_losses comes from validation_pass().
+    #     """
+    #
+    #     self.net.eval()
+    #
+    #     y_probe = self.net(self._u_probe_t).detach().cpu().numpy().reshape(-1)
+    #
+    #     output_names = getattr(
+    #         self,
+    #         "train_output_names",
+    #         ["y0", "y1", "y2"],
+    #     )
+    #
+    #     self.l.info(
+    #         f"Epoch {self._e:6d} | "
+    #         f"train total={train_losses['total']:.4e} "
+    #         f"(phys={train_losses['physics']:.3e}, "
+    #         f"data_n={train_losses['data']:.3e}) | "
+    #         f"f=[{train_losses['physics_comp_0']:.3e}, "
+    #         f"{train_losses['physics_comp_1']:.3e}, "
+    #         f"{train_losses['physics_comp_2']:.3e}] | "
+    #         f"val mse={val_losses['total']:.4e}, "
+    #         f"val rmse={val_losses['rmse_total']:.4e} | "
+    #         f"val rmse comps="
+    #         f"[{val_losses['rmse_y0']:.3e}, "
+    #         f"{val_losses['rmse_y1']:.3e}, "
+    #         f"{val_losses['rmse_y2']:.3e}] | "
+    #         f"val maxabs comps="
+    #         f"[{val_losses['max_abs_y0']:.3e}, "
+    #         f"{val_losses['max_abs_y1']:.3e}, "
+    #         f"{val_losses['max_abs_y2']:.3e}] | "
+    #         f"u_probe={tuple(self.u_probe.tolist())} "
+    #         f"y_hat={y_probe} "
+    #         f"outputs={output_names}"
+    #     )
+
+    # @torch.no_grad()
+    # def print_prediction_debug(self, n_train=10, n_val=10, random_val=True):
+    #     """
+    #     Print ground-truth vs PINN prediction for selected training and validation points.
+    #     Useful for checking scale/order/data consistency.
+    #     """
+    #
+    #     self.net.eval()
+    #
+    #     output_names = getattr(
+    #         self,
+    #         "train_output_names",
+    #         ["y0", "y1", "y2"],
+    #     )
+    #
+    #     self.l.info("=" * 80)
+    #     self.l.info(f"Prediction debug for well {self.well_name}")
+    #     self.l.info(f"Output names: {output_names}")
+    #     self.l.info(f"y_min_train: {self.y_min_train}")
+    #     self.l.info(f"y_max_train: {self.y_max_train}")
+    #     self.l.info("=" * 80)
+    #
+    #     # ------------------------------------------------
+    #     # 1. Training points
+    #     # ------------------------------------------------
+    #     y_pred_train = self.net(self.u_data_train)
+    #     err_train = y_pred_train - self.y_data_train
+    #
+    #     train_n = min(n_train, self.u_data_train.shape[0])
+    #
+    #     self.l.info("")
+    #     self.l.info(f"First {train_n} training points:")
+    #     self.l.info("-" * 80)
+    #
+    #     for k in range(train_n):
+    #         u_k = self.u_data_train[k].detach().cpu().numpy()
+    #         y_true_k = self.y_data_train[k].detach().cpu().numpy()
+    #         y_pred_k = y_pred_train[k].detach().cpu().numpy()
+    #         err_k = err_train[k].detach().cpu().numpy()
+    #
+    #         self.l.info(
+    #             f"TRAIN k={k:02d} | "
+    #             f"u={u_k} | "
+    #             f"true={y_true_k} | "
+    #             f"pred={y_pred_k} | "
+    #             f"err={err_k}"
+    #         )
+    #
+    #     # ------------------------------------------------
+    #     # 2. Validation points
+    #     # ------------------------------------------------
+    #     y_pred_val = self.net(self.u_data_val)
+    #     err_val = y_pred_val - self.y_data_val
+    #
+    #     val_total = self.u_data_val.shape[0]
+    #     val_n = min(n_val, val_total)
+    #
+    #     if random_val:
+    #         rng = np.random.default_rng(333333)
+    #         val_indices = rng.choice(val_total, size=val_n, replace=False)
+    #     else:
+    #         val_indices = np.linspace(0, val_total - 1, val_n, dtype=int)
+    #
+    #     self.l.info("")
+    #     self.l.info(f"{val_n} validation points:")
+    #     self.l.info("-" * 80)
+    #
+    #     for k in val_indices:
+    #         u_k = self.u_data_val[k].detach().cpu().numpy()
+    #         y_true_k = self.y_data_val[k].detach().cpu().numpy()
+    #         y_pred_k = y_pred_val[k].detach().cpu().numpy()
+    #         err_k = err_val[k].detach().cpu().numpy()
+    #
+    #         self.l.info(
+    #             f"VAL k={int(k):03d} | "
+    #             f"u={u_k} | "
+    #             f"true={y_true_k} | "
+    #             f"pred={y_pred_k} | "
+    #             f"err={err_k}"
+    #         )
+    #
+    #     # ------------------------------------------------
+    #     # 3. Summary statistics
+    #     # ------------------------------------------------
+    #     train_rmse = torch.sqrt(torch.mean(err_train ** 2, dim=0))
+    #     train_maxabs = torch.max(torch.abs(err_train), dim=0).values
+    #
+    #     val_rmse = torch.sqrt(torch.mean(err_val ** 2, dim=0))
+    #     val_maxabs = torch.max(torch.abs(err_val), dim=0).values
+    #
+    #     self.l.info("")
+    #     self.l.info("Summary:")
+    #     self.l.info("-" * 80)
+    #     self.l.info(f"Train RMSE by component: {train_rmse.detach().cpu().numpy()}")
+    #     self.l.info(f"Train MaxAbs by component: {train_maxabs.detach().cpu().numpy()}")
+    #     self.l.info(f"Val RMSE by component: {val_rmse.detach().cpu().numpy()}")
+    #     self.l.info(f"Val MaxAbs by component: {val_maxabs.detach().cpu().numpy()}")
+    #     self.l.info("=" * 80)
+    #
+    # @torch.no_grad()
+    # def print_physics_on_ground_truth_data(self):
+    #     """
+    #     Evaluate physics residual using the true 17 training states directly,
+    #     not the neural network prediction.
+    #     """
+    #
+    #     dx_data = self.physics_f(
+    #         self.y_data_train,
+    #         self.u_data_train,
+    #         BSW=self.BSW,
+    #         GOR=self.GOR,
+    #         PI=self.PI,
+    #         K_gs=self.K_gs,
+    #         K_inj=self.K_inj,
+    #         K_pr=self.K_pr,
+    #     )
+    #
+    #     y_range = (self.y_max_t - self.y_min_t).clamp_min(1e-6)
+    #     dx_scaled = dx_data / y_range
+    #
+    #     mse_components = torch.mean(dx_scaled ** 2, dim=0)
+    #     mean_abs_raw = torch.mean(torch.abs(dx_data), dim=0)
+    #     max_abs_raw = torch.max(torch.abs(dx_data), dim=0).values
+    #
+    #     self.l.info("=" * 80)
+    #     self.l.info("Physics residual on TRUE 17 training states")
+    #     self.l.info("-" * 80)
+    #     self.l.info(f"Raw mean abs dx: {mean_abs_raw.detach().cpu().numpy()}")
+    #     self.l.info(f"Raw max abs dx:  {max_abs_raw.detach().cpu().numpy()}")
+    #     self.l.info(f"Scaled MSE components: {mse_components.detach().cpu().numpy()}")
+    #     self.l.info("=" * 80)
+    #
+  # def print_flow_balance_diagnostics(self, label=""):
+  #       """
+  #       Detailed diagnostic for the steady-state mass-balance residuals.
+  #
+  #       For a fixed set of diagnostic training points, this compares:
+  #           1. the true sweep state y_data_train
+  #           2. the PINN prediction net(u)
+  #
+  #       It prints:
+  #           - state errors
+  #           - raw residuals dx
+  #           - the individual flow terms that form dx1, dx2, dx3
+  #           - pressure drops and phase-fraction variables that may explain blow-ups
+  #
+  #       Required:
+  #           physics_f(..., return_z=True) must return:
+  #               dx, z_diag
+  #
+  #           where z_diag follows self.Z_DIAG_NAMES.
+  #       """
+  #
+  #       self.net.eval()
+  #
+  #       if not hasattr(self, "diag_indices"):
+  #           raise RuntimeError(
+  #               "self.diag_indices not found. Create it in prepare_data()."
+  #           )
+  #
+  #       if not hasattr(self, "z_diag_idx"):
+  #           raise RuntimeError(
+  #               "self.z_diag_idx not found. Define self.Z_DIAG_NAMES and self.z_diag_idx."
+  #           )
+  #
+  #       idx = self.diag_indices
+  #
+  #       u = self.u_data_train[idx]
+  #       y_true = self.y_data_train[idx]
+  #       y_pred = self.net(u)
+  #
+  #       # ------------------------------------------------
+  #       # Evaluate physics on true states and predicted states
+  #       # ------------------------------------------------
+  #       dx_true, z_true = self._eval_physics_dx_z(y_true, u)
+  #       dx_pred, z_pred = self._eval_physics_dx_z(y_pred, u)
+  #
+  #       zi = self.z_diag_idx
+  #
+  #       def get(z, name):
+  #           return z[:, zi[name]]
+  #
+  #       def scalar(t, k):
+  #           return float(t[k].detach().cpu().item())
+  #
+  #       def arr(t, k):
+  #           return t[k].detach().cpu().numpy()
+  #
+  #       # ------------------------------------------------
+  #       # Print header
+  #       # ------------------------------------------------
+  #       self.l.info("=" * 120)
+  #       self.l.info(f"FLOW BALANCE DIAGNOSTICS {label} | epoch={self._e}")
+  #       self.l.info("-" * 120)
+  #       self.l.info(
+  #           "Residual definitions: "
+  #           "dx1 = w_G_in - w_G_inj, "
+  #           "dx2 = w_G_inj + w_G_res - w_G_out, "
+  #           "dx3 = w_L_res - w_L_out"
+  #       )
+  #       self.l.info("-" * 120)
+  #
+  #       # ------------------------------------------------
+  #       # Loop over diagnostic points
+  #       # ------------------------------------------------
+  #       for local_k in range(idx.shape[0]):
+  #           global_k = int(idx[local_k].detach().cpu().item())
+  #
+  #           u_k = arr(u, local_k)
+  #           y_true_k = arr(y_true, local_k)
+  #           y_pred_k = arr(y_pred, local_k)
+  #           y_err_k = y_pred_k - y_true_k
+  #
+  #           dx_true_k = arr(dx_true, local_k)
+  #           dx_pred_k = arr(dx_pred, local_k)
+  #
+  #           self.l.info("")
+  #           self.l.info("=" * 100)
+  #           self.l.info(f"POINT global_k={global_k} | u={u_k}")
+  #           self.l.info("-" * 100)
+  #
+  #           # ------------------------------------------------
+  #           # State comparison
+  #           # ------------------------------------------------
+  #           self.l.info("STATE COMPARISON")
+  #           self.l.info(f"  y_true = {y_true_k}")
+  #           self.l.info(f"  y_pred = {y_pred_k}")
+  #           self.l.info(f"  y_err  = {y_err_k}")
+  #
+  #           # ------------------------------------------------
+  #           # Residual summary
+  #           # ------------------------------------------------
+  #           self.l.info("")
+  #           self.l.info("RESIDUAL SUMMARY")
+  #           self.l.info(
+  #               f"  TRUE dx = {dx_true_k} | norm={np.linalg.norm(dx_true_k):.6e}"
+  #           )
+  #           self.l.info(
+  #               f"  PRED dx = {dx_pred_k} | norm={np.linalg.norm(dx_pred_k):.6e}"
+  #           )
+  #
+  #           # ------------------------------------------------
+  #           # TRUE balance terms
+  #           # ------------------------------------------------
+  #           self.l.info("")
+  #           self.l.info("TRUE FLOW BALANCES")
+  #
+  #           self.l.info(
+  #               "  dx1 = w_G_in - w_G_inj = "
+  #               f"{scalar(get(z_true, 'w_G_in'), local_k):.6e} - "
+  #               f"{scalar(get(z_true, 'w_G_inj'), local_k):.6e} = "
+  #               f"{float(dx_true[local_k, 0].detach().cpu().item()):.6e}"
+  #           )
+  #
+  #           self.l.info(
+  #               "  dx2 = w_G_inj + w_G_res - w_G_out = "
+  #               f"{scalar(get(z_true, 'w_G_inj'), local_k):.6e} + "
+  #               f"{scalar(get(z_true, 'w_G_res'), local_k):.6e} - "
+  #               f"{scalar(get(z_true, 'w_G_out'), local_k):.6e} = "
+  #               f"{float(dx_true[local_k, 1].detach().cpu().item()):.6e}"
+  #           )
+  #
+  #           self.l.info(
+  #               "  dx3 = w_L_res - w_L_out = "
+  #               f"{scalar(get(z_true, 'w_L_res'), local_k):.6e} - "
+  #               f"{scalar(get(z_true, 'w_L_out'), local_k):.6e} = "
+  #               f"{float(dx_true[local_k, 2].detach().cpu().item()):.6e}"
+  #           )
+  #
+  #           self.l.info(
+  #               "  flows: "
+  #               f"w_res={scalar(get(z_true, 'w_res'), local_k):.6e}, "
+  #               f"w_out={scalar(get(z_true, 'w_out'), local_k):.6e}, "
+  #               f"w_G_in={scalar(get(z_true, 'w_G_in'), local_k):.6e}, "
+  #               f"w_G_inj={scalar(get(z_true, 'w_G_inj'), local_k):.6e}, "
+  #               f"w_G_res={scalar(get(z_true, 'w_G_res'), local_k):.6e}, "
+  #               f"w_L_res={scalar(get(z_true, 'w_L_res'), local_k):.6e}, "
+  #               f"w_G_out={scalar(get(z_true, 'w_G_out'), local_k):.6e}, "
+  #               f"w_L_out={scalar(get(z_true, 'w_L_out'), local_k):.6e}"
+  #           )
+  #
+  #           self.l.info(
+  #               "  pressures: "
+  #               f"P_bh={scalar(get(z_true, 'P_bh_bar'), local_k):.6e} bar, "
+  #               f"P_tb_b={scalar(get(z_true, 'P_tb_b_bar'), local_k):.6e} bar, "
+  #               f"P_tb_t={scalar(get(z_true, 'P_tb_t_bar'), local_k):.6e} bar, "
+  #               f"P_an_t={scalar(get(z_true, 'P_an_t_bar'), local_k):.6e} bar, "
+  #               f"P_an_b={scalar(get(z_true, 'P_an_b_bar'), local_k):.6e} bar"
+  #           )
+  #
+  #           self.l.info(
+  #               "  deltas: "
+  #               f"dP_gs_an={scalar(get(z_true, 'dP_gs_an_bar'), local_k):.6e} bar, "
+  #               f"dP_an_tb={scalar(get(z_true, 'dP_an_tb_bar'), local_k):.6e} bar, "
+  #               f"dP_res_bh={scalar(get(z_true, 'dP_res_bh_bar'), local_k):.6e} bar, "
+  #               f"dP_tb_choke={scalar(get(z_true, 'dP_tb_choke_bar'), local_k):.6e} bar"
+  #           )
+  #
+  #           self.l.info(
+  #               "  phase/mixture: "
+  #               f"alpha_avg_L_tb={scalar(get(z_true, 'alpha_avg_L_tb'), local_k):.6e}, "
+  #               f"alpha_L_tb_b={scalar(get(z_true, 'alpha_L_tb_b'), local_k):.6e}, "
+  #               f"alpha_L_tb_t={scalar(get(z_true, 'alpha_L_tb_t'), local_k):.6e}, "
+  #               f"alpha_G_tb_t={scalar(get(z_true, 'alpha_G_tb_t'), local_k):.6e}, "
+  #               f"rho_mix_tb_t={scalar(get(z_true, 'rho_mix_tb_t'), local_k):.6e}, "
+  #               f"rho_mix_tb_t_safe={scalar(get(z_true, 'rho_mix_tb_t_safe'), local_k):.6e}"
+  #           )
+  #
+  #           self.l.info(
+  #               "  denominators: "
+  #               f"V_gas_tb_t={scalar(get(z_true, 'V_gas_tb_t'), local_k):.6e}, "
+  #               f"V_gas_tb_t_safe={scalar(get(z_true, 'V_gas_tb_t_safe'), local_k):.6e}, "
+  #               f"denom_alpha_t={scalar(get(z_true, 'denom_alpha_t'), local_k):.6e}, "
+  #               f"denom_alpha_t_safe={scalar(get(z_true, 'denom_alpha_t_safe'), local_k):.6e}, "
+  #               f"denom_alpha_b={scalar(get(z_true, 'denom_alpha_b'), local_k):.6e}, "
+  #               f"denom_alpha_b_safe={scalar(get(z_true, 'denom_alpha_b_safe'), local_k):.6e}"
+  #           )
+  #
+  #           # ------------------------------------------------
+  #           # PRED balance terms
+  #           # ------------------------------------------------
+  #           self.l.info("")
+  #           self.l.info("PRED FLOW BALANCES")
+  #
+  #           self.l.info(
+  #               "  dx1 = w_G_in - w_G_inj = "
+  #               f"{scalar(get(z_pred, 'w_G_in'), local_k):.6e} - "
+  #               f"{scalar(get(z_pred, 'w_G_inj'), local_k):.6e} = "
+  #               f"{float(dx_pred[local_k, 0].detach().cpu().item()):.6e}"
+  #           )
+  #
+  #           self.l.info(
+  #               "  dx2 = w_G_inj + w_G_res - w_G_out = "
+  #               f"{scalar(get(z_pred, 'w_G_inj'), local_k):.6e} + "
+  #               f"{scalar(get(z_pred, 'w_G_res'), local_k):.6e} - "
+  #               f"{scalar(get(z_pred, 'w_G_out'), local_k):.6e} = "
+  #               f"{float(dx_pred[local_k, 1].detach().cpu().item()):.6e}"
+  #           )
+  #
+  #           self.l.info(
+  #               "  dx3 = w_L_res - w_L_out = "
+  #               f"{scalar(get(z_pred, 'w_L_res'), local_k):.6e} - "
+  #               f"{scalar(get(z_pred, 'w_L_out'), local_k):.6e} = "
+  #               f"{float(dx_pred[local_k, 2].detach().cpu().item()):.6e}"
+  #           )
+  #
+  #           self.l.info(
+  #               "  flows: "
+  #               f"w_res={scalar(get(z_pred, 'w_res'), local_k):.6e}, "
+  #               f"w_out={scalar(get(z_pred, 'w_out'), local_k):.6e}, "
+  #               f"w_G_in={scalar(get(z_pred, 'w_G_in'), local_k):.6e}, "
+  #               f"w_G_inj={scalar(get(z_pred, 'w_G_inj'), local_k):.6e}, "
+  #               f"w_G_res={scalar(get(z_pred, 'w_G_res'), local_k):.6e}, "
+  #               f"w_L_res={scalar(get(z_pred, 'w_L_res'), local_k):.6e}, "
+  #               f"w_G_out={scalar(get(z_pred, 'w_G_out'), local_k):.6e}, "
+  #               f"w_L_out={scalar(get(z_pred, 'w_L_out'), local_k):.6e}"
+  #           )
+  #
+  #           self.l.info(
+  #               "  pressures: "
+  #               f"P_bh={scalar(get(z_pred, 'P_bh_bar'), local_k):.6e} bar, "
+  #               f"P_tb_b={scalar(get(z_pred, 'P_tb_b_bar'), local_k):.6e} bar, "
+  #               f"P_tb_t={scalar(get(z_pred, 'P_tb_t_bar'), local_k):.6e} bar, "
+  #               f"P_an_t={scalar(get(z_pred, 'P_an_t_bar'), local_k):.6e} bar, "
+  #               f"P_an_b={scalar(get(z_pred, 'P_an_b_bar'), local_k):.6e} bar"
+  #           )
+  #
+  #           self.l.info(
+  #               "  deltas: "
+  #               f"dP_gs_an={scalar(get(z_pred, 'dP_gs_an_bar'), local_k):.6e} bar, "
+  #               f"dP_an_tb={scalar(get(z_pred, 'dP_an_tb_bar'), local_k):.6e} bar, "
+  #               f"dP_res_bh={scalar(get(z_pred, 'dP_res_bh_bar'), local_k):.6e} bar, "
+  #               f"dP_tb_choke={scalar(get(z_pred, 'dP_tb_choke_bar'), local_k):.6e} bar"
+  #           )
+  #
+  #           self.l.info(
+  #               "  phase/mixture: "
+  #               f"alpha_avg_L_tb={scalar(get(z_pred, 'alpha_avg_L_tb'), local_k):.6e}, "
+  #               f"alpha_L_tb_b={scalar(get(z_pred, 'alpha_L_tb_b'), local_k):.6e}, "
+  #               f"alpha_L_tb_t={scalar(get(z_pred, 'alpha_L_tb_t'), local_k):.6e}, "
+  #               f"alpha_G_tb_t={scalar(get(z_pred, 'alpha_G_tb_t'), local_k):.6e}, "
+  #               f"rho_mix_tb_t={scalar(get(z_pred, 'rho_mix_tb_t'), local_k):.6e}, "
+  #               f"rho_mix_tb_t_safe={scalar(get(z_pred, 'rho_mix_tb_t_safe'), local_k):.6e}"
+  #           )
+  #
+  #           self.l.info(
+  #               "  denominators: "
+  #               f"V_gas_tb_t={scalar(get(z_pred, 'V_gas_tb_t'), local_k):.6e}, "
+  #               f"V_gas_tb_t_safe={scalar(get(z_pred, 'V_gas_tb_t_safe'), local_k):.6e}, "
+  #               f"denom_alpha_t={scalar(get(z_pred, 'denom_alpha_t'), local_k):.6e}, "
+  #               f"denom_alpha_t_safe={scalar(get(z_pred, 'denom_alpha_t_safe'), local_k):.6e}, "
+  #               f"denom_alpha_b={scalar(get(z_pred, 'denom_alpha_b'), local_k):.6e}, "
+  #               f"denom_alpha_b_safe={scalar(get(z_pred, 'denom_alpha_b_safe'), local_k):.6e}"
+  #           )
+  #
+  #       self.l.info("=" * 120)
+
+# def get_staged_physics_losses(self):
+#     """
+#     Computes the physics losses needed by the curriculum.
+#
+#     Returns
+#     -------
+#     loss_f_data : physics loss on the 17 supervised points
+#     mse_f_data  : component-wise physics MSE on the 17 points
+#     loss_f_extra: physics loss on the additional collocation points
+#     mse_f_extra : component-wise physics MSE on the extra points
+#     """
+#
+#     loss_f_data, mse_f_data, y_hat_data, dx_data = self.get_physics_loss(
+#         self.u_col_data
+#     )
+#
+#     loss_f_extra, mse_f_extra, y_hat_extra, dx_extra = self.get_physics_loss(
+#         self.u_col_extra
+#     )
+#
+#     return {
+#         "loss_f_data": loss_f_data,
+#         "mse_f_data": mse_f_data,
+#         "y_hat_data": y_hat_data,
+#         "dx_data": dx_data,
+#
+#         "loss_f_extra": loss_f_extra,
+#         "mse_f_extra": mse_f_extra,
+#         "y_hat_extra": y_hat_extra,
+#         "dx_extra": dx_extra,
+# #     }
+# @torch.no_grad()
+    # def _eval_physics_dx_z(self, y, u):
+    #     """
+    #     Evaluate physics function and return dx, z.
+    #     Assumes physics_f supports return_z=True.
+    #     """
+    #     physics_out = self.physics_f(
+    #         y,
+    #         u,
+    #         BSW=self.BSW,
+    #         GOR=self.GOR,
+    #         PI=self.PI,
+    #         K_gs=self.K_gs,
+    #         K_inj=self.K_inj,
+    #         K_pr=self.K_pr,
+    #         return_z=True,
+    #     )
+    #
+    #     if not isinstance(physics_out, tuple):
+    #         raise RuntimeError(
+    #             "Expected physics_f(..., return_z=True) to return (dx, z), "
+    #             "but it returned only dx."
+    #         )
+    #
+    #     dx, z = physics_out
+    #     return dx, z
+    #
+
+# u1_grid = np.asarray(sweep_results["u1_grid"], dtype=float)
+# u2_grid = np.asarray(sweep_results["u2_grid"], dtype=float)
+#
+# u_list = []
+# y_list = []
+#
+# for i, u1 in enumerate(u1_grid):
+#     for j, u2 in enumerate(u2_grid):
+#
+#         y_row = [
+#             sweep_results["OUT"][name][i, j]
+#             for name in output_names
+#         ]
+#
+#         y_row = np.asarray(y_row, dtype=float)
+#
+#         if np.all(np.isfinite(y_row)):
+#             u_list.append([u1, u2])
+#             y_list.append(y_row)
+#
+# u_full_np = np.asarray(u_list, dtype=np.float32)
+# y_full_np = np.asarray(y_list, dtype=np.float32)
+#
+# if u_full_np.shape[1] != self.N_u:
+#     raise ValueError(
+#         f"Expected u_full_np to have {self.N_u} columns, "
+#         f"but got shape {u_full_np.shape}."
+#     )
+#
+# if y_full_np.shape[1] != self.N_y:
+#     raise ValueError(
+#         f"Expected y_full_np to have {self.N_y} columns, "
+#         f"but got shape {y_full_np.shape}."
+#     )
+
+
+
+
+    #
+    # U1_NN, U2_NN, Z_NN = run_sweep_PINN(
+    #     model_NN,
+    #     U1_MIN=U1_MIN,
+    #     U2_MIN=U2_MIN,
+    #     U_SIM_SIZE=U_SIM_SIZE
+    # )
+    # Zj = Z_NN[:, :, j]
+    #
+    # print(Z_NN)
+    # result_3d = plot_polynomial_vs_sweep_3d(
+    #     well_name="P6",
+    #     variable_name="w_G_inj",
+    #     F_u2z=None,
+    #     elev=25,
+    # )
+# from mpl_toolkits.mplot3d import Axes3D  # needed for 3D projection
+# import numpy as np
+# import matplotlib.pyplot as plt
+#
+#
+# def plot_polynomial_vs_sweep_3d(
+#     well_name,
+#     variable_name,
+#     F_u2z=None,
+#     elev=25,
+#     azim=-135,
+# ):
+#     """
+#     3D comparison between sweep/reference, polynomial prediction,
+#     and absolute error for one well and one variable.
+#     """
+#
+#     if variable_name not in Z_NAMES:
+#         raise ValueError(f"variable_name must be one of {Z_NAMES}")
+#
+#     if F_u2z is None:
+#         F_u2z = build_casadi_polynomial_u2z_for_well(well_name)
+#
+#     var_idx = Z_NAMES.index(variable_name)
+#
+#     folder = get_well_folder(well_name)
+#     sweep_path = folder / "sweep_results.pkl"
+#
+#     sweep = load_pickle(sweep_path)
+#
+#     u1_grid = np.asarray(sweep["u1_grid"], dtype=float)
+#     u2_grid = np.asarray(sweep["u2_grid"], dtype=float)
+#
+#     U1 = np.asarray(sweep["U1"], dtype=float)
+#     U2 = np.asarray(sweep["U2"], dtype=float)
+#
+#     Y_sweep = np.asarray(sweep["OUT"][variable_name], dtype=float)
+#
+#     Z_poly = evaluate_casadi_function_on_grid(F_u2z, u1_grid, u2_grid)
+#     Y_poly = Z_poly[:, :, var_idx]
+#
+#     abs_error = np.abs(Y_poly - Y_sweep)
+#
+#     fig = plt.figure(figsize=(18, 5))
+#
+#     ax1 = fig.add_subplot(1, 3, 1, projection="3d")
+#     ax1.plot_surface(U1, U2, Y_sweep, linewidth=0, antialiased=True)
+#     ax1.set_title(f"{well_name} - Sweep: {variable_name}")
+#     ax1.set_xlabel("$u_1$")
+#     ax1.set_ylabel("$u_2$")
+#     ax1.set_zlabel(variable_name)
+#     ax1.view_init(elev=elev, azim=azim)
+#
+#     ax2 = fig.add_subplot(1, 3, 2, projection="3d")
+#     ax2.plot_surface(U1, U2, Y_poly, linewidth=0, antialiased=True)
+#     ax2.set_title(f"{well_name} - Polynomial: {variable_name}")
+#     ax2.set_xlabel("$u_1$")
+#     ax2.set_ylabel("$u_2$")
+#     ax2.set_zlabel(variable_name)
+#     ax2.view_init(elev=elev, azim=azim)
+#
+#     ax3 = fig.add_subplot(1, 3, 3, projection="3d")
+#     ax3.plot_surface(U1, U2, abs_error, linewidth=0, antialiased=True)
+#     ax3.set_title("Absolute error")
+#     ax3.set_xlabel("$u_1$")
+#     ax3.set_ylabel("$u_2$")
+#     ax3.set_zlabel("|error|")
+#     ax3.view_init(elev=elev, azim=azim)
+#
+#     rmse = np.sqrt(np.nanmean((Y_poly - Y_sweep) ** 2))
+#     max_abs = np.nanmax(abs_error)
+#
+#     fig.suptitle(
+#         f"{well_name} | {variable_name} | RMSE = {rmse:.4e}, MaxAbs = {max_abs:.4e}",
+#         fontsize=12,
+#     )
+#
+#     plt.tight_layout()
+#     plt.show()
+#
+#     return {
+#         "Y_sweep": Y_sweep,
+#         "Y_poly": Y_poly,
+#         "abs_error": abs_error,
+#         "rmse": rmse,
+#         "max_abs_error": max_abs,
+#     }
 
 
 

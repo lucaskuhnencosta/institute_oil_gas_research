@@ -5,6 +5,8 @@ from contextlib import nullcontext
 from training.base_trainer import Trainer
 from networks.networks import AlgNN
 from training.dataset_generator import *
+from pathlib import Path
+
 
 class AlgTrainer(Trainer):
     """
@@ -16,6 +18,7 @@ class AlgTrainer(Trainer):
     def __init__(self,
                  net: AlgNN,
                  well_list: list,
+                 well_name: str,
                  N_train: int,
                  N_val: int,
                  adam_epochs: int,
@@ -31,6 +34,17 @@ class AlgTrainer(Trainer):
                  wandb_group=None,
                  random_seed=42
                  ):
+        self.well_name=well_name
+        self.well_list=well_list
+
+
+        this_file = Path(__file__).resolve()
+        project_root = this_file.parent.parent
+        self.well_models_dir = project_root / "well_models"
+        self.well_folder = self.well_models_dir / str(self.well_name)
+
+        self.training_path = self.well_folder / "sweep_results_figures_training.pkl"
+        self.validation_path = self.well_folder / "sweep_results_validation.pkl"
 
         self.BSW = well_list["BSW"]
         self.GOR = well_list["GOR"]
@@ -38,7 +52,7 @@ class AlgTrainer(Trainer):
         self.K_gs = well_list["K_gs"]
         self.K_inj = well_list["K_inj"]
         self.K_pr = well_list["K_pr"]
-        self.y_guess_sur=np.array(well_list["y_guess"], dtype=float)
+        self.y_guess_sur=np.array(well_list["y_guess_sur"], dtype=float)
         self.y_min_train = np.array(well_list["y_min"])
         self.y_max_train = np.array(well_list["y_max"])
 
@@ -55,6 +69,24 @@ class AlgTrainer(Trainer):
 
         self.K1 = adam_epochs
         self.K2 = lbfgs_epochs
+
+        self.history = {
+            "epoch": [],
+
+            "train_mse_total": [],
+            "train_rmse_total": [],
+            "train_rmse_z0": [],
+            "train_rmse_z1": [],
+            "train_rmse_z2": [],
+            "train_rmse_z3": [],
+
+            "val_mse_total": [],
+            "val_rmse_total": [],
+            "val_rmse_z0": [],
+            "val_rmse_z1": [],
+            "val_rmse_z2": [],
+            "val_rmse_z3": [],
+        }
 
         # Call the base trainer's __init__
         # We use the base 'run' loop (no K1/K2) and a simple scheduler
@@ -79,117 +111,212 @@ class AlgTrainer(Trainer):
             'z_max': net.z_max.cpu().tolist(),
         })
 
+    @torch.no_grad()
+    def _prediction_metrics(self, y_in, u_in, z_target):
+        """
+        Compute prediction metrics in physical units of z.
+
+        z may contain:
+            [P_bh_bar, P_tb_b_bar, w_G_inj, w_res]
+        """
+
+        self.net.eval()
+
+        with self.autocast_if_mp():
+            z_pred = self.net(y_in, u_in)
+
+        error = z_pred - z_target
+
+        mse_total = torch.mean(error ** 2)
+        rmse_total = torch.sqrt(mse_total)
+
+        mse_components = torch.mean(error ** 2, dim=0)
+        rmse_components = torch.sqrt(mse_components)
+
+        return {
+            "mse_total": mse_total,
+            "rmse_total": rmse_total,
+            "mse_components": mse_components,
+            "rmse_components": rmse_components,
+            "z_pred": z_pred,
+            "error": error,
+        }
+
     def prepare_data(self):
         """
-        Prepare AlgNN data using ground-truth sweeps.
+        Prepare AlgNN data from saved ground-truth sweep pickles.
 
         Dataset:
-            input  -> (y,u)
-            target -> (P_bh_bar, P_tb_b_bar)
-
-        States y are the first 3 entries in Z_NAMES.
-        Targets are selected by name.
+            input  -> (y, u)
+            target -> z
         """
 
-        self.l.info("Preparing AlgNN dataset from ground-truth sweeps...")
+        self.l.info("Preparing AlgNN dataset from saved sweep pickles...")
 
-        # ------------------------------------------------
-        # 1. Build sweep grids
-        # ------------------------------------------------
-        # Nu1_train = int(np.sqrt(self.N_train))
-        # Nu2_train = int(np.sqrt(self.N_train))
-        #
-        # Nu1_val = int(np.sqrt(self.N_val))
-        # Nu2_val = int(np.sqrt(self.N_val))
+        self.training_path = self.well_folder / "sweep_results_figures_training.pkl"
+        self.validation_path = self.well_folder / "sweep_results_validation.pkl"
 
-        # u1_grid_train = np.linspace(self.u_min_train[0], self.u_max_train[0], Nu1_train)
-        # u2_grid_train = np.linspace(self.u_min_train[1], self.u_max_train[1], Nu2_train)
-        #
-        # u1_grid_val = np.linspace(self.u_min_train[0], self.u_max_train[0], Nu1_val)
-        # u2_grid_val = np.linspace(self.u_min_train[1], self.u_max_train[1], Nu2_val)
+        if not self.training_path.exists():
+            raise FileNotFoundError(f"Training sweep not found: {self.training_path}")
 
-        self.model_sur = make_model("surrogate",
-                                    BSW=self.BSW,
-                                    GOR=self.GOR,
-                                    PI=self.PI,
-                                    K_gs=self.K_gs,
-                                    K_inj=self.K_inj,
-                                    K_pr=self.K_pr)
+        if not self.validation_path.exists():
+            raise FileNotFoundError(f"Validation sweep not found: {self.validation_path}")
 
-        self.y_guess_surr = np.array(self.y_guess_sur, dtype=float)
-        # ------------------------------------------------
-        # 2. Run sweeps
-        # ------------------------------------------------
-        self.l.info("Running TRAIN sweep...")
-        results_train = run_sweep(
-            self.model_sur,
-            U1_MIN=self.u1_min,
-            U2_MIN=self.u2_min,
-            U_SIM_SIZE=self.N_train,
-            y_guess_init=self.y_guess_surr)
+        self.l.info(f"Loading training sweep from: {self.training_path}")
+        with open(self.training_path, "rb") as f:
+            results_train = pickle.load(f)
 
+        self.l.info(f"Loading validation sweep from: {self.validation_path}")
+        with open(self.validation_path, "rb") as f:
+            results_val = pickle.load(f)
 
-        self.l.info("Running VAL sweep...")
-        results_val = run_sweep(
-            self.model_sur,
-            U1_MIN=self.u1_min,
-            U2_MIN=self.u2_min,
-            U_SIM_SIZE=self.N_val,
-            y_guess_init=self.y_guess_surr)
+        batch_train = flatten_sweep_results_to_batch_full(
+            results_train,
+            only_success=True,
+            y_names=["m_G_an", "m_G_t", "m_o_t"],
+            z_names=["P_bh_bar", "P_tb_b_bar", "w_G_inj", "w_res"],
+        )
+        batch_val = flatten_sweep_results_to_batch_full(
+            results_val,
+            only_success=True,
+            y_names=["m_G_an", "m_G_t", "m_o_t"],
+            z_names=["P_bh_bar", "P_tb_b_bar", "w_G_inj", "w_res"],
+        )
 
-        # ------------------------------------------------
-        # 3. Flatten sweep results
-        # ------------------------------------------------
-        batch_train = flatten_sweep_results_to_batch_full(results_train, only_success=True)
-        batch_val = flatten_sweep_results_to_batch_full(results_val, only_success=True)
-
-        Z_NAMES = list(batch_train["Z_NAMES"])
-
-        # Inputs
         y_train = batch_train["y_t"].to(self.device)
         u_train = batch_train["u_t"].to(self.device)
+        z_train = batch_train["z_t"].to(self.device)
 
         y_val = batch_val["y_t"].to(self.device)
         u_val = batch_val["u_t"].to(self.device)
-
-        # Targets
-        z_train = batch_train["z_t"].to(self.device)
         z_val = batch_val["z_t"].to(self.device)
 
-        # Metadata
-        state_names = list(batch_train["Z_NAMES"][:3])
-        target_names = list(batch_train["z_names"])
-
-        # # ------------------------------------------------
-        # # 4. Extract targets by name
-        # # ------------------------------------------------
-        # target_names = ["P_bh_bar", "P_tb_b_bar"]
-        #
-        # def extract_targets(results, mask_np):
-        #     z_cols = []
-        #     for name in target_names:
-        #         arr = np.asarray(results["OUT"][name], dtype=float)
-        #         z_cols.append(arr.reshape(-1))
-        #     z_flat = np.stack(z_cols, axis=1)
-        #     z_np = z_flat[mask_np]
-        #     return torch.tensor(z_np, dtype=torch.float32)
-        #
-        # z_train = extract_targets(results_train, batch_train["mask_np"]).to(self.device)
-        # z_val = extract_targets(results_val, batch_val["mask_np"]).to(self.device)
-
-        # ------------------------------------------------
-        # 5. Store datasets
-        # ------------------------------------------------
         self.train_data = (y_train, u_train, z_train)
         self.val_data = (y_val, u_val, z_val)
 
+        self.state_names = batch_train["y_names"]
+        self.target_names = batch_train["z_names"]
+
         self.l.info(
             f"Data preparation complete.\n"
-            f"State inputs:  {state_names}\n"
-            f"Target outputs: {target_names}\n"
+            f"State inputs:   {self.state_names}\n"
+            f"Control inputs: ['u1', 'u2']\n"
+            f"Target outputs: {self.target_names}\n"
             f"Train shapes: y={tuple(y_train.shape)}, u={tuple(u_train.shape)}, z={tuple(z_train.shape)}\n"
             f"Val shapes:   y={tuple(y_val.shape)}, u={tuple(u_val.shape)}, z={tuple(z_val.shape)}"
         )
+
+    # def prepare_data(self):
+    #     """
+    #     Prepare AlgNN data using ground-truth sweeps.
+    #
+    #     Dataset:
+    #         input  -> (y,u)
+    #         target -> (P_bh_bar, P_tb_b_bar)
+    #
+    #     States y are the first 3 entries in Z_NAMES.
+    #     Targets are selected by name.
+    #     """
+    #
+    #     self.l.info("Preparing AlgNN dataset from ground-truth sweeps...")
+    #
+    #     # ------------------------------------------------
+    #     # 1. Build sweep grids
+    #     # ------------------------------------------------
+    #     # Nu1_train = int(np.sqrt(self.N_train))
+    #     # Nu2_train = int(np.sqrt(self.N_train))
+    #     #
+    #     # Nu1_val = int(np.sqrt(self.N_val))
+    #     # Nu2_val = int(np.sqrt(self.N_val))
+    #
+    #     # u1_grid_train = np.linspace(self.u_min_train[0], self.u_max_train[0], Nu1_train)
+    #     # u2_grid_train = np.linspace(self.u_min_train[1], self.u_max_train[1], Nu2_train)
+    #     #
+    #     # u1_grid_val = np.linspace(self.u_min_train[0], self.u_max_train[0], Nu1_val)
+    #     # u2_grid_val = np.linspace(self.u_min_train[1], self.u_max_train[1], Nu2_val)
+    #
+    #     self.model_sur = make_model("surrogate",
+    #                                 BSW=self.BSW,
+    #                                 GOR=self.GOR,
+    #                                 PI=self.PI,
+    #                                 K_gs=self.K_gs,
+    #                                 K_inj=self.K_inj,
+    #                                 K_pr=self.K_pr)
+    #
+    #     self.y_guess_surr = np.array(self.y_guess_sur, dtype=float)
+    #     # ------------------------------------------------
+    #     # 2. Run sweeps
+    #     # ------------------------------------------------
+    #     self.l.info("Running TRAIN sweep...")
+    #     results_train = run_sweep(
+    #         self.model_sur,
+    #         U1_MIN=self.u1_min,
+    #         U2_MIN=self.u2_min,
+    #         U_SIM_SIZE=self.N_train,
+    #         y_guess_init=self.y_guess_surr)
+    #
+    #
+    #     self.l.info("Running VAL sweep...")
+    #     results_val = run_sweep(
+    #         self.model_sur,
+    #         U1_MIN=self.u1_min,
+    #         U2_MIN=self.u2_min,
+    #         U_SIM_SIZE=self.N_val,
+    #         y_guess_init=self.y_guess_surr)
+    #
+    #     # ------------------------------------------------
+    #     # 3. Flatten sweep results
+    #     # ------------------------------------------------
+    #     batch_train = flatten_sweep_results_to_batch_full(results_train, only_success=True)
+    #     batch_val = flatten_sweep_results_to_batch_full(results_val, only_success=True)
+    #
+    #     Z_NAMES = list(batch_train["Z_NAMES"])
+    #
+    #     # Inputs
+    #     y_train = batch_train["y_t"].to(self.device)
+    #     u_train = batch_train["u_t"].to(self.device)
+    #
+    #     y_val = batch_val["y_t"].to(self.device)
+    #     u_val = batch_val["u_t"].to(self.device)
+    #
+    #     # Targets
+    #     z_train = batch_train["z_t"].to(self.device)
+    #     z_val = batch_val["z_t"].to(self.device)
+    #
+    #     # Metadata
+    #     state_names = list(batch_train["Z_NAMES"][:3])
+    #     target_names = list(batch_train["z_names"])
+    #
+    #     # # ------------------------------------------------
+    #     # # 4. Extract targets by name
+    #     # # ------------------------------------------------
+    #     # target_names = ["P_bh_bar", "P_tb_b_bar"]
+    #     #
+    #     # def extract_targets(results, mask_np):
+    #     #     z_cols = []
+    #     #     for name in target_names:
+    #     #         arr = np.asarray(results["OUT"][name], dtype=float)
+    #     #         z_cols.append(arr.reshape(-1))
+    #     #     z_flat = np.stack(z_cols, axis=1)
+    #     #     z_np = z_flat[mask_np]
+    #     #     return torch.tensor(z_np, dtype=torch.float32)
+    #     #
+    #     # z_train = extract_targets(results_train, batch_train["mask_np"]).to(self.device)
+    #     # z_val = extract_targets(results_val, batch_val["mask_np"]).to(self.device)
+    #
+    #     # ------------------------------------------------
+    #     # 5. Store datasets
+    #     # ------------------------------------------------
+    #     self.train_data = (y_train, u_train, z_train)
+    #     self.val_data = (y_val, u_val, z_val)
+    #
+    #     self.l.info(
+    #         f"Data preparation complete.\n"
+    #         f"State inputs:  {state_names}\n"
+    #         f"Target outputs: {target_names}\n"
+    #         f"Train shapes: y={tuple(y_train.shape)}, u={tuple(u_train.shape)}, z={tuple(z_train.shape)}\n"
+    #         f"Val shapes:   y={tuple(y_val.shape)}, u={tuple(u_val.shape)}, z={tuple(z_val.shape)}"
+    #     )
 
     def train_pass(self):
         """Performs a single standard supervised training step."""
@@ -208,7 +335,21 @@ class AlgTrainer(Trainer):
                 return loss
 
             self._optim.step(closure)
-            losses = {'total': self._current_loss}
+            with torch.no_grad():
+                train_metrics = self._prediction_metrics(y_in, u_in, z_target)
+                train_rmse_components = train_metrics["rmse_components"]
+
+            losses = {
+                "total": float(self._current_loss),
+
+                "mse_total": float(train_metrics["mse_total"].item()),
+                "rmse_total": float(train_metrics["rmse_total"].item()),
+
+                "rmse_z0": float(train_rmse_components[0].item()),
+                "rmse_z1": float(train_rmse_components[1].item()),
+                "rmse_z2": float(train_rmse_components[2].item()),
+                "rmse_z3": float(train_rmse_components[3].item()),
+            }
         else:
 
             if torch.is_grad_enabled():
@@ -227,61 +368,79 @@ class AlgTrainer(Trainer):
             else:
                 loss.backward()
                 self._optim.step()
-
+            with torch.no_grad():
+                train_metrics = self._prediction_metrics(y_in, u_in, z_target)
+                train_rmse_components = train_metrics["rmse_components"]
             # Step the scheduler (if one exists)
             if hasattr(self, '_scheduler') and self._scheduler is not None:
                 self._scheduler.step()
 
-            losses={'total': loss.item()}
+            losses = {
+                "total": float(loss.item()),
+
+                "mse_total": float(train_metrics["mse_total"].item()),
+                "rmse_total": float(train_metrics["rmse_total"].item()),
+
+                "rmse_z0": float(train_rmse_components[0].item()),
+                "rmse_z1": float(train_rmse_components[1].item()),
+                "rmse_z2": float(train_rmse_components[2].item()),
+                "rmse_z3": float(train_rmse_components[3].item()),
+            }
 
         return losses
 
+    @torch.no_grad()
     def validation_pass(self):
-        """Simple validation: total MSE + per-output MSE/RMSE/MAE."""
+        """Validation metrics in physical units."""
+
         self.net.eval()
-        (y_in_val, u_in_val, z_target_val) = self.val_data
 
-        eps = 1e-8
-        with torch.no_grad():
-            with self.autocast_if_mp():
-                z_pred_val = self.net(y_in_val, u_in_val)
+        y_in_val, u_in_val, z_target_val = self.val_data
 
-            err = z_pred_val - z_target_val  # (N,2)
+        metrics = self._prediction_metrics(
+            y_in_val,
+            u_in_val,
+            z_target_val,
+        )
 
-            # total
-            total_mse = torch.mean(err ** 2).item()
+        rmse_components = metrics["rmse_components"]
 
-            # per-output
-            mse = torch.mean(err ** 2, dim=0)  # (2,)
-            rmse = torch.sqrt(mse + eps)  # (3,)
-            mae = torch.mean(torch.abs(err), dim=0)  # (2,)
-
-        # Target order from prepare_data(): [P_bh_bar, P_tb_b_bar]
         return {
-            "total": total_mse,
+            "total": float(metrics["mse_total"].item()),
 
-            "mse_P_bh": mse[0].item(),
-            "mse_P_tb_b": mse[1].item(),
+            "mse_total": float(metrics["mse_total"].item()),
+            "rmse_total": float(metrics["rmse_total"].item()),
 
-            "rmse_P_bh": rmse[0].item(),
-            "rmse_P_tb_b": rmse[1].item(),
-
-            "mae_P_bh": mae[0].item(),
-            "mae_P_tb_b": mae[1].item(),
+            "rmse_z0": float(rmse_components[0].item()),
+            "rmse_z1": float(rmse_components[1].item()),
+            "rmse_z2": float(rmse_components[2].item()),
+            "rmse_z3": float(rmse_components[3].item()),
         }
 
     def _log_epoch_info(self, train_losses: dict, val_losses: dict):
-        """Implements the abstract logging method."""
-        train_loss = train_losses['total']
-        val_loss = val_losses['total']
-        val_pbh_loss = val_losses.get('mse_P_bh', 0.0)  # .get for safety
-
         self.l.info(
-            f"Epoch {self._e} | "
-            f"Train Loss: {train_loss:.8f} | "
-            f"Val Loss: {val_loss:.8f} | "
-            f"(Val P_bh MSE: {val_pbh_loss:.6f})"
+            f"Epoch {self._e:6d} | "
+            f"train RMSE={train_losses['rmse_total']:.4e} | "
+            f"val RMSE={val_losses['rmse_total']:.4e} | "
+            f"val comps="
+            f"[{val_losses['rmse_z0']:.3e}, "
+            f"{val_losses['rmse_z1']:.3e}, "
+            f"{val_losses['rmse_z2']:.3e}, "
+            f"{val_losses['rmse_z3']:.3e}]"
         )
+
+    # def _log_epoch_info(self, train_losses: dict, val_losses: dict):
+    #     """Implements the abstract logging method."""
+    #     train_loss = train_losses['total']
+    #     val_loss = val_losses['total']
+    #     val_pbh_loss = val_losses.get('mse_P_bh', 0.0)  # .get for safety
+    #
+    #     self.l.info(
+    #         f"Epoch {self._e} | "
+    #         f"Train Loss: {train_loss:.8f} | "
+    #         f"Val Loss: {val_loss:.8f} | "
+    #         f"(Val P_bh MSE: {val_pbh_loss:.6f})"
+    #     )
 
     def switch_to_lbfgs(self, max_iter_per_call=200):
         """Switches the optimizer to L-BFGS for fine-tuning."""
@@ -317,6 +476,7 @@ class AlgTrainer(Trainer):
         self.l.info(f"--- Starting Stage 1: Adam training for {self.K1} epochs ---")
         while self._e < self.K1:
             data_to_log, val_score = self._run_epoch()
+            self._record_history(data_to_log)
 
             if self._log_to_wandb:
                 wandb.log(data_to_log, step=self._e, commit=True)
@@ -345,6 +505,7 @@ class AlgTrainer(Trainer):
             # We manually call _run_epoch() ONCE for this entire block.
             data_to_log, val_score = self._run_epoch()
             self._e += iter_per_block  # Log this as new "epochs"
+            self._record_history(data_to_log)
 
             if self._log_to_wandb:
                 wandb.log(data_to_log, step=self._e, commit=True)
@@ -363,9 +524,64 @@ class AlgTrainer(Trainer):
             wandb.finish()
 
         self.l.info('training finished!')
+        history_path = self.well_folder / "algnn_training_history.pkl"
+
+        with open(history_path, "wb") as f:
+            pickle.dump(self.history, f)
+
+        self.l.info(f"Saved AlgNN training history at: {history_path}")
         return {
+            "history": self.history,
             "train_loss": self.train_losses_list,
             "val_loss": self.val_losses_list,
             "best_val_loss": self.best_val,
             "train_loss_at_best_val": self.train_loss_at_best_val,
+            "history_path": str(history_path),
         }
+
+    def _record_history(self, data_to_log: dict):
+        """
+        Store epoch-wise AlgNN metrics for later plotting.
+        """
+
+        self.history["epoch"].append(int(self._e))
+
+        # Training metrics
+        self.history["train_mse_total"].append(
+            float(data_to_log.get("train/mse_total", np.nan))
+        )
+        self.history["train_rmse_total"].append(
+            float(data_to_log.get("train/rmse_total", np.nan))
+        )
+        self.history["train_rmse_z0"].append(
+            float(data_to_log.get("train/rmse_z0", np.nan))
+        )
+        self.history["train_rmse_z1"].append(
+            float(data_to_log.get("train/rmse_z1", np.nan))
+        )
+        self.history["train_rmse_z2"].append(
+            float(data_to_log.get("train/rmse_z2", np.nan))
+        )
+        self.history["train_rmse_z3"].append(
+            float(data_to_log.get("train/rmse_z3", np.nan))
+        )
+
+        # Validation metrics
+        self.history["val_mse_total"].append(
+            float(data_to_log.get("val/mse_total", np.nan))
+        )
+        self.history["val_rmse_total"].append(
+            float(data_to_log.get("val/rmse_total", np.nan))
+        )
+        self.history["val_rmse_z0"].append(
+            float(data_to_log.get("val/rmse_z0", np.nan))
+        )
+        self.history["val_rmse_z1"].append(
+            float(data_to_log.get("val/rmse_z1", np.nan))
+        )
+        self.history["val_rmse_z2"].append(
+            float(data_to_log.get("val/rmse_z2", np.nan))
+        )
+        self.history["val_rmse_z3"].append(
+            float(data_to_log.get("val/rmse_z3", np.nan))
+        )

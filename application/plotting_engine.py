@@ -909,7 +909,7 @@ def plot_feasible_region_pretty(
         fig = ax.figure
     color_stable = (0.00, 0.45, 0.00)  # dark green
     color_unstable = (0.75, 0.00, 0.00)  # dark red
-    color_boundary = (0.00, 0.20, 0.80)  # blue
+    color_boundary = "gray"#(0.00, 0.20, 0.80)  # blue
 
     # Soft feasible region
     ax.contourf(
@@ -918,7 +918,7 @@ def plot_feasible_region_pretty(
         feasible.astype(float),
         levels=[0.5, 1.5],
         colors=color_stable,
-        alpha=0.95,
+        alpha=0.20,
         zorder=1
     )
 
@@ -962,11 +962,11 @@ def plot_feasible_region_pretty(
     # --------------------------------------------------
     # Labels
     # --------------------------------------------------
-    ax.set_xlabel(r"$u_1$")
-    ax.set_ylabel(r"$u_2$")
+    ax.set_xlabel(r"$u_1$",fontsize=12)
+    ax.set_ylabel(r"$u_2$",fontsize=12)
 
-    ax.set_xlim(u1_grid.min(), u1_grid.max())
-    ax.set_ylim(u2_grid.min(), u2_grid.max())
+    ax.set_xlim(u1_grid.min(), u1_grid.max()+0.02)
+    ax.set_ylim(u2_grid.min()-0.02, u2_grid.max()+0.02)
 
     # ax.grid(False, alpha=0.18, linewidth=0.8)
 

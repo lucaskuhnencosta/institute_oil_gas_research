@@ -597,8 +597,6 @@ def get_model_paths(well_name: str, base_dir="../../well_models"):
         P1 -> well_1
         P2 -> well_2
     """
-    # Extract number from "P1" -> "1"
-    well_id = well_name.replace("P", "")
 
     # directory of this file
     this_file = Path(__file__).resolve()
@@ -606,10 +604,10 @@ def get_model_paths(well_name: str, base_dir="../../well_models"):
     # project root = parent of utilities/
     project_root = this_file.parent.parent
 
-    well_folder = project_root / "well_models" / f"well_{well_id}"
+    well_folder = project_root / "well_models" / f"{well_name}"
 
-    pinn_path = well_folder / "PINN" / f"PINN_{well_name}.pth"
-    algnn_path = well_folder / "Alg" / f"AlgNN_{well_name}.pth"
+    pinn_path = well_folder / "PINN" / f"{well_name}.pth"
+    algnn_path = well_folder / "AlgNN" / f"{well_name}.pth"
 
     return pinn_path, algnn_path
 
@@ -618,7 +616,7 @@ def get_model_paths(well_name: str, base_dir="../../well_models"):
 def build_casadi_surrogate_u2z_for_well(
     well_name: str,
     pinn_hidden_units=(64, 64, 64),
-    alg_hidden_units=(64, 64, 64, 64),
+    alg_hidden_units=(64, 64, 64),
 ):
     """
     Build the final CasADi surrogate u -> z for a given well.

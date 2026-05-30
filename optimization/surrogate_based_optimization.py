@@ -270,7 +270,7 @@ class SurrogateBasedOptimization:
                     "debug_corrected": True,
 
                     "u": self.u_k.copy(),
-                    "u_trial": self.u_k.copy(),
+                    "u_trial": u_trial,
 
                     "Delta": self.Delta_restoration,
                     "trsp": phase0,
@@ -311,7 +311,7 @@ class SurrogateBasedOptimization:
                     "debug_corrected": False,
 
                     "u": self.u_k.copy(),
-                    "u_trial": self.u_k.copy(),
+                    "u_trial": u_trial,
 
                     "Delta": self.Delta_restoration,
                     "trsp": phase0,
@@ -344,7 +344,7 @@ class SurrogateBasedOptimization:
                     "debug_corrected": True,
 
                     "u": self.u_k.copy(),
-                    "u_trial": self.u_k.copy(),
+                    "u_trial":u_trial,
 
                     "Delta": self.Delta_restoration,
                     "trsp": phase0,

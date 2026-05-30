@@ -7,7 +7,7 @@ from configuration.wells import get_wells
 
 wells = get_wells()
 
-well_name="P1"
+well_name="P6"
 well_list=wells[well_name]
 
 HIDDEN_UNITS = [64] * 3
@@ -37,6 +37,7 @@ alg_net = AlgNN(
 trainer = AlgTrainer(
     net=alg_net,
     well_list=well_list,
+    well_name=well_name,
     N_train=N_TRAIN_SAMPLES,
     N_val=N_VAL_SAMPLES,
     adam_epochs=10000,

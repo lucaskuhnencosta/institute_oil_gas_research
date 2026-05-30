@@ -356,3 +356,25 @@ def extract_threshold_boundary_from_grid(
 
 
 
+def evaluate_casadi_function_on_grid(F_u2z, u1_grid, u2_grid):
+    """
+    Evaluates F_u2z on the full sweep grid.
+
+    Returns
+    -------
+    Z_poly : array, shape (Nu1, Nu2, 8)
+    """
+
+    Nu1 = len(u1_grid)
+    Nu2 = len(u2_grid)
+
+    Z_poly = np.full((Nu1, Nu2, 8), np.nan, dtype=float)
+
+    for i, u1 in enumerate(u1_grid):
+        for j, u2 in enumerate(u2_grid):
+            z_val = F_u2z(np.array([u1, u2]))
+            z_val = np.array(z_val, dtype=float).reshape(-1)
+
+            Z_poly[i, j, :] = z_val
+
+    return Z_poly

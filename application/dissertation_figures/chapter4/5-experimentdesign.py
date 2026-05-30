@@ -10,12 +10,12 @@ from application.simulation_engine import make_glc_well_surrogate
 # User choices
 # ============================================================
 
-WELL_NAME = "P1"
+WELL_NAME = "P5"
 
 # For PINN state variables, use one of:
 # "m_G_an", "m_G_t", "m_o_t"
 
-VARIABLE_NAME = "m_G_an"
+VARIABLE_NAME = "P_bh_bar"
 
 
 # ============================================================
@@ -79,11 +79,13 @@ def extract_17_point_values(poly_dataset, variable_name):
 # Main diagnostic plot
 # ============================================================
 
-def plot_sweep_surface_with_17_points(
+def plot_sweep_surface_with_17_points_and_random_samples(
     well_name,
     variable_name,
-    elev=25,
-    azim=-135,
+    elev=15,
+    azim=20,
+    n_random=20,
+    seed=123,
 ):
     folder = get_well_folder(well_name)
 
@@ -99,57 +101,139 @@ def plot_sweep_surface_with_17_points(
     U1 = np.asarray(sweep["U1"], dtype=float)
     U2 = np.asarray(sweep["U2"], dtype=float)
 
+    u1_min, u1_max = np.nanmin(U1), np.nanmax(U1)
+    u2_min, u2_max = np.nanmin(U2), np.nanmax(U2)
+
     Y_sweep = np.asarray(sweep["OUT"][variable_name], dtype=float)
 
     U_17, Y_17 = extract_17_point_values(poly_dataset, variable_name)
 
-    fig = plt.figure(figsize=(10, 7))
-    ax = fig.add_subplot(111, projection="3d")
+    # =====================================================
+    # Random samples in [u1_min, 1.0] x [u2_min, 1.0]
+    # =====================================================
+    rng = np.random.default_rng(seed)
 
-    ax.plot_surface(
-        U1,
-        U2,
-        Y_sweep,
-        linewidth=0,
-        antialiased=True,
-        alpha=0.75,
-    )
-    print(Y_sweep)
-    ax.scatter(
+    U_random = np.column_stack([
+        rng.uniform(u1_min, 1.0, size=n_random),
+        rng.uniform(u2_min, 1.0, size=n_random),
+    ])
+
+    # Put random samples on the bottom plane
+    z_floor = np.nanmin(Y_sweep) - 5.0
+    Z_random_floor = np.full(n_random, z_floor)
+
+    # =====================================================
+    # Figure
+    # =====================================================
+    fig = plt.figure(figsize=(7.2, 4.0))
+
+    ax_left = fig.add_subplot(1, 2, 1, projection="3d")
+    ax_right = fig.add_subplot(1, 2, 2, projection="3d")
+
+    axes = [ax_left, ax_right]
+
+    # Common z limits so both panels are visually comparable
+    z_min = z_floor
+    z_max = np.nanmax(Y_sweep)
+
+    for ax in axes:
+        ax.plot_surface(
+            U1,
+            U2,
+            Y_sweep,
+            linewidth=0,
+            antialiased=True,
+            alpha=0.70,
+            cmap="viridis",
+        )
+
+        ax.set_xlabel("$u_1$")
+        ax.set_ylabel("$u_2$")
+        ax.set_zlabel(variable_name)
+
+        ax.set_xlim(u1_min, u1_max)
+        ax.set_ylim(u2_min, u2_max)
+        ax.set_zlim(z_min, z_max)
+
+        ax.set_box_aspect((1.0, 1.0, 1.0))
+        ax.view_init(elev=elev, azim=azim)
+
+    # =====================================================
+    # Left: original 17 selected points
+    # =====================================================
+    ax_left.scatter(
         U_17[:, 0],
         U_17[:, 1],
         Y_17,
         marker="o",
-        s=70,
+        s=50,
         color="red",
         edgecolor="black",
         depthshade=True,
-        label="17 selected points",
     )
-    print(Y_17)
-
-    # Optional: also plot red X markers on the bottom plane
-    z_floor = np.nanmin(Y_sweep)
-
-    ax.scatter(
+    red_scatter=ax_right.scatter(
         U_17[:, 0],
         U_17[:, 1],
-        np.full_like(Y_17, z_floor),
-        marker="x",
-        s=80,
+        Y_17,
+        marker="o",
+        s=50,
         color="red",
-        label="17 point coordinates",
+        edgecolor="black",
+        depthshade=True,
     )
 
-    ax.set_title(f"{well_name} - {variable_name}: sweep surface and 17 selected points")
-    ax.set_xlabel("$u_1$")
-    ax.set_ylabel("$u_2$")
-    ax.set_zlabel(variable_name)
 
-    ax.view_init(elev=elev, azim=azim)
-    ax.legend()
 
-    plt.tight_layout()
+    # =====================================================
+    # Right: 50 random points on bottom plane
+    # =====================================================
+    blue_scatter=ax_right.scatter(
+        U_random[:, 0],
+        U_random[:, 1],
+        Z_random_floor,
+        marker="x",
+        s=50,
+        color="blue",
+        linewidths=1.8,
+        depthshade=False,
+    )
+
+
+    ax_left.set_title(
+        f"Polynomial interpolation", fontsize=14,pad=-10
+    )
+    ax_right.set_title(
+        f"PINN-AlgNN Training", fontsize=14, pad=-10
+    )
+
+    fig.legend(
+        handles=[red_scatter, blue_scatter],
+        labels=["Simulated data points", "Collocation points"],
+        loc="lower center",
+        ncol=2,
+        frameon=False,
+        bbox_to_anchor=(0.5, -0.005),
+        fontsize=12,
+
+        handletextpad=0.05,   # distance between marker and text
+        columnspacing=1.5,   # distance between the two legend entries
+    )
+
+    fig.subplots_adjust(
+        left=0.06,
+        right=0.98,
+        bottom=0.11,
+        top=0.98,
+        wspace=0.12,
+        hspace=0.10,
+    )
+
+    fig.savefig(
+        "experiment_design.pdf",
+        format="pdf",
+        bbox_inches="tight",
+    )
+
     plt.show()
 
     return {
@@ -158,12 +242,20 @@ def plot_sweep_surface_with_17_points(
         "Y_sweep": Y_sweep,
         "U_17": U_17,
         "Y_17": Y_17,
+        "U_random": U_random,
+        "z_floor": z_floor,
     }
 
+# if __name__ == "__main__":
+#     data = plot_sweep_surface_with_17_points(
+#         well_name=WELL_NAME,
+#         variable_name=VARIABLE_NAME,
+#     )
 
 if __name__ == "__main__":
-    data = plot_sweep_surface_with_17_points(
+    data = plot_sweep_surface_with_17_points_and_random_samples(
         well_name=WELL_NAME,
         variable_name=VARIABLE_NAME,
+        n_random=40,
+        seed=123,
     )
-

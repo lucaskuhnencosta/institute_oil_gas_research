@@ -6,7 +6,7 @@ from settings import *
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-from application.dissertation_figures.chapter4.Feasibility_start import plot_feasible_region_pretty
+# from application.dissertation_figures.chapter4.Feasibility_start import plot_feasible_region_pretty
 
 # SPECIFIC MODULES
 from application.simulation_engine import make_model, run_sweep, fit_boundary_polynomial, extract_stability_boundary_from_grid
@@ -184,21 +184,21 @@ for well, params in wells.items():
         # ax.figure.tight_layout()
         # ax.figure.show()
 
-        fig, ax, feasible = plot_feasible_region_pretty(
-            u1_grid=results_all_wells[well]["u1_grid"],
-            u2_grid=results_all_wells[well]["u2_grid"],
-            bottomhole_pressure_values=results_all_wells[well]["OUT"]["P_bh_bar"],
-            tubing_pressure_values=results_all_wells[well]["OUT"]["P_tb_b_bar"],
-            p_tb_max=120.0,
-            p_bh_min=80.0,
-            instability_coef_dict=coeff_stability[well],
-            instability_side="above",
-            n_fine=500,
-            save_path="feasible_region.pdf",
-        )
-
-        ax.figure.tight_layout()
-        # ax.figure.show()
+        # fig, ax, feasible = plot_feasible_region_pretty(
+        #     u1_grid=results_all_wells[well]["u1_grid"],
+        #     u2_grid=results_all_wells[well]["u2_grid"],
+        #     bottomhole_pressure_values=results_all_wells[well]["OUT"]["P_bh_bar"],
+        #     tubing_pressure_values=results_all_wells[well]["OUT"]["P_tb_b_bar"],
+        #     p_tb_max=120.0,
+        #     p_bh_min=80.0,
+        #     instability_coef_dict=coeff_stability[well],
+        #     instability_side="above",
+        #     n_fine=500,
+        #     save_path="feasible_region.pdf",
+        # )
+        #
+        # ax.figure.tight_layout()
+        # # ax.figure.show()
 
     if focused_figures:
         U1=results_all_wells[well]["U1"]

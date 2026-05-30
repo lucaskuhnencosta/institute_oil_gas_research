@@ -292,7 +292,7 @@ def build_and_run_surrogate_sweep(
         folder = Path.cwd().parent / "well_models" / str(well_name)
         folder.mkdir(parents=True, exist_ok=True)
 
-        path = folder / "sweep_results_validation.pkl"
+        path = folder / "sweep_results.pkl"
 
         with open(path, "wb") as f:
             pickle.dump(results, f)
@@ -346,157 +346,219 @@ if __name__ == "__main__":
             save=True
         )
 
-        # output_names = ("P_bh_bar", "P_tb_b_bar", "w_G_inj")
-
-        # dataset = poly_dataset(
-        #     sweep_result=results,
-        #     well_name=well_name,
-        # )
-
-        # model = fit_cubic_polynomial(
-        #     dataset=dataset,
-        #     save=True,
-        # )
-
-    #
-    # print("\nFlattening to AlgNN batch...")
-    # batch = flatten_sweep_results_to_batch_full(
-    #     results,
-    #     only_success=True
-    # )
-    #
-    # # -------- State ranges --------
-    # y_np = batch["y_np"]
-    # y_min = np.min(y_np, axis=0)
-    # y_max = np.max(y_np, axis=0)
-    #
-    # margin = 0.05
-    # y_span = y_max - y_min
-    # y_min_loose = y_min - margin * y_span
-    # y_max_loose = y_max + margin * y_span
-    #
-    # print("\n--- State ranges (loose) ---")
-    # for i, name in enumerate(batch["Z_NAMES"][:3]):
-    #     print(f"{name}: min = {y_min_loose[i]:.6f}, max = {y_max_loose[i]:.6f}")
-    #
-    # # -------- Target ranges --------
-    # z_np = batch["z_np"]
-    # z_min = np.min(z_np, axis=0)
-    # z_max = np.max(z_np, axis=0)
-    #
-    # z_span = z_max - z_min
-    # z_min_loose = z_min - margin * z_span
-    # z_max_loose = z_max + margin * z_span
-    #
-    # names=["P_bh_bar", "P_tb_b_bar","w_G_inj","w_res"]
-    #
-    # print("\n--- Target ranges (loose) ---")
-    # for i, name in enumerate(names):
-    #     print(f"{name}: min = {z_min_loose[i]:.6f}, max = {z_max_loose[i]:.6f}")
-    #
-    # # -------- Summary --------
-    # print("\n--- Sweep summary ---")
-    # Nu1, Nu2 = batch["Nu1"], batch["Nu2"]
-    # total = Nu1 * Nu2
-    # success_total = int(np.sum(results["SUCCESS"]))
-    # print(f"Grid: {Nu1} x {Nu2} = {total} points")
-    # print(f"SUCCESS count (raw): {success_total}")
-    # print(f"Batch size (finite OUT & success): {batch['u_np'].shape[0]}")
-    # print(f"State names:  {batch['Z_NAMES'][:3]}")
-    # print(f"Target names: {batch['z_names']}")
-    #
-    # # -------- Tensor shapes --------
-    # print("\n--- Torch tensors ---")
-    # print("u_t:", tuple(batch["u_t"].shape), batch["u_t"].dtype)
-    # print("y_t:", tuple(batch["y_t"].shape), batch["y_t"].dtype)
-    # print("z_t:", tuple(batch["z_t"].shape), batch["z_t"].dtype)
-    # print("res_dx_t:", tuple(batch["res_dx_t"].shape), batch["res_dx_t"].dtype)
-    #
-    # # -------- Sample rows --------
-    # print("\n--- First samples ---")
-    # for k in range(min(1000, batch["u_np"].shape[0])):
-    #     u_k = batch["u_np"][k]
-    #     y_k = batch["y_np"][k]
-    #     z_k = batch["z_np"][k]
-    #     rd_k = batch["res_dx_np"][k]
-    #     print(f"{k:02d} | u={u_k} | res_dx={rd_k:.2e} | y={y_k} | z={z_k}")
-    #
-
-
-def flatten_sweep_results_to_batch_full(results: dict, only_success: bool = True):
+def flatten_sweep_results_to_batch_full(
+    results: dict,
+    only_success: bool = True,
+    y_names=None,
+    z_names=None,
+):
     """
-    Like flatten_sweep_results_to_batch, but also returns z targets from OUT.
+    Flatten a saved sweep dictionary into tensors for AlgNN training.
 
-    Assumes:
-      - first 3 Z_NAMES are states y = [y1,y2,y3]
-      - z targets are selected explicitly by name
+    AlgNN dataset:
+        input  -> (y, u)
+        target -> z
+
+    where:
+        y = selected state variables
+        u = [u1, u2]
+        z = selected algebraic/output variables
     """
+
     import numpy as np
     import torch
+
+    if y_names is None:
+        y_names = ["m_G_an", "m_G_t", "m_o_t"]
+
+    if z_names is None:
+        z_names = ["P_bh_bar", "P_tb_b_bar", "w_G_inj", "w_res"]
 
     u1_grid = np.asarray(results["u1_grid"], dtype=float)
     u2_grid = np.asarray(results["u2_grid"], dtype=float)
 
-    Z_NAMES = list(results["Z_NAMES"])
     OUT = results["OUT"]
-
-    SUCCESS = np.asarray(results["SUCCESS"], dtype=bool)
-    RES_DX = np.asarray(results["RES_DX"], dtype=float)
 
     Nu1 = len(u1_grid)
     Nu2 = len(u2_grid)
 
-    # u grid
+    # ------------------------------------------------------------
+    # Flatten control grid
+    # ------------------------------------------------------------
     U1, U2 = np.meshgrid(u1_grid, u2_grid, indexing="ij")
-    u_flat = np.stack([U1.reshape(-1), U2.reshape(-1)], axis=1)
 
-    # y (first 3)
-    y_cols = []
-    for name in Z_NAMES[:3]:
-        arr = np.asarray(OUT[name], dtype=float)
-        y_cols.append(arr.reshape(-1))
-    y_flat = np.stack(y_cols, axis=1)
+    u_flat = np.stack(
+        [U1.reshape(-1), U2.reshape(-1)],
+        axis=1,
+    )
 
-    # z targets
-    z_names = ["P_bh_bar", "P_tb_b_bar","w_G_inj","w_res"]
-    z_cols = []
-    for name in z_names:
-        arr = np.asarray(OUT[name], dtype=float)
-        z_cols.append(arr.reshape(-1))
-    z_flat = np.stack(z_cols, axis=1)
+    # ------------------------------------------------------------
+    # Flatten state inputs y
+    # ------------------------------------------------------------
+    y_flat = np.stack(
+        [
+            np.asarray(OUT[name], dtype=float).reshape(-1)
+            for name in y_names
+        ],
+        axis=1,
+    )
 
-    success_flat = SUCCESS.reshape(-1)
-    res_dx_flat = RES_DX.reshape(-1)
+    # ------------------------------------------------------------
+    # Flatten algebraic targets z
+    # ------------------------------------------------------------
+    z_flat = np.stack(
+        [
+            np.asarray(OUT[name], dtype=float).reshape(-1)
+            for name in z_names
+        ],
+        axis=1,
+    )
 
+    # ------------------------------------------------------------
+    # Build mask
+    # ------------------------------------------------------------
+    finite_u = np.all(np.isfinite(u_flat), axis=1)
     finite_y = np.all(np.isfinite(y_flat), axis=1)
     finite_z = np.all(np.isfinite(z_flat), axis=1)
-    finite_all = finite_y & finite_z
 
-    mask = (success_flat & finite_all) if only_success else finite_all
+    finite_all = finite_u & finite_y & finite_z
 
-    u_np = u_flat[mask]
-    y_np = y_flat[mask]
-    z_np = z_flat[mask]
-    res_dx_np = res_dx_flat[mask]
+    if only_success and "SUCCESS" in results:
+        success_flat = np.asarray(results["SUCCESS"], dtype=bool).reshape(-1)
+        mask = success_flat & finite_all
+    else:
+        mask = finite_all
 
+    # ------------------------------------------------------------
+    # Apply mask
+    # ------------------------------------------------------------
+    u_np = u_flat[mask].astype(np.float32)
+    y_np = y_flat[mask].astype(np.float32)
+    z_np = z_flat[mask].astype(np.float32)
+
+    # ------------------------------------------------------------
     # Torch tensors
+    # ------------------------------------------------------------
     u_t = torch.tensor(u_np, dtype=torch.float32)
     y_t = torch.tensor(y_np, dtype=torch.float32)
     z_t = torch.tensor(z_np, dtype=torch.float32)
-    res_dx_t = torch.tensor(res_dx_np, dtype=torch.float32)
 
     return {
-        "Z_NAMES": Z_NAMES,
-        "z_names": z_names,
+        "y_names": list(y_names),
+        "z_names": list(z_names),
+
         "u_np": u_np,
         "y_np": y_np,
         "z_np": z_np,
-        "res_dx_np": res_dx_np,
+
         "u_t": u_t,
         "y_t": y_t,
         "z_t": z_t,
-        "res_dx_t": res_dx_t,
+
         "Nu1": Nu1,
         "Nu2": Nu2,
         "mask_np": mask,
     }
+
+
+# def flatten_sweep_results_to_batch_full(results: dict,
+#                                         only_success: bool = True,
+#                                         y_names=None,
+#                                         z_names=None):
+#     """
+#     Like flatten_sweep_results_to_batch, but also returns z targets from OUT.
+#
+#     Assumes:
+#       - first 3 Z_NAMES are states y = [y1,y2,y3]
+#       - z targets are selected explicitly by name
+#     """
+#     import numpy as np
+#     import torch
+#
+#     if y_names is None:
+#         y_names = ["m_G_an", "m_G_t", "m_o_t"]
+#
+#     if z_names is None:
+#         z_names = ["P_bh_bar", "P_tb_b_bar", "w_G_inj", "w_res"]
+#
+#
+#     u1_grid = np.asarray(results["u1_grid"], dtype=float)
+#     u2_grid = np.asarray(results["u2_grid"], dtype=float)
+#
+#     # Z_NAMES = list(results["Z_NAMES"])
+#     OUT = results["OUT"]
+#
+#     # SUCCESS = np.asarray(results["SUCCESS"], dtype=bool)
+#     # RES_DX = np.asarray(results["RES_DX"], dtype=float)
+#
+#     Nu1 = len(u1_grid)
+#     Nu2 = len(u2_grid)
+#
+#     # u grid
+#     U1, U2 = np.meshgrid(u1_grid, u2_grid, indexing="ij")
+#
+#     u_flat = np.stack([U1.reshape(-1), U2.reshape(-1)], axis=1)
+#
+#     # Flatten state inputs y
+#     # ------------------------------------------------------------
+#     y_flat = np.stack(
+#         [
+#             np.asarray(OUT[name], dtype=float).reshape(-1)
+#             for name in y_names
+#         ],
+#         axis=1,
+#     )
+#
+#     # -------------------------------
+#
+#
+#     # y (first 3)
+#     y_cols = []
+#     for name in Z_NAMES[:3]:
+#         arr = np.asarray(OUT[name], dtype=float)
+#         y_cols.append(arr.reshape(-1))
+#     y_flat = np.stack(y_cols, axis=1)
+#
+#     # z targets
+#     z_names = ["P_bh_bar", "P_tb_b_bar","w_G_inj","w_res"]
+#     z_cols = []
+#     for name in z_names:
+#         arr = np.asarray(OUT[name], dtype=float)
+#         z_cols.append(arr.reshape(-1))
+#     z_flat = np.stack(z_cols, axis=1)
+#
+#     success_flat = SUCCESS.reshape(-1)
+#     res_dx_flat = RES_DX.reshape(-1)
+#
+#     finite_y = np.all(np.isfinite(y_flat), axis=1)
+#     finite_z = np.all(np.isfinite(z_flat), axis=1)
+#     finite_all = finite_y & finite_z
+#
+#     mask = (success_flat & finite_all) if only_success else finite_all
+#
+#     u_np = u_flat[mask]
+#     y_np = y_flat[mask]
+#     z_np = z_flat[mask]
+#     res_dx_np = res_dx_flat[mask]
+#
+#     # Torch tensors
+#     u_t = torch.tensor(u_np, dtype=torch.float32)
+#     y_t = torch.tensor(y_np, dtype=torch.float32)
+#     z_t = torch.tensor(z_np, dtype=torch.float32)
+#     res_dx_t = torch.tensor(res_dx_np, dtype=torch.float32)
+#
+#     return {
+#         "Z_NAMES": Z_NAMES,
+#         "z_names": z_names,
+#         "u_np": u_np,
+#         "y_np": y_np,
+#         "z_np": z_np,
+#         "res_dx_np": res_dx_np,
+#         "u_t": u_t,
+#         "y_t": y_t,
+#         "z_t": z_t,
+#         "res_dx_t": res_dx_t,
+#         "Nu1": Nu1,
+#         "Nu2": Nu2,
+#         "mask_np": mask,
+#     }

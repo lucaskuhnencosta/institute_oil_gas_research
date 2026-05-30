@@ -19,6 +19,9 @@ from scipy.spatial.transform import rotation
 color_primary   = (54/255,  32/255, 229/255)   # blue
 color_secondary = (240/255, 101/255, 74/255)   # orange
 color_third     = (183/255, 53/255, 192/255)   # purple (saved)
+
+
+from settings import *
 from application.simulation_engine import make_model
 from configuration.wells import get_wells
 
@@ -30,18 +33,6 @@ from utilities.block_builders import build_casadi_surrogate_u2z_for_well
 import json
 
 import numpy as np
-
-#### Global values ###
-U1_MIN = 0.05
-U2_MIN = 0.10
-U_SIM_SIZE = 100
-
-z_guess_sur = None
-RES_TOL_DX = 1e-6
-RES_TOL_G = 1e-6
-TOL_EIG = 1e-8
-#####################
-
 import matplotlib.ticker as ticker
 
 ################################ SELECT THE PLOTS YOU WANT #####################################
@@ -51,13 +42,6 @@ second_figure=False
 
 
 if first_figure:
-    plt.rcParams.update({
-        "font.size": 14,
-        "axes.titlesize": 18,
-        "axes.labelsize": 16,
-        "xtick.labelsize": 14,
-        "ytick.labelsize": 14,
-    })
     wells = get_wells()
     sweeps=[]
     zmin = np.inf
@@ -184,16 +168,6 @@ if second_figure:
 
     print(u1_p1)
 
-    # ============================
-    # 2. Plot style
-    # ============================
-    plt.rcParams.update({
-        "font.size": 14,
-        "axes.titlesize": 16,
-        "axes.labelsize": 14,
-        "xtick.labelsize": 12,
-        "ytick.labelsize": 12,
-    })
 
     wells = get_wells()
     names = [

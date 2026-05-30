@@ -7,7 +7,7 @@ import numpy as np
 # User settings
 # ============================================================
 
-STATE_NAMES = ["m_G_an", "m_G_t", "m_o_t"]
+STATE_NAMES = ["P_bh_bar","P_tb_b_bar","w_G_inj","w_res"]
 
 # Add a safety margin so the bounded PINN output can represent
 # all sweep values without saturating exactly at the boundary.
