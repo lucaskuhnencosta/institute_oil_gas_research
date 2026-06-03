@@ -340,7 +340,7 @@ def rebuild_algnn_from_weights(model_path: str,
 
 def load_model_weights(model,model_path, device="cpu"):
     """Just loads the model from model_path and put it in evaluation mode"""
-    print(f"=== LOADING MODEL FROM {model_path} ===")
+    # print(f"=== LOADING MODEL FROM {model_path} ===")
     model.to(device)
     model.load_state_dict(torch.load(model_path, map_location=device,weights_only=True))
     model.eval()
@@ -953,3 +953,105 @@ def build_casadi_polynomial_u2z_for_well(well_name: str):
     )
 
     return F_u2z
+
+#####################################################################################
+###################### OPTIMIZATION UTILITIES #######################################
+#####################################################################################
+
+def print_solution(sol, show_states=False, show_algebraic=False):
+    Z_NAMES = sol["Z_NAMES"]
+
+    print("\n" + "="*60)
+    print("SOLVER STATUS")
+    print("="*60)
+
+    stats = sol["stats"]
+    print("Return status:", stats.get("return_status", "N/A"))
+    print("Success      :", stats.get("success", "N/A"))
+    print("Iterations   :", stats.get("iter_count", "N/A"))
+
+    print("\n" + "="*60)
+    print("TOTALS")
+    print("="*60)
+    for k, v in sol["totals"].items():
+        print(f"{k:20s}: {v:.6f}")
+
+    print("\n" + "="*60)
+    print("PER-WELL RESULTS")
+    print("="*60)
+
+    for w in sol["per_well"]:
+        print("\n" + "-"*50)
+        print(f"Well: {w['well_name']}")
+        print("-"*50)
+
+        # Controls
+        u = np.array(w["u"]).reshape(-1)
+        print("u* =", u)
+
+        # States
+        if show_states:
+            y = np.array(w["y"]).reshape(-1)
+            print("y* =", y)
+
+        # Algebraic states
+        if show_algebraic and w["z"] is not None:
+            z = np.array(w["z"]).reshape(-1)
+            print("z* =", z)
+
+        # Outputs
+        print("\nOutputs:")
+        out_dict = w["out_dict"]
+
+        for name in Z_NAMES:
+            val = out_dict.get(name, None)
+            if val is not None:
+                print(f"{name:25s}: {val:.6f}")
+
+        # Key indicators
+        print("\nKey indicators:")
+        for key in ["w_o_out", "P_bh_bar", "P_tb_b_bar"]:
+            if key in out_dict:
+                print(f"{key:25s}: {out_dict[key]:.6f}")
+
+
+def print_compact_summary(sol):
+    print("\n" + "="*60)
+    print("COMPACT SUMMARY")
+    print("="*60)
+
+    for w in sol["per_well"]:
+        u = np.array(w["u"]).reshape(-1)
+        out = w["out_dict"]
+
+        print(
+            f"{w['well_name']:5s} | "
+            f"u = {u} | "
+            f"w_o = {out.get('w_o_out', np.nan):.4f} | "
+            f"P_bh = {out.get('P_bh_bar', np.nan):.2f} | "
+            f"P_tb = {out.get('P_tb_b_bar', np.nan):.2f}"
+        )
+
+
+def _build_out_dict(out_vec, Z_NAMES):
+    return {name: out_vec[i] for i, name in enumerate(Z_NAMES)}
+
+def polyval_casadi(u1, coef):
+    val = 0
+    deg = len(coef) - 1
+    for k, c in enumerate(coef):
+        val += float(c) * u1**(deg - k)
+    return val
+
+def build_casadi_zero_surrogate_u2z():
+    """
+    Build a dummy CasADi surrogate u -> z where z = 0 for all u.
+
+    Output ordering:
+        [P_bh_bar, P_tb_b_bar, w_G_inj, w_res, w_L_res, w_G_res, w_w_out, w_o_out]
+    """
+
+    u = ca.MX.sym("u", 2)
+    z = ca.MX.zeros(8, 1)
+
+    return ca.Function("F_u2z_zero", [u], [z], ["u"], ["z"])

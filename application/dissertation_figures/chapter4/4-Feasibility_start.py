@@ -139,67 +139,67 @@ def plot_feasible_region_pretty(
     color_unstable = (0.75, 0.00, 0.00)  # dark red
     color_boundary = (0.00, 0.20, 0.80) #blue
 
-    # # Trust-region center
-    # u_center = np.array([0.8, 0.8])
-    # radius = 0.1
-    #
-    # # Point at the center
-    # ax.scatter(
-    #     u_center[0],
-    #     u_center[1],
-    #     s=55,
-    #     color="black",
-    #     marker="o",
-    #     zorder=5,
-    #     label="Current point",
-    # )
-    #
-    # # Circle centered at the point
-    # circle = Circle(
-    #     xy=(u_center[0], u_center[1]),
-    #     radius=radius,
-    #     fill=False,
-    #     color="black",
-    #     linewidth=1.8,
-    #     linestyle=":",
-    #     zorder=4,
-    # )
-    #
-    # ax.add_patch(circle)
-    #
-    # # Label for the center point
-    # ax.text(
-    #     u_center[0]-0.010,
-    #     u_center[1] - 0.045,
-    #     r"$\mathbf{u}_0$",
-    #     fontsize=12,
-    #     ha="left",
-    #     va="bottom",
-    #     zorder=6,
-    # )
-    #
-    # # Radius line from center to circumference
-    # u_radius_end = np.array([u_center[0] + radius, u_center[1]])
-    #
-    # ax.plot(
-    #     [u_center[0], u_radius_end[0]],
-    #     [u_center[1], u_radius_end[1]],
-    #     color="black",
-    #     linewidth=1.5,
-    #     linestyle="-",
-    #     zorder=5,
-    # )
-    #
-    # # Label for radius
-    # ax.text(
-    #     u_center[0] + radius / 2,
-    #     u_center[1] + 0.00025,
-    #     r"$\Delta_0$",
-    #     fontsize=12,
-    #     ha="center",
-    #     va="bottom",
-    #     zorder=6,
-    # )
+    # Trust-region center
+    u_center = np.array([0.8, 0.8])
+    radius = 0.1
+
+    # Point at the center
+    ax.scatter(
+        u_center[0],
+        u_center[1],
+        s=55,
+        color="black",
+        marker="o",
+        zorder=5,
+        label="Current point",
+    )
+
+    # Circle centered at the point
+    circle = Circle(
+        xy=(u_center[0], u_center[1]),
+        radius=radius,
+        fill=False,
+        color="black",
+        linewidth=1.8,
+        linestyle=":",
+        zorder=4,
+    )
+
+    ax.add_patch(circle)
+
+    # Label for the center point
+    ax.text(
+        u_center[0]-0.010,
+        u_center[1] - 0.045,
+        r"$\mathbf{u}_0$",
+        fontsize=12,
+        ha="left",
+        va="bottom",
+        zorder=6,
+    )
+
+    # Radius line from center to circumference
+    u_radius_end = np.array([u_center[0] + radius, u_center[1]])
+
+    ax.plot(
+        [u_center[0], u_radius_end[0]],
+        [u_center[1], u_radius_end[1]],
+        color="black",
+        linewidth=1.5,
+        linestyle="-",
+        zorder=5,
+    )
+
+    # Label for radius
+    ax.text(
+        u_center[0] + radius / 2,
+        u_center[1] + 0.00025,
+        r"$\Delta_0$",
+        fontsize=12,
+        ha="center",
+        va="bottom",
+        zorder=6,
+    )
 
     # Soft feasible region
     ax.contourf(
@@ -208,7 +208,7 @@ def plot_feasible_region_pretty(
         feasible.astype(float),
         levels=[0.5, 1.5],
         colors=color_stable,
-        alpha=0.95,
+        alpha=0.20,
         zorder=1
     )
 
@@ -268,7 +268,7 @@ def plot_feasible_region_pretty(
     # Legend
     # --------------------------------------------------
     legend_elements = [
-        Patch(facecolor=color_stable, edgecolor="none", alpha=0.95,
+        Patch(facecolor=color_stable, edgecolor="none", alpha=0.20,
               label="Feasible region"),
         Line2D([0], [0], color=color_boundary, lw=2.2, linestyle="solid",
                label=r"$p_{\mathrm{tb}}$ constraint"),
@@ -300,7 +300,7 @@ if __name__ == "__main__":
     ##################################################################################3
     ######################################################################################
     wells = get_wells()
-    well = "P1"
+    well = "P2"
     params = wells[well]
     MODE = "rigorous"
     U1_MIN = 0.05  # if you ever change this, you need to change inside the black box optimizer
@@ -370,7 +370,7 @@ if __name__ == "__main__":
         bottomhole_pressure_values=bottomhole_pressure_values,
         tubing_pressure_values=tubing_pressure_values,
         p_tb_max=120.0,
-        p_bh_min=90.0,
+        p_bh_min=80.0,
         instability_coef_dict=coeff_stability,
         instability_side="above",
         n_fine=500,

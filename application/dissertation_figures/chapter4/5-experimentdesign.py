@@ -230,8 +230,7 @@ def plot_sweep_surface_with_17_points_and_random_samples(
 
     fig.savefig(
         "experiment_design.pdf",
-        format="pdf",
-        bbox_inches="tight",
+        format="pdf"
     )
 
     plt.show()

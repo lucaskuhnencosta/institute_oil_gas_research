@@ -11,7 +11,7 @@
 ###################################################################
 ################ GENERAL LIBRARIES USED ###########################
 ###################################################################
-
+from utilities.block_builders import print_solution, print_compact_summary, polyval_casadi, _build_out_dict
 import casadi as ca
 import numpy as np
 
@@ -24,93 +24,11 @@ from application.simulation_engine import make_model
 import numpy as np
 from configuration.wells import get_wells
 from configuration.parameters import get_parameters
+from settings import *
 
 parameters = get_parameters()
 
-def print_solution(sol, show_states=False, show_algebraic=False):
-    Z_NAMES = sol["Z_NAMES"]
 
-    print("\n" + "="*60)
-    print("SOLVER STATUS")
-    print("="*60)
-
-    stats = sol["stats"]
-    print("Return status:", stats.get("return_status", "N/A"))
-    print("Success      :", stats.get("success", "N/A"))
-    print("Iterations   :", stats.get("iter_count", "N/A"))
-
-    print("\n" + "="*60)
-    print("TOTALS")
-    print("="*60)
-    for k, v in sol["totals"].items():
-        print(f"{k:20s}: {v:.6f}")
-
-    print("\n" + "="*60)
-    print("PER-WELL RESULTS")
-    print("="*60)
-
-    for w in sol["per_well"]:
-        print("\n" + "-"*50)
-        print(f"Well: {w['well_name']}")
-        print("-"*50)
-
-        # Controls
-        u = np.array(w["u"]).reshape(-1)
-        print("u* =", u)
-
-        # States
-        if show_states:
-            y = np.array(w["y"]).reshape(-1)
-            print("y* =", y)
-
-        # Algebraic states
-        if show_algebraic and w["z"] is not None:
-            z = np.array(w["z"]).reshape(-1)
-            print("z* =", z)
-
-        # Outputs
-        print("\nOutputs:")
-        out_dict = w["out_dict"]
-
-        for name in Z_NAMES:
-            val = out_dict.get(name, None)
-            if val is not None:
-                print(f"{name:25s}: {val:.6f}")
-
-        # Key indicators
-        print("\nKey indicators:")
-        for key in ["w_o_out", "P_bh_bar", "P_tb_b_bar"]:
-            if key in out_dict:
-                print(f"{key:25s}: {out_dict[key]:.6f}")
-
-
-def print_compact_summary(sol):
-    print("\n" + "="*60)
-    print("COMPACT SUMMARY")
-    print("="*60)
-
-    for w in sol["per_well"]:
-        u = np.array(w["u"]).reshape(-1)
-        out = w["out_dict"]
-
-        print(
-            f"{w['well_name']:5s} | "
-            f"u = {u} | "
-            f"w_o = {out.get('w_o_out', np.nan):.4f} | "
-            f"P_bh = {out.get('P_bh_bar', np.nan):.2f} | "
-            f"P_tb = {out.get('P_tb_b_bar', np.nan):.2f}"
-        )
-
-
-def _build_out_dict(out_vec, Z_NAMES):
-    return {name: out_vec[i] for i, name in enumerate(Z_NAMES)}
-
-def polyval_casadi(u1, coef):
-    val = 0
-    deg = len(coef) - 1
-    for k, c in enumerate(coef):
-        val += float(c) * u1**(deg - k)
-    return val
 
 
 def optimize_field_production(
@@ -225,8 +143,8 @@ def optimize_field_production(
     else:
         y_lb=[0.0,0.0,0.0]
         y_ub=[INF,INF,INF]
-    u_lb=[0.00,0.00]
-    u_ub=[1.0,1.0]
+    u_lb=[U1_MIN,U2_MIN]
+    u_ub=[U1_MAX,U2_MAX]
 
     # ---------------------
     # 6) Decision Variables (symbolic, stacked)
@@ -381,7 +299,7 @@ def optimize_field_production(
     # 7.2) Objective
     # ---------------------
     #
-    obj=total_w_w
+    obj=-total_w_o
 
     # obj=0
 
@@ -560,13 +478,13 @@ if __name__=="__main__":
     sol = optimize_field_production(
         model_type=model_type,
         wells=wells,
-        u_guess_list=[[1.0,1.0],[1.0,1.0],[1.0,1.0],[1.0,1.0],[1.0,1.0],[1.0,1.0]],
-        G_available=36.50,
-        G_max_export=1.90,
-        W_max=11.40,
-        L_max=76,
+        u_guess_list=[[0.5,0.5],[0.5,0.5],[0.5,0.5],[0.5,0.5],[0.5,0.5],[0.5,0.5]],
+        G_available=35.0, # 57.51
+        G_max_export=2.00, #3.71
+        W_max=15.0, #20.25
+        L_max=80.0, #139.26
         unconstrained_well=False,
-        unconstrained_platform=True,
+        unconstrained_platform=False,
         enforce_stable=True
     )
 

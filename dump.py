@@ -3096,3 +3096,569 @@ from casadi import *
 
 
 
+    # ax.legend(
+    #     handles=legend_elements,
+    #     loc="upper center",
+    #     bbox_to_anchor=(0.5, 1.18),
+    #     ncol=2,
+    #     frameon=False,
+    # )
+    # fig.tight_layout()
+    #
+    # if save_path is not None:
+    #     fig.savefig(save_path, format="pdf", bbox_inches="tight")
+    #
+    # plt.show()
+
+    #
+    # u1_grid = results["u1_grid"]
+    # u2_grid = results["u2_grid"]
+    # U1=results["U1"]
+    # U2=results["U2"]
+    #
+    #
+    # W = np.array(results["OUT"]["w_o_out"], dtype=float)
+    # SUCCESS = np.array(results["SUCCESS"], dtype=bool)
+    # STABLE = np.array(results["STABLE"], dtype=float)
+    #
+    # fig,ax=plt.subplots(figsize=(8, 8))
+    #
+    # mask = np.zeros_like(W, dtype=bool)
+    #
+    # if only_success:
+    #     mask |= ~SUCCESS
+    #
+    # if only_stable:
+    #     mask |= ~(STABLE == 1.0)
+    #
+    # W_plot = np.array(W, copy=True)
+    # W_plot[mask] = np.nan
+    #
+    # # # Mesh for contour: X must match columns (u2), Y rows (u1)
+    # # U2, U1 = np.meshgrid(u2_grid, u1_grid)
+    #
+    # # plt.figure(figsize=(8, 8))
+    # cf = plt.contourf(U1, U2, W_plot, levels=levels)
+    # cs = plt.contour(U1, U2, W_plot, levels=levels, linewidths=0.5)
+    # ax.clabel(cs, inline=True, fontsize=8)
+    #
+    # cbar=fig.colorbar(cf,ax=ax, label="w_o_out")
+    #
+    # # Mark optimum among valid points
+    # if np.all(np.isnan(W_plot)):
+    #     print("No valid points available to locate optimum.")
+    # else:
+    #     flat_idx = np.nanargmax(W_plot)
+    #     i_opt, j_opt = np.unravel_index(flat_idx, W_plot.shape)
+    #
+    #
+    #     u1_opt = u1_grid[i_opt]
+    #     u2_opt = u2_grid[j_opt]
+    #     w_opt = W_plot[i_opt, j_opt]
+    #
+    #
+    #     ax.plot(u1_opt,
+    #             u2_opt,
+    #             'b*',
+    #             markersize=14,
+    #             label=f"Ótimo {w_opt:.3f}")
+    #
+    #     handles, labels = ax.get_legend_handles_labels()
+    #     if handles:
+    #         leg = ax.legend(loc="best",
+    #                         frameon=True,
+    #                         fancybox=False,
+    #                         fontsize=14)
+    #         frame = leg.get_frame()
+    #         frame.set_facecolor("white")
+    #         frame.set_edgecolor("black")
+    #         frame.set_alpha(1)
+    #         frame.set_linewidth(1.0)
+    #
+    # ax.set_xlabel("u1")
+    # ax.set_ylabel("u2")
+    # ax.set_title(title, fontsize=16)
+    #
+    # return ax
+    #     # plt.plot(u2_opt, u1_opt, 'r*', markersize=14, label=f"Optimum = {w_opt:.3f}")
+    #     # plt.legend()
+    #     #
+    #     # print(f"Optimum at u1={u1_opt:.4f}, u2={u2_opt:.4f}, w_o_out={w_opt:.6f}")
+    #
+    # plt.xlabel("u2")
+    # plt.ylabel("u1")
+    # plt.title(title,fontsize=16)
+    # plt.tight_layout()
+    # plt.show()
+
+################################################################
+################################################################
+
+
+
+
+    # for ax in axes:
+    #     ax.view_init(elev=45, azim=135)
+    # plt.tight_layout()
+    #
+    #
+    # fig1.savefig(f"gas_lift_surfaces_{well_name}.png", dpi=300, bbox_inches="tight")
+    # plt.show()
+    #
+    # #################################################################
+    # fig2 = plt.figure(figsize=(16, 18))
+    # fig2.suptitle(f"History behind the bottom tubing pressure for {title}", fontsize=16)
+    # axes = [
+    #     fig2.add_subplot(2, 2, 1, projection="3d"),
+    #     fig2.add_subplot(2, 2, 2, projection="3d"),
+    #     fig2.add_subplot(2, 2, 3, projection="3d"),
+    #     fig2.add_subplot(2, 2, 4, projection="3d")
+    # ]
+    # plot_surface(fig2,axes[0], U1, U2, results["OUT"]["P_tb_b_bar"],  "p_tb_b(u1,u2)", "bar")
+    # plot_surface(fig2,axes[1], U1, U2, results["OUT"]["P_tb_t_bar"], "p_tb_t(u1,u2)", "bar")
+    # plot_surface(fig2,axes[2], U1, U2, results["OUT"]["P_hidro_tb_bar"], "p_hidrostatic(u1,u2) ~ weight of column", "bar")
+    # plot_surface(fig2,axes[3], U1, U2, results["OUT"]["F_t_bar"], "F_tb(u1,u2)", "bar")
+
+    #
+    # # #################################################################
+    # fig3 = plt.figure(figsize=(16, 18))
+    # fig3.suptitle(f"History behind the bottom hole pressure for {title}", fontsize=16)
+    #
+    # axes = [
+    #     fig3.add_subplot(2, 2, 1, projection="3d"),
+    #     fig3.add_subplot(2, 2, 2, projection="3d"),
+    #     fig3.add_subplot(2, 2, 3, projection="3d"),
+    #     fig3.add_subplot(2, 2, 4, projection="3d")
+    # ]
+    #
+    # plot_surface(fig3,axes[0], U1, U2, results["OUT"]["P_bh_bar"],  "p_bh(u1,u2)", "bar")
+    # plot_surface(fig3,axes[1], U1, U2, results["OUT"]["P_tb_b_bar"], "p_tb_b(u1,u2)", "bar")
+    # plot_surface(fig3,axes[2],U1,U2,results["OUT"]["P_hidro_bh_bar"],"p_hidrostatic","bar")
+    # plot_surface(fig3,axes[3], U1, U2, results["OUT"]["F_bh_bar"], "F_bh(u1,u2)", "bar")
+    # axes[0].view_init(elev=25, azim=45)
+    # axes[1].view_init(elev=25,azim=45)# opposite view
+    # axes[2].view_init(elev=25,azim=45)# opposite view
+    # axes[3].view_init(elev=45,azim=45)# opposite view
+    # plt.tight_layout()
+    # plt.show()
+    #
+    # # #################################################################
+    #
+    # fig4 = plt.figure(figsize=(16, 18))
+    # fig4.suptitle(f"Zoom in the friction term for {title}", fontsize=16)
+    #
+    # axes = [
+    #     fig4.add_subplot(2, 2, 1, projection="3d"),
+    #     fig4.add_subplot(2, 2, 2, projection="3d"),
+    #     fig4.add_subplot(2, 2, 3, projection="3d"),
+    #     fig4.add_subplot(2, 2, 4, projection="3d")
+    # ]
+    #
+    # plot_surface(fig4,axes[0], U1, U2, results["OUT"]["F_t_bar"], "F_t(u1,u2)", "bar")
+    # plot_surface(fig4,axes[1], U1, U2, results["OUT"]["rho_avg_mix_tb"],  "alpha_avg(u1,u2)", "bar")
+    # plot_surface(fig4,axes[2], U1, U2, results["OUT"]["Re_tb"], "Re_tb(u1,u2)", "bar")
+    # plot_surface(fig4,axes[3], U1, U2, results["OUT"]["U_avg_mix_tb"], "U_g(u1,u2)", "bar")
+    #
+    # for ax in axes:
+    #     ax.view_init(elev=45, azim=45)    # opposite view
+    #
+    # plt.tight_layout()
+    # plt.show()
+    #
+    # # #################################################################
+    #
+    # fig5 = plt.figure(figsize=(16, 18))
+    # fig5.suptitle(f"Reservoir Flows for {title}", fontsize=16)
+    #
+    # axes = [
+    #     fig5.add_subplot(2, 2, 1, projection="3d"),
+    #     fig5.add_subplot(2, 2, 2, projection="3d"),
+    #     fig5.add_subplot(2, 2, 3, projection="3d"),
+    #     fig5.add_subplot(2, 2, 4, projection="3d")
+    # ]
+    #
+    # plot_surface(fig5,axes[0], U1, U2, results["OUT"]["w_res"],  "w_res(u1,u2)", "kg/s")
+    # plot_surface(fig5,axes[1], U1, U2, results["OUT"]["w_L_res"], "w_l_res(u1,u2)", "kg/s")
+    # plot_surface(fig5,axes[2], U1, U2, results["OUT"]["w_G_res"], "w_g_res(u1,u2)", "kg/s")
+    # plot_surface(fig5,axes[3], U1, U2, results["OUT"]["w_out"], "w_out(u1,u2)", "kg/s")
+    # for ax in axes:
+    #     ax.view_init(elev=45, azim=45)  # opposite view
+    #
+    # plt.tight_layout()
+    # plt.show()
+    #
+    # # # #################################################################
+    # #
+    # fig6 = plt.figure(figsize=(16, 18))
+    # fig6.suptitle(f"Flows for {title}", fontsize=16)
+    # axes = [
+    #     fig6.add_subplot(2, 2, 1, projection="3d"),
+    #     fig6.add_subplot(2, 2, 2, projection="3d"),
+    #     fig6.add_subplot(2, 2, 3, projection="3d"),
+    #     fig6.add_subplot(2, 2, 4, projection="3d")
+    # ]
+    # plot_surface(fig6,axes[0], U1, U2, results["OUT"]["w_G_res"],  "w_g_res(u1,u2)", "kg/s")
+    # plot_surface(fig6,axes[1], U1, U2, results["OUT"]["w_G_inj"], "w_g_inj(u1,u2)", "kg/s")
+    # plot_surface(fig6,axes[2], U1, U2, results["OUT"]["w_L_res"], "w_g_out(u1,u2)", "kg/s")
+    # plot_surface(fig6,axes[3], U1, U2, results["OUT"]["w_L_out"], "Q_out(u1,u2)", "kg/s")
+    # for ax in axes:
+    #     ax.view_init(elev=45, azim=45)   # opposite view
+    # plt.tight_layout()
+    # plt.show()
+    #
+    # #
+    # # # #################################################################
+    # #
+    # fig7 = plt.figure(figsize=(16, 18))
+    # fig7.suptitle(f"Delta pressure in the chokes for {title}", fontsize=16)
+    #
+    # axes = [
+    #     fig7.add_subplot(2, 2, 1, projection="3d"),
+    #     fig7.add_subplot(2, 2, 2, projection="3d"),
+    #     fig7.add_subplot(2, 2, 3, projection="3d"),
+    #     fig7.add_subplot(2, 2, 4, projection="3d")
+    # ]
+    #
+    # plot_surface(fig7,axes[0], U1, U2, results["OUT"]["dP_gs_an_bar"],  "DP_GS_AN(u1,u2)", "bar")
+    # plot_surface(fig7,axes[1], U1, U2,results["OUT"]["dP_an_tb_bar"], "DP_AN_TB(u1,u2)", "bar")
+    # plot_surface(fig7,axes[2], U1, U2, results["OUT"]["dP_tb_choke_bar"], "DP_TB_CHOKE(u1,u2)", "bar")
+    # plot_surface(fig7,axes[3], U1, U2, results["OUT"]["dP_res_bh_bar"], "DP_RES_BH(u1,u2)", "bar")
+    # for ax in axes:
+    #     ax.view_init(elev=45, azim=45)   # opposite view
+    # plt.tight_layout()
+    # plt.show()
+    # #
+    # # # #################################################################
+    # #
+    # fig8 = plt.figure(figsize=(16, 18))
+    # fig8.suptitle(f"Production for {title}", fontsize=16)
+    # axes = [
+    #     fig8.add_subplot(2, 2, 1, projection="3d"),
+    #     fig8.add_subplot(2, 2, 2, projection="3d"),
+    #     fig8.add_subplot(2, 2, 3, projection="3d"),
+    #     fig8.add_subplot(2, 2, 4, projection="3d")
+    # ]
+    # plot_surface(fig8,axes[0], U1, U2, results["OUT"]["w_out"], "Total production", "kg/s")
+    # plot_surface(fig8,axes[1], U1, U2, results["OUT"]["w_L_out"], "Production of liquid", "kg/s")
+    # plot_surface(fig8,axes[2], U1, U2, results["OUT"]["w_o_out"], "Production of oil", "kg/s")
+    # plot_surface(fig8,axes[3], U1, U2, results["OUT"]["w_w_out"], "Production of water`", "kg/s")
+    # for ax in axes:
+    #     ax.view_init(elev=45, azim=45)   # opposite view
+    # plt.tight_layout()
+    # plt.show()
+    #
+    # # #################################################################
+
+
+
+
+    # THIS ONE IS FOR LATER ON
+    #
+    # def plot_overlay_surface(varname, U1, U2, results_all,
+    #                          title="Tubing friction comparison between rigorous and surrogate models", zlabel=""):
+    #     """
+    #     Plots rigorous (blue) and surrogate (red) surfaces
+    #     on the SAME 3D axis.
+    #     """
+    #     color_u1 = (252 / 255, 77 / 255, 45 / 255)  # rgba(252, 77, 45)
+    #     color_u2 = (21 / 255, 59 / 255, 131 / 255)  # rgba(21, 59, 131)
+    #
+    #     Zr = results_all["rigorous"]["OUT"][varname]
+    #     Zs = results_all["surrogate"]["OUT"][varname]
+    #
+    #     Zr_m = np.ma.masked_invalid(Zr)
+    #     Zs_m = np.ma.masked_invalid(Zs)
+    #
+    #     fig = plt.figure(figsize=(10, 8))
+    #     ax = fig.add_subplot(111, projection="3d")
+    #
+    #     ax.plot_surface(
+    #         U2, U1, Zr_m,
+    #         color=color_u1,
+    #         alpha=1.0,
+    #         edgecolor="none",
+    #         label="Rigorous"
+    #     )
+    #
+    #     ax.plot_surface(
+    #         U2, U1, Zs_m,
+    #         color=color_u2,
+    #         alpha=1.0,
+    #         edgecolor="none",
+    #         label="Surrogate"
+    #     )
+    #
+    #     ax.set_title(title or varname, fontsize=18)
+    #     ax.set_xlabel("u2", fontsize=16)
+    #     ax.set_ylabel("u1", fontsize=15)
+    #     ax.set_zlabel(zlabel)
+    #     ax.set_xlabel("u2", fontsize=16)
+    #     ax.set_ylabel("u1", fontsize=16)
+    #     ax.set_zlabel(zlabel, fontsize=16)
+    #
+    #     ax.view_init(elev=30, azim=135)
+    #
+    #     # Manual legend (since plot_surface doesn't auto-legend)
+    #     from matplotlib.lines import Line2D
+    #     legend_elements = [
+    #         Line2D([0], [0], marker='s', color='w', label='Rigorous',
+    #                markerfacecolor=color_u1, markersize=10),
+    #         Line2D([0], [0], marker='s', color='w', label='Surrogate',
+    #                markerfacecolor=color_u2, markersize=10),
+    #     ]
+    #     ax.legend(handles=legend_elements, loc="upper right", fontsize=16)
+    #
+    #     plt.tight_layout()
+    #     plt.savefig(f"{varname}.png", dpi=300, bbox_inches="tight")
+    #     plt.show()
+    #
+    #     # plt.savefig(f"{varname}.pdf", bbox_inches="tight")
+    #
+    #
+    #
+    #
+
+
+# def plot_contour(
+#         U1,
+#         U2,
+#         Z,
+#         u1_opt,
+#         u2_opt,
+#         z_opt,
+#         title,
+#         zlabel='Z',
+#         fill_levels=40,
+#         line_levels=40,
+#         mask=None,
+#         mark_optimum=True,
+#         optimum="max",
+#         ax=None,
+#         add_colorbar=True,
+#         vmin=None,
+#         vmax=None,
+#         just_contour=False):
+#
+#     Z_plot=np.array(Z,dtype=float,copy=True)
+#
+#     if mask is not None:
+#         Z_plot[np.asarray(mask,dtype=bool)] = np.nan
+#
+#     if ax is None:
+#         fig, ax = plt.subplots(figsize=(8, 8))
+#     else:
+#         fig=ax.figure
+#
+#     if not just_contour:
+#         cf = ax.contourf(U1,
+#                          U2,
+#                          Z_plot,
+#                          levels=fill_levels,
+#                          vmin=vmin,
+#                          vmax=vmax)
+#
+#     cs = ax.contour(U1,
+#                     U2,
+#                     Z_plot,
+#                     levels=line_levels,
+#                     cmap="viridis",
+#                      linewidths=2.0,
+#                     alpha=0.9,
+#                     vmin=vmin,
+#                     vmax=vmax)
+#
+#     # ax.clabel(cs, inline=True, fontsize=24)
+#
+#     if add_colorbar:
+#         cbar=fig.colorbar(cf, ax=ax, label=zlabel)
+#         cbar.set_label(zlabel, fontsize=16)
+#
+#         # tick labels
+#         cbar.ax.tick_params(labelsize=14)
+#
+#     if mark_optimum:
+#         ax.plot(
+#             u1_opt,
+#             u2_opt,
+#             "b*",
+#             markersize=14,
+#             label=f"Ótimo irrestrito {z_opt:.2f}"
+#         )
+#
+#         handles, labels = ax.get_legend_handles_labels()
+#         if handles:
+#             leg = ax.legend(
+#                 loc="lower center",
+#                 frameon=True,
+#                 fancybox=True,
+#                 fontsize=14
+#             )
+#             frame = leg.get_frame()
+#             frame.set_facecolor("white")
+#             frame.set_edgecolor("black")
+#             frame.set_alpha(1)
+#             frame.set_linewidth(1.0)
+#
+#     ax.set_xlabel(f"$u_1$",fontsize=16)
+#     ax.set_ylabel(f"$u_2$",fontsize=16)
+#     ax.set_title(title, fontsize=18,pad=12)
+#     ax.tick_params(axis="both", which="major", labelsize=14)
+#     ax.set_aspect('equal', adjustable='box')
+#
+#     ticks = [0.25, 0.5, 0.75, 1.0]
+#     ax.set_xticks(ticks)
+#     ax.set_yticks(ticks)
+#     ax.set_xlim(0.10,1.00)
+#     ax.set_ylim(0.10,1.00)
+#     # optional: nicer formatting
+#     ax.set_xticklabels([f"{t:.2f}" for t in ticks])
+#     ax.set_yticklabels([f"{t:.2f}" for t in ticks])
+#     return ax,cs
+
+
+
+# if __name__ == "__main__":
+#
+#     result1, result2 = production_optim_run()
+#     #
+#     # history=result2["history"]
+#     # # extract sequence of accepted u_k
+#     # u_sequence = [h["u_trial"].tolist() for h in history]
+#     #
+#     # with open("u_sequence_4.json", "w") as f:
+#     #     json.dump(u_sequence, f, indent=2)
+#     #
+#     # step_types = [h["type"] for h in history]
+#     # print(step_types)
+#     #
+#     # theta = np.array([h["theta"] for h in history], dtype=float)
+#     # phi   = np.array([h["phi"] for h in history], dtype=float)
+#     #
+#     # theta_model_per_well = []
+#     # theta_constraints_per_well = []
+#     # theta_platform = []
+#     #
+#     #
+#     # for h in history:
+#     #     # New format
+#     #     if "theta_details" in h:
+#     #         details = h["theta_details"]
+#     #
+#     #         theta_model_per_well.append(
+#     #             details.get("model_mismatch_per_well", [])
+#     #         )
+#     #
+#     #         theta_constraints_per_well.append(
+#     #             details.get("well_constraint_per_well", [])
+#     #         )
+#     #
+#     #         platform_dict = details.get("platform_constraints", {})
+#     #         theta_platform.append([
+#     #             platform_dict.get("G_available", 0.0),
+#     #             platform_dict.get("G_max_export", 0.0),
+#     #             platform_dict.get("W_max", 0.0),
+#     #             platform_dict.get("L_max", 0.0),
+#     #         ])
+#     #
+#     # theta_model_per_well = np.array(theta_model_per_well, dtype=float)
+#     # theta_constraints_per_well = np.array(theta_constraints_per_well, dtype=float)
+#     # theta_platform = np.array(theta_platform, dtype=float)
+#     #
+#     # theta_model_p1 = theta_model_per_well[:, 0]
+#     # theta_model_p2 = theta_model_per_well[:, 1]
+#     #
+#     # theta_constraint_p1 = theta_constraints_per_well[:, 0]
+#     # theta_constraint_p2 = theta_constraints_per_well[:, 1]
+#     #
+#     # theta_platform_gas_inj = theta_platform[:, 0]
+#     # theta_platform_gas_export = theta_platform[:, 1]
+#     # theta_platform_water = theta_platform[:, 2]
+#     # theta_platform_liquid = theta_platform[:, 3]
+#     #
+#     # iters = np.arange(len(history))
+#     #
+#     #
+#     # # ============================
+#     # # Global style
+#     # # ============================
+#     # plt.rcParams.update({
+#     #     "font.size": 14,
+#     #     "axes.titlesize": 18,
+#     #     "axes.labelsize": 16,
+#     #     "xtick.labelsize": 14,
+#     #     "ytick.labelsize": 14,
+#     # })
+#     #
+#     # # ============================
+#     # # Single figure (two-column friendly)
+#     # # ============================
+#     # fig, ax = plt.subplots(figsize=(5.6, 3.8))
+#     #
+#     # ax.plot(theta,
+#     #         phi,
+#     #         marker='o',
+#     #         linewidth=1.8,
+#     #         markersize=5,
+#     #         color=color_primary)
+#     #
+#     # for i, (x, y) in enumerate(zip(theta, phi)):
+#     #     ax.annotate(
+#     #         str(i),
+#     #         (x, y),
+#     #         xytext=(-6, 6),
+#     #         textcoords="offset points",
+#     #         fontsize=14
+#     #     )
+#     #
+#     #
+#     # # Down arrow (objective improves ↓)
+#     # ax.annotate(
+#     #     "melhor",
+#     #     xy=(0.04, 0.50),        # arrow tip
+#     #     xytext=(0.04, 0.70),    # text position
+#     #     xycoords="axes fraction",
+#     #     textcoords="axes fraction",
+#     #     arrowprops=dict(arrowstyle="->",
+#     #                     linewidth=1.5,
+#     #                     color=color_secondary),
+#     #     ha="center",
+#     #     fontsize=14,
+#     #     color=color_secondary,
+#     #     rotation=90,
+#     #     fontweight="bold"
+#     # )
+#     #
+#     # # Left arrow (theta improves ←)
+#     # ax.annotate(
+#     #     "melhor",
+#     #     xy=(0.60, 0.04),
+#     #     xytext=(0.80, 0.04),
+#     #     xycoords="axes fraction",
+#     #     textcoords="axes fraction",
+#     #     arrowprops=dict(arrowstyle="->",
+#     #                     linewidth=1.5,
+#     #                     color=color_secondary),
+#     #     va="center",
+#     #     fontsize=14,
+#     #     color=color_secondary,
+#     #     fontweight="bold"
+#     # )
+#     #
+#     #
+#     # ax.set_xlabel(r"Infactibilidade $\theta$",fontsize=16)
+#     # ax.set_ylabel(r"Função objetivo $\phi$",fontsize=16)
+#     # ax.set_xticklabels([])
+#     # # ax.set_yticks(np.arange(-29, -9, 3))
+#     # # ax.set_ylim(-29, -9)
+#     # ax.set_xscale("log")
+#     # ax.set_title(r"Evolução das iterações no plano $(\theta,\phi)$",fontsize=18)
+#     #
+#     # ax.grid(True, which="both", linestyle="--", linewidth=0.4, alpha=0.5)
+#     #
+#     # plt.savefig("figure_theta_phi_first.pdf", bbox_inches="tight")
+#     # plt.tight_layout()
+#     # plt.show()
+
+
+
+

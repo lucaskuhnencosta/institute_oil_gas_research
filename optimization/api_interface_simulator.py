@@ -1,5 +1,3 @@
-# api_interface_simulator.py
-
 import numpy as np
 import casadi as ca
 from sympy.polys.numberfields import utilities

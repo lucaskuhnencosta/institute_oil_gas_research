@@ -86,6 +86,9 @@ def build_corrected_surrogate_single_with_plant_api(
     z_s = np.asarray(surr_eval["z"], dtype=float).reshape(-1)
     J_s = np.asarray(surr_eval["J"], dtype=float)
 
+    print(f" z_s are{z_s}")
+    print(f" J_s are{J_s}")
+
     # --------------------------------------------------
     # 3) Important: make sure dimensions match
     # --------------------------------------------------

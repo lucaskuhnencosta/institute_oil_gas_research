@@ -1,9 +1,11 @@
 import casadi as ca
-from utilities.block_builders import build_casadi_surrogate_u2z_for_well
-from optimization.production_optimizer import print_solution, print_compact_summary, polyval_casadi
+
+from settings import *
+from utilities.block_builders import build_casadi_surrogate_u2z_for_well, build_casadi_polynomial_u2z_for_well
+from utilities.block_builders import print_solution, print_compact_summary, polyval_casadi
 from configuration.wells import get_wells
 
-def optimize_field_production_nn(
+def optimize_field_production_MODEL(
         wells: dict,
         # -------------------------
         # Initial guesses
@@ -27,6 +29,7 @@ def optimize_field_production_nn(
         unconstrained_well=False,
         unconstrained_platform=False,
         enforce_stable=True,
+        is_poly=False
 ):
     """
     Field optimization using the composed NN surrogate u -> z.
@@ -76,8 +79,12 @@ def optimize_field_production_nn(
     # 2) Build per-well NN surrogates
     # ---------------------
     models = {}
+
     for well_name in well_names:
-        models[well_name] = build_casadi_surrogate_u2z_for_well(well_name)
+        if is_poly:
+            models[well_name]=build_casadi_polynomial_u2z_for_well(well_name)
+        else:
+            models[well_name] = build_casadi_surrogate_u2z_for_well(well_name)
 
     # ---------------------
     # 3) IPOPT options
@@ -95,8 +102,8 @@ def optimize_field_production_nn(
     # ---------------------
     # 4) Bounds on controls
     # ---------------------
-    u_lb = [0., 0.0]
-    u_ub = [1.0, 1.0]
+    u_lb = [U1_MIN, U2_MIN]
+    u_ub = [U1_MAX, U2_MAX]
 
     # ---------------------
     # 5) Decision variables
@@ -149,7 +156,6 @@ def optimize_field_production_nn(
             "w_w_out": z_j[6],
             "w_o_out": z_j[7],
             "w_L_out": z_j[6] + z_j[7],
-            # "w_G_out": z_j[2] + z_j[5],  # gas inj + gas from reservoir
         }
 
         # totals
@@ -320,21 +326,21 @@ def optimize_field_production_nn(
         "x_star": x_star,
     }
 
-wells = get_wells()
-
-sol = optimize_field_production_nn(
-    wells=wells,
-u_guess_list = [
-    [0.17325437, 0.23448885],   # P1
-    [0.58183577, 0.65922337]],
-    G_available=14.00,
-    G_max_export=1.40,
-    W_max=11.50,
-    L_max=40.0,
-    unconstrained_well=False,
-    unconstrained_platform=False,
-    enforce_stable=True,
-)
-
-print_solution(sol, show_states=False, show_algebraic=True)
-print_compact_summary(sol)
+# wells = get_wells()
+#
+# sol = optimize_field_production_nn(
+#     wells=wells,
+# u_guess_list = [
+#     [0.17325437, 0.23448885],   # P1
+#     [0.58183577, 0.65922337]],
+#     G_available=14.00,
+#     G_max_export=1.40,
+#     W_max=11.50,
+#     L_max=40.0,
+#     unconstrained_well=False,
+#     unconstrained_platform=False,
+#     enforce_stable=True,
+# )
+#
+# print_solution(sol, show_states=False, show_algebraic=True)
+# print_compact_summary(sol)

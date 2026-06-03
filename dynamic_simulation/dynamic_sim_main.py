@@ -165,8 +165,12 @@ def build_dae_backward_euler_step_solver(
     lbg.append(Vmin_g)
     ubg.append(1e20)
 
-    g_list.append(w_out-w_G_inj)
-    lbg.append(Vmin_g)
+    g_list.append(w_G_inj)
+    lbg.append(0)
+    ubg.append(1e20)
+
+    g_list.append(w_out)
+    lbg.append(0)
     ubg.append(1e20)
 
     g_list.append(w_up)
@@ -382,15 +386,14 @@ def simulate_dae_backward_euler(
         OUT_DICT.append(make_output_dict(out_next, Z_NAMES))
 
 
-        if (k + 1) % 100 == 0:
-            print(
-                f"k = {k + 1:5d} | "
-                f"t = {t_next:10.2f} s | "
-                f"u = [{u_next[0]:.3f}, {u_next[1]:.3f}] | "
-                f"P_bh = {out_next_np[idx_P_bh]:12.6f} bar | "
-                f"w_o_out = {out_next_np[idx_w_o_out]:12.6f} kg/s | "
-                f"w_G_inj = {out_next_np[idx_w_G_inj]:12.6f} kg/s"
-            )
+        print(
+            f"k = {k + 1:5d} | "
+            f"t = {t_next:10.2f} s | "
+            f"u = [{u_next[0]:.3f}, {u_next[1]:.3f}] | "
+            f"P_bh = {out_next_np[idx_P_bh]:12.6f} bar | "
+            f"w_o_out = {out_next_np[idx_w_o_out]:12.6f} kg/s | "
+            f"w_G_inj = {out_next_np[idx_w_G_inj]:12.6f} kg/s"
+        )
     OUT = np.vstack(OUT)
 
     return {
@@ -423,27 +426,59 @@ z_ss=z_guess_rig
 y_sur=y_guess_sur
 
 def u_fun(t):
-    if t < 500.0:
-        return np.array([0.80, 1.0])
-    if t < 3600+500:
+    if t < 1800.0:
+        return np.array([0.80, 0.90])
+    elif t < 1800*2.0:
         return np.array([0.80, 0.80])
-    elif t < 3600.0*2.0+500.0:
+    elif t < 1800*3.0:
+        return np.array([0.80, 0.70])
+    elif t < 1800.0*4.0:
         return np.array([0.80, 0.60])
-    elif t < 3600.0*3.0+500.0:
+    elif t < 1800.0*5.0:
+        return np.array([0.80, 0.50])
+    elif t < 1800.0*6.0:
         return np.array([0.80, 0.40])
-    elif t < 3600.0*4.0+500.0:
-        return np.array([0.80, 0.20])
     else:
-        return np.array([0.80, 0.20])
+        return np.array([0.80, 0.40])
 
-dt=1
-t_grid = np.arange(0.0, 3600.0*4.0+500+dt, dt)
+dt=0.5
+t_grid = np.arange(0.0, 3600.0*3+dt, dt)
 
 
-#######################################################
-# THIS IS TO RUN RIGOROUS SIMULATOR
-#######################################################
-
+#
+# # ######################################################
+# # THIS IS TO RUN SURROGATE SIMULATOR
+# # ######################################################
+# model_sur = make_model("surrogate",
+#                    BSW=BSW,
+#                    GOR=GOR,
+#                    PI=PI,
+#                    K_gs=K_gs,
+#                    K_inj=K_inj,
+#                    K_pr=K_pr)
+#
+#
+#
+# sim_sur = simulate_dae_backward_euler(
+#     model=model_sur,
+#     y0=y_sur,
+#     z0=None,
+#     u_fun=u_fun,
+#     t_grid=t_grid,
+#     Z_NAMES=Z_NAMES
+# )
+# with open("sim_sur_dt_1sv2.pkl", "wb") as f:
+#     pickle.dump(sim_sur, f)
+#
+#
+# ####################################################################
+# ####################################################################
+# ####################################################################
+# #
+# # ######################################################
+# # THIS IS TO RUN RIGOROUS SIMULATOR
+# # ######################################################
+#
 # model_rig = make_model("rigorous",
 #                    BSW=BSW,
 #                    GOR=GOR,
@@ -464,43 +499,13 @@ t_grid = np.arange(0.0, 3600.0*4.0+500+dt, dt)
 #     t_grid=t_grid,
 #     Z_NAMES=Z_NAMES
 # )
-# with open("sim_rig_dt_1s.pkl", "wb") as f:
+# with open("sim_rig_dt_1sv2.pkl", "wb") as f:
 #     pickle.dump(sim_rig, f)
+# ##################
 
-
-#######################################################
-# THIS IS TO RUN SURROGATE SIMULATOR
-#######################################################
-model_sur = make_model("surrogate",
-                   BSW=BSW,
-                   GOR=GOR,
-                   PI=PI,
-                   K_gs=K_gs,
-                   K_inj=K_inj,
-                   K_pr=K_pr)
-
-
-
-sim_sur = simulate_dae_backward_euler(
-    model=model_sur,
-    y0=y_sur,
-    z0=None,
-    u_fun=u_fun,
-    t_grid=t_grid,
-    Z_NAMES=Z_NAMES
-)
-with open("sim_sur_dt_1s.pkl", "wb") as f:
-    pickle.dump(sim_sur, f)
-
-
-#####################################################################
-#####################################################################
-#####################################################################
-
-
-with open("sim_rig_dt_1s.pkl", "rb") as f:
+with open("sim_rig_dt_1sv2.pkl", "rb") as f:
     sim_rig = pickle.load(f)
-with open("sim_sur_dt_1s.pkl", "rb") as f:
+with open("sim_sur_dt_1sv2.pkl", "rb") as f:
     sim_sur = pickle.load(f)
 
 t = sim_sur["t"]
@@ -528,11 +533,10 @@ out_ode = sim_sur["OUT"]
 idx_wo_rig = names_rig.index("w_o_out")
 idx_wginj_rig = names_rig.index("w_G_inj")
 
-# idx_wo_ode = names_ode.index("w_o_out")
-# idx_wginj_ode = names_ode.index("w_G_inj")
-
 # u2 is the second control
 u2_rig = U_rig[:, 1]
+
+u1_rig = U_rig[:, 0]
 
 # ============================================================
 # Figure
@@ -541,7 +545,7 @@ u2_rig = U_rig[:, 1]
 fig, axs = plt.subplots(
     3,
     1,
-    figsize=(7.2, 7.0),   # good for full-page LaTeX figure
+    figsize=(7.2, 5.2),   # good for full-page LaTeX figure
     sharex=True,
 )
 
@@ -549,9 +553,17 @@ fig, axs = plt.subplots(
 # 1) Oil production rate
 # ------------------------------------------------------------
 #
+
+w_o_rig = out_rig[:, idx_wo_rig]
+w_o_ode = out_ode[:, idx_wo_rig]
+
+# clip only for plotting
+w_o_rig_plot = np.maximum(w_o_rig, 0.0)
+w_o_ode_plot = np.maximum(w_o_ode, 0.0)
+
 axs[0].plot(
     t_rig,
-    out_rig[:, idx_wo_rig],
+    w_o_rig_plot,
     color="blue",
     linestyle="-",
     linewidth=1.6,
@@ -560,7 +572,7 @@ axs[0].plot(
 
 axs[0].plot(
     t_rig,
-    out_ode[:, idx_wo_rig],
+    w_o_ode_plot,
     color="red",
     linestyle="--",
     linewidth=1.4,
@@ -602,15 +614,27 @@ axs[1].grid(False)
 #
 axs[2].plot(
     t_rig,
-    u2_rig,
-    color="gray",
+    u1_rig,
+    color="darkorange",
     linestyle="-",
+    label="$u_1$",
     linewidth=1.6,
 )
 
-axs[2].set_ylabel(r"$u_2$ [-]")
+axs[2].plot(
+    t_rig,
+    u2_rig,
+    color="purple",
+    linestyle="-",
+    label="$u_2$",
+    linewidth=1.6,
+)
+
+
+axs[2].set_ylabel(r"$\mathbf{u}$ [-]")
 axs[2].set_xlabel(r"Time [s]")
 axs[2].grid(False)
+axs[2].legend(frameon=False, loc="best")
 
 # ------------------------------------------------------------
 # Formatting
@@ -626,7 +650,7 @@ fig.align_ylabels(axs)
 plt.tight_layout()
 
 plt.savefig(
-    "dynamic_comparison_full_page_2.pdf",
+    "dynamic_comparison_full_page_4.pdf",
     format="pdf",
     bbox_inches="tight",
 )

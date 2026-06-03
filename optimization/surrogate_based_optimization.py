@@ -3,6 +3,7 @@ from optimization.production_optimizer import polyval_casadi
 np.set_printoptions(suppress=True, precision=6)
 from utilities.block_builders import *
 from optimization.api_interface_simulator import plant_zeroth_and_first_order
+from settings import *
 
 class SurrogateBasedOptimization:
     def __init__(self,
@@ -10,12 +11,23 @@ class SurrogateBasedOptimization:
                  wells,
                  rigorous_models,
                  F_u2z_models,
-                 refinement,
+                 unconstrained_well=True,
+                 unconstrained_platform=True,
+                 P_tb_max=None,
+                 P_bh_min=None,
+                 W_max=None,
+                 L_max=None,
+                 G_available=None,
+                 G_max_export=None,
+                 refinement=False,
                  u_guess=None,
                  total_wo=None):
 
-        self.theta_compat_tol=1e-8
 
+        self.verbose=config["debug_verbose"]
+        self.theta_compat_tol=config["theta_compat_tol"]
+        self.y_warm_start=None
+        self.z_warm_start=None
         # -------------------------------
         # Refinement mode?
         # -------------------------------
@@ -50,35 +62,41 @@ class SurrogateBasedOptimization:
         # -------------------------------
         # Problem settings
         # -------------------------------
-        self.u_min = np.array(config["u_min"], dtype=float)
-        self.u_max = np.array(config["u_max"], dtype=float)
-
-        # -------------------------------
-        # Well constrains
-        # -------------------------------
-        self.P_min_bh=float(config["P_min_bh"])
-        self.P_max_tb_b=float(config["P_max_tb_b"])
-
-        # -------------------------------
-        # Global constraints
-        # -------------------------------
-        self.G_available=float(config["G_available"])
-        self.G_max_export=float(config["G_max_export"])
-        self.W_max=float(config["W_max"])
-        self.L_max=float(config["L_max"])
+        self.u_lb=[U1_MIN,U2_MIN]
+        self.u_ub=[U1_MAX,U2_MAX]
+        # self.u_min = np.array([U1_MIN, U2_MIN], dtype=float)
+        # self.u_max = np.array([U1_MAX, U2_MAX], dtype=float)
 
         # -------------------------------
         # Constraint options
         # -------------------------------
-        self.unconstrained_well=config["unconstrained_well"]
-        self.unconstrained_platform=config["unconstrained_platform"]
+        self.unconstrained_well=unconstrained_well
+        self.unconstrained_platform=unconstrained_platform
         self.enforce_stable=config["enforce_stable"]
+
+        # -------------------------------
+        # Well constrains
+        # -------------------------------
+        if not self.unconstrained_well:
+            self.P_min_bh=float(P_bh_min)
+            self.P_max_tb_b=float(P_tb_max)
+
+        # -------------------------------
+        # Global constraints
+        # -------------------------------
+        if not self.unconstrained_platform:
+            self.G_available=float(G_available)
+            self.G_max_export=float(G_max_export)
+            self.W_max=float(W_max)
+            self.L_max=float(L_max)
+
+
 
         # -------------------------------
         # Surrogate-based optimization parameters
         # -------------------------------
+        self.warm_start=config["warm_start"]
         self.max_iter=config["max_iter"]
-        self.theta_mode=config["theta_mode"] # This is to be extinct
         self.Delta=config["Delta"]
         self.gamma_c=config["gamma_c"] # Decrease of the trust region
         self.gamma_e=config["gamma_e"] # Increase of the trust region
@@ -94,8 +112,8 @@ class SurrogateBasedOptimization:
         self.gamma_c_restoration=config["gamma_c_restoration"]
         self.gamma_e_restoration=config["gamma_e_restoration"]
 
-        self.scale_pressure = 1#1 / 100
-        self.scale_gas = 1#10.0
+        self.scale_pressure = 1 #1 / 100
+        self.scale_gas = 1      #10.0
 
         # -------------------------------
         # Here we import the only external API
@@ -117,12 +135,6 @@ class SurrogateBasedOptimization:
         self.theta_k=None
         self.phi_k=None
         self.filter_list=[]
-
-        # -------------------------------
-        # Upper and lower bounds from u need to come from config
-        # -------------------------------
-        self.u_lb=config["u_lb"]
-        self.u_ub=config["u_ub"]
 
         # -------------------------------
         # History is fundamental for post-processing
@@ -154,7 +166,8 @@ class SurrogateBasedOptimization:
 
         for k0 in range(self.max_iter):
             print(f"\n--- PHASE ZERO ITERATION {k0} ---")
-            print("u_k =", self.u_k)
+            if self.verbose:
+                print("u_k =", self.u_k)
 
             z_surr_k_list, J_surr_k_list = self._eval_surrogates_with_jac(self.u_k)
             z_plant_k_list, J_plant_k_list = self._eval_plant_models(self.u_k)
@@ -164,13 +177,9 @@ class SurrogateBasedOptimization:
                     z_plant_list=z_plant_k_list,
                     u=self.u_k,
                 )
-
-
             print("violation =", violation_k)
-
             if violation_k <= self.theta_compat_tol:
                 print("\nPHASE ZERO CONVERGED")
-                print("violation=", violation_k)
                 self.history.append({
                     "phase": "restoration",
 
@@ -189,14 +198,14 @@ class SurrogateBasedOptimization:
                     "Delta": self.Delta_restoration,
                     "trsp": None,
 
-                    "accepted": True,
+                    "accepted": None,
                     "rejected": None,
                     "rejected_reason": None,
 
                     "theta_k": violation_k,
                     "theta_details": violation_details_k,
                     "phi_k": None,
-                    "type": "init_restoration",
+                    "type": "no-step-converged",
 
                     "filter_list": self.filter_list,
                 })
@@ -209,13 +218,12 @@ class SurrogateBasedOptimization:
                 z_plant_k_list,
                 J_plant_k_list
             )
-
-
             phase0 = self._solve_phase_zero_subproblem(F_corr_models)
-            print(phase0)
+            if self.verbose:
+                print(phase0)
 
             if not phase0["success"]:
-                print("Phase-zero TRSP failed.")
+                print("Phase-zero TRRSP failed!")
                 print("status =", phase0["stats"].get("return_status", "unknown"))
                 self.history.append({
                     "phase": "restoration",
@@ -227,7 +235,7 @@ class SurrogateBasedOptimization:
                     "z_plant": z_plant_k_list,
                     "J_plant": J_plant_k_list,
 
-                    "debug_corrected": None,
+                    "debug_corrected": True,
 
                     "u": self.u_k.copy(),
                     "u_trial": self.u_k.copy(),
@@ -242,7 +250,7 @@ class SurrogateBasedOptimization:
                     "theta_k": violation_k,
                     "theta_details": violation_details_k,
                     "phi_k": None,
-                    "type": "restoration",
+                    "type": "TRRSP failure",
 
                     "filter_list": self.filter_list,
                 })
@@ -254,7 +262,7 @@ class SurrogateBasedOptimization:
             try:
                 z_plant_trial_list, _ = self._eval_plant_models(u_trial)
             except RuntimeError as e:
-                print("Plant evaluation failed at phase-zero trial.")
+                print("Plant evaluation failed at phase-zero trial!")
                 print("u_trial =", u_trial)
                 print("error =", e)
                 self.history.append({
@@ -270,7 +278,7 @@ class SurrogateBasedOptimization:
                     "debug_corrected": True,
 
                     "u": self.u_k.copy(),
-                    "u_trial": u_trial,
+                    "u_trial": u_trial.copy(),
 
                     "Delta": self.Delta_restoration,
                     "trsp": phase0,
@@ -282,7 +290,7 @@ class SurrogateBasedOptimization:
                     "theta_k": violation_k,
                     "theta_details": violation_details_k,
                     "phi_k": None,
-                    "type": "restoration",
+                    "type": "Simulator failure",
 
                     "filter_list": self.filter_list,
                 })
@@ -308,10 +316,10 @@ class SurrogateBasedOptimization:
                     "z_plant": z_plant_k_list,
                     "J_plant": J_plant_k_list,
 
-                    "debug_corrected": False,
+                    "debug_corrected": None,
 
                     "u": self.u_k.copy(),
-                    "u_trial": u_trial,
+                    "u_trial": u_trial.copy(),
 
                     "Delta": self.Delta_restoration,
                     "trsp": phase0,
@@ -323,13 +331,14 @@ class SurrogateBasedOptimization:
                     "theta_k": violation_k,
                     "theta_details": violation_details_k,
                     "phi_k": None,
-                    "type": "restoration",
+                    "type": "Accepted restoration step",
 
                     "filter_list": self.filter_list,
                 })
                 self.u_k = u_trial
                 self.Delta_restoration *= self.gamma_e_restoration
                 violation_k=violation_trial
+                violation_details_k=violation_details_trial
             else:
                 self.history.append({
                     "phase": "restoration",
@@ -341,22 +350,22 @@ class SurrogateBasedOptimization:
                     "z_plant": z_plant_k_list,
                     "J_plant": J_plant_k_list,
 
-                    "debug_corrected": True,
+                    "debug_corrected": None,
 
                     "u": self.u_k.copy(),
-                    "u_trial":u_trial,
+                    "u_trial":u_trial.copy(),
 
                     "Delta": self.Delta_restoration,
                     "trsp": phase0,
 
                     "accepted": None,
                     "rejected": True,
-                    "rejected_reason": "No reduction",
+                    "rejected_reason": "No reduction in violation",
 
                     "theta_k": violation_k,
                     "theta_details": violation_details_k,
                     "phi_k": None,
-                    "type": "restoration",
+                    "type": "Rejected restoration step",
 
                     "filter_list": self.filter_list,
                 })
@@ -366,27 +375,26 @@ class SurrogateBasedOptimization:
         print("\nPHASE ZERO FAILED TO REACH COMPATIBILITY")
         return False
 
-
-
     # =========================================================
     # PUBLIC API
     # =========================================================
     def solve(self):
-        print(f"self.N is: {self.N}")
+        if self.verbose:
+            print(f"\n\nRunning with {self.N} wells...")
         phase_zero_success=self.run_phase_zero()
-        # if not phase_zero_success:
-        return {
-            "success": phase_zero_success,
-            "status": "phase_zero_failed",
-            "history": self.history,
-        }
-
+        if not phase_zero_success:
+            return {
+                "success": phase_zero_success,
+                "status": "phase_zero_failed",
+                "history": self.history,
+            }
         k=0
         while k<self.max_iter:
             print("\n=====================================================")
             print(f"=============== ITERATION {k} ======================")
             print("=====================================================")
-            print("u_k =", self.u_k)
+            if self.verbose:
+                print("u_k =", self.u_k)
             """
             u_k is a numpy.ndarray with 2N elements
             Shape (2N,)
@@ -410,6 +418,7 @@ class SurrogateBasedOptimization:
             # -------------------------------
             if k==0 and self.theta_k is None and self.phi_k is None:
                 # We just need to compute this here. For the next iterations, it will be computed as of the trials
+
                 # -------------------------------
                 # 2.1. Compute Phi
                 # -------------------------------
@@ -422,15 +431,9 @@ class SurrogateBasedOptimization:
                 # 2.2 Compute theta
                 # -------------------------------
                 theta_k,theta_k_details=self._compute_theta(z_plant_k_list,
-                                                             z_surr_k_list,
-                                                             u=self.u_k)
+                                                             z_surr_k_list)
                 self.theta_k=theta_k
                 self.phi_k=phi_k
-
-                # -------------------------------
-                # 2.3 Initialize the filter
-                # -------------------------------
-                # self._filter_update(theta_k,phi_k)
 
                 self.history.append({
                     "phase": "refinement" if self.refinement else "oil_maximization",
@@ -454,18 +457,13 @@ class SurrogateBasedOptimization:
                     "rejected": None,
                     "rejected_reason": None,
 
-                    "theta_k": theta_k,
-                    "theta_details": theta_k_details,
-                    "phi_k": phi_k,
+                    "theta_k": self.theta_k,
+                    "theta_details": theta_k_details.copy(),
+                    "phi_k": self.phi_k,
                     "type": "init",
 
                     "filter_list": self.filter_list,
                 })
-
-                print("\n--- FILTER VALUES ---")
-                print("u0      =", self.u_k)
-                print("phi_0   =", phi_k)
-                print("theta_0 =", theta_k)
 
             # -------------------------------
             # 3. Convergence test at current accepted point
@@ -478,6 +476,7 @@ class SurrogateBasedOptimization:
                     print("theta_tol=",self.theta_tol)
                     print("u_converged=",self.u_k)
                     print("oil_total =", oil_total)
+
                 if self.refinement:
                     gas_injected=self.phi_k
                     print("\n=== CONVERGENCE ACHIEVED ===")
@@ -486,6 +485,35 @@ class SurrogateBasedOptimization:
                     print("u_converged=",self.u_k)
                     print("gas_injected=",gas_injected)
 
+                self.history.append({
+                    "phase": "refinement" if self.refinement else "oil_maximization",
+
+                    "iteration": k,
+
+                    "z_surr": z_surr_k_list,
+                    "J_surr": J_surr_k_list,
+                    "z_plant": z_plant_k_list,
+                    "J_plant": J_plant_k_list,
+
+                    "debug_corrected": None,
+
+                    "u": self.u_k.copy(),
+                    "u_trial": self.u_k.copy(),
+
+                    "Delta": self.Delta,
+                    "trsp": None,
+
+                    "accepted": True,
+                    "rejected": None,
+                    "rejected_reason": None,
+
+                    "theta_k": self.theta_k,
+                    "theta_details": theta_k_details.copy(),
+                    "phi_k": self.phi_k,
+                    "type": "convergence",
+
+                    "filter_list": self.filter_list,
+                })
 
                 return {
                     "success": True,
@@ -496,6 +524,13 @@ class SurrogateBasedOptimization:
                     "iterations": k,
                     "history": self.history
                 }
+
+            if self.refinement:
+                print("Using gas-lift:", self.phi_k)
+            else:
+                print("Production of oil:", -self.phi_k)
+            print(f"Theta is {self.theta_k}")
+            print(f"Delta is {self.Delta}")
             # -------------------------------
             # 4. Build corrected models
             # -------------------------------
@@ -514,11 +549,49 @@ class SurrogateBasedOptimization:
             u_trial = trsp["x_star"]
 
             if not trsp["success"]:
-                print("\n--- TRSP FAILED ---")
-                print("status =", trsp["stats"].get("return_status", "unknown"))
-                print("Rejecting TRSP solution and shrinking trust region.")
+                print("TRSP FAILED")
+                if self.verbose:
+                    print("status =", trsp["stats"].get("return_status", "unknown"))
+                print("Rejecting TRSP solution and running phase 0...")
+                self.history.append({
+                    "phase": "refinement" if self.refinement else "oil_maximization",
 
-                self.Delta *= self.gamma_c
+                    "iteration": k,
+
+                    "z_surr": z_surr_k_list,
+                    "J_surr": J_surr_k_list,
+                    "z_plant": z_plant_k_list,
+                    "J_plant": J_plant_k_list,
+
+                    "debug_corrected": True,
+
+                    "u": self.u_k.copy(),
+                    "u_trial": u_trial.copy(),
+
+                    "Delta": self.Delta,
+                    "trsp": trsp,
+
+                    "accepted": None,
+                    "rejected": True,
+                    "rejected_reason": "Failure TRSP and entering restoration",
+
+                    "theta_k": self.theta_k,
+                    "theta_details": theta_k_details.copy(),
+                    "phi_k": self.phi_k,
+                    "type": "TRSP failure",
+
+                    "filter_list": self.filter_list,
+                })
+
+                phase_zero_success = self.run_phase_zero()
+                if not phase_zero_success:
+                    return {
+                        "success": phase_zero_success,
+                        "status": "phase_zero_failed",
+                        "history": self.history,
+                    }
+
+                self.Delta *= self.gamma_e
                 k += 1
                 continue
 
@@ -527,18 +600,17 @@ class SurrogateBasedOptimization:
             # -------------------------------
             du = u_trial - self.u_k
             step_norm = np.linalg.norm(du)
-
-            print("\n--- TR STEP ---")
-            print("u_k      =", self.u_k)
-            print("u_trial  =", u_trial)
-            print("du       =", du)
-            print("||du||   =", step_norm)
-
-            print("\n--- TRUST REGION ---")
-            print("Delta          =", self.Delta)
-            print("||du||^2       =", trsp["tr_norm_sq"])
-            print("Delta^2        =", trsp["tr_radius_sq"])
-            print("TR active?     =", trsp["tr_active"])
+            if self.verbose:
+                print("\n--- TR STEP ---")
+                print("u_k      =", self.u_k)
+                print("u_trial  =", u_trial)
+                print("du       =", du)
+                print("||du||   =", step_norm)
+                print("\n--- TRUST REGION ---")
+                print("Delta          =", self.Delta)
+                print("||du||^2       =", trsp["tr_norm_sq"])
+                print("Delta^2        =", trsp["tr_radius_sq"])
+                print("TR active?     =", trsp["tr_active"])
 
             # -------------------------------
             # 6. Evaluate trial point
@@ -548,10 +620,40 @@ class SurrogateBasedOptimization:
             try:
                 z_plant_trial_list, _ = self._eval_plant_models(u_trial)
             except RuntimeError as e:
-                print("\nPLANT EVALUATION FAILED AT TRIAL POINT")
-                print("u_trial =", u_trial)
-                print("reason =", e)
-                print("Rejecting step and shrinking trust region.")
+                print("Plant evaluation failed at trial point...")
+                if self.verbose:
+                    print("u_trial =", u_trial)
+                    print("reason =", e)
+                    print("Rejecting step and shrinking trust region...")
+                self.history.append({
+                    "phase": "refinement" if self.refinement else "oil_maximization",
+
+                    "iteration": k,
+
+                    "z_surr": z_surr_k_list,
+                    "J_surr": J_surr_k_list,
+                    "z_plant": z_plant_k_list,
+                    "J_plant": J_plant_k_list,
+
+                    "debug_corrected": True,
+
+                    "u": self.u_k.copy(),
+                    "u_trial": u_trial.copy(),
+
+                    "Delta": self.Delta,
+                    "trsp": trsp,
+
+                    "accepted": None,
+                    "rejected": True,
+                    "rejected_reason": "Simulation failure",
+
+                    "theta_k": self.theta_k,
+                    "theta_details": theta_k_details.copy(),
+                    "phi_k": self.phi_k,
+                    "type": "Simulation failure trial",
+
+                    "filter_list": self.filter_list,
+                })
 
                 self.Delta *= self.gamma_c
                 k += 1
@@ -560,14 +662,14 @@ class SurrogateBasedOptimization:
             phi_trial = self._compute_phi(z_plant_trial_list)
             theta_trial,theta_trial_per_well = self._compute_theta(z_plant_trial_list,
                                                                    z_surr_trial_list)
-
-            print("\n--- EVALUATING ACCEPTANCE ---")
-            print("theta_trial =", theta_trial)
-            print("theta_k=", self.theta_k)
-            print("dtheta=",theta_trial-self.theta_k)
-            print("phi_k       =", self.phi_k)
-            print("phi_trial   =", phi_trial)
-            print("dphi        =", phi_trial - self.phi_k)
+            if self.verbose:
+                print("\n--- EVALUATING ACCEPTANCE ---")
+                print("theta_trial =", theta_trial)
+                print("theta_k=", self.theta_k)
+                print("dtheta=",theta_trial-self.theta_k)
+                print("phi_k       =", self.phi_k)
+                print("phi_trial   =", phi_trial)
+                print("dphi        =", phi_trial - self.phi_k)
 
             # -------------------------------
             # 7. Filter decision
@@ -589,19 +691,75 @@ class SurrogateBasedOptimization:
                         self.Delta *= self.gamma_e
 
                     self._filter_update(self.theta_k, self.phi_k)
-
-                self._accept_step(u_trial,
-                                  theta_trial,
-                                  theta_trial_per_well,
-                                  phi_trial,
-                                  step_type)
                 print("\nSTEP ACCEPTED")
                 print("step_type =", step_type)
                 print("new theta_k =", self.theta_k)
                 print("new phi_k   =", self.phi_k)
                 print("new Delta   =", self.Delta)
+                self.history.append({
+                    "phase": "refinement" if self.refinement else "oil_maximization",
+
+                    "iteration": k,
+
+                    "z_surr": z_surr_k_list,
+                    "J_surr": J_surr_k_list,
+                    "z_plant": z_plant_k_list,
+                    "J_plant": J_plant_k_list,
+
+                    "debug_corrected": None,
+
+                    "u": self.u_k.copy(),
+                    "u_trial": u_trial.copy(),
+
+                    "Delta": self.Delta,
+                    "trsp": trsp,
+
+                    "accepted": True,
+                    "rejected": None,
+                    "rejected_reason": None,
+
+                    "theta_k": self.theta_k,
+                    "theta_details": theta_k_details.copy(),
+                    "phi_k": self.phi_k,
+                    "type": step_type,
+
+                    "filter_list": self.filter_list,
+                })
+                self.u_k = u_trial
+                self.theta_k = theta_trial
+                theta_k_details=theta_trial_per_well
+                self.phi_k = phi_trial
             else:
                 print("\nSTEP REJECTED")
+                self.history.append({
+                    "phase": "refinement" if self.refinement else "oil_maximization",
+
+                    "iteration": k,
+
+                    "z_surr": z_surr_k_list,
+                    "J_surr": J_surr_k_list,
+                    "z_plant": z_plant_k_list,
+                    "J_plant": J_plant_k_list,
+
+                    "debug_corrected": True,
+
+                    "u": self.u_k.copy(),
+                    "u_trial": u_trial.copy(),
+
+                    "Delta": self.Delta,
+                    "trsp": trsp,
+
+                    "accepted": None,
+                    "rejected": True,
+                    "rejected_reason": "Filter rejection",
+
+                    "theta_k": theta_trial,
+                    "theta_details": theta_trial_per_well.copy(),
+                    "phi_k": phi_trial,
+                    "type": None,
+
+                    "filter_list": self.filter_list,
+                })
                 print("Delta old =", self.Delta)
                 self.Delta *= self.gamma_c
                 print("Delta new =", self.Delta)
@@ -710,7 +868,8 @@ class SurrogateBasedOptimization:
         z_star_list = []
 
         for j, well_name in enumerate(self.well_names):
-            print(f"\nEvaluating plant model for well {well_name}...")
+            if self.verbose:
+                print(f"\nEvaluating plant model for well {well_name}...")
 
             model=self.rigorous_models[j]
             well_data = self.wells[well_name]
@@ -720,8 +879,12 @@ class SurrogateBasedOptimization:
             end=(j+1)*self.nu
             u_j=u_k[start:end]
 
-            y_guess=well_data["y_guess_rig"]
-            z_guess=well_data["z_guess_rig"]
+            if self.warm_start:
+                y_guess=self.y_warm_start[j]
+                z_guess=self.z_warm_start[j]
+            else:
+                y_guess=well_data["y_guess_rig"]
+                z_guess=well_data["z_guess_rig"]
 
             res_j=self.plant_eval(
                 model=model,
@@ -1125,7 +1288,7 @@ class SurrogateBasedOptimization:
 
         if self.refinement:
             g_list.append(total_w_o)
-            lbg.append(self.total_wo-self.oil_allowance)
+            lbg.append(self.total_wo*(1-self.oil_allowance))
             ubg.append(self.INF)
 
         # ---------------------
@@ -1281,24 +1444,26 @@ class SurrogateBasedOptimization:
         tr_lbg = float(lbg_np[tr_g_index])
         tr_ubg = float(ubg_np[tr_g_index])
 
-        print("\n--- TRUST REGION DEBUG ---")
-        print("solver success =", solver.stats().get("success", None))
-        print("return_status  =", solver.stats().get("return_status", None))
+        if self.verbose:
 
-        print("x_star =", x_star)
-        print("x_k_np =", x_k_np)
-        print("dx_star =", dx_star)
+            print("\n--- TRUST REGION DEBUG ---")
+            print("solver success =", solver.stats().get("success", None))
+            print("return_status  =", solver.stats().get("return_status", None))
 
-        print("manual ||dx||^2 =", tr_norm_sq)
-        print("Delta^2         =", tr_radius_sq)
-        print("manual violation =", tr_violation)
+            print("x_star =", x_star)
+            print("x_k_np =", x_k_np)
+            print("dx_star =", dx_star)
 
-        print("len(g_star) =", len(g_star))
-        print("TR g index  =", tr_g_index)
-        print("TR g value  =", tr_g_value)
-        print("TR lbg      =", tr_lbg)
-        print("TR ubg      =", tr_ubg)
-        print("TR g - ubg  =", tr_g_value - tr_ubg)
+            print("manual ||dx||^2 =", tr_norm_sq)
+            print("Delta^2         =", tr_radius_sq)
+            print("manual violation =", tr_violation)
+
+            print("len(g_star) =", len(g_star))
+            print("TR g index  =", tr_g_index)
+            print("TR g value  =", tr_g_value)
+            print("TR lbg      =", tr_lbg)
+            print("TR ubg      =", tr_ubg)
+            print("TR g - ubg  =", tr_g_value - tr_ubg)
 
         tr_feasible = tr_g_value <= tr_ubg + 1e-6
         tr_active = tr_feasible and tr_g_value >= 0.999 * tr_ubg
@@ -1383,26 +1548,6 @@ class SurrogateBasedOptimization:
     # STEP HANDLING
     # =========================================================
 
-    def _accept_step(self,
-                     u_trial,
-                     theta,
-                     theta_per_well,
-                     phi,
-                     step_type):
-
-        self.history.append({
-            "u": self.u_k.copy(),
-            "u_trial": u_trial.copy(),
-            "Delta": self.Delta,
-            "theta": theta,
-            "theta_per_well": theta_per_well.copy(),
-            "phi": phi,
-            "type": step_type
-        })
-
-        self.u_k = u_trial
-        self.theta_k = theta
-        self.phi_k = phi
 
     def _solve_phase_zero_subproblem(self, F_corr_models):
         """

@@ -1,0 +1,187 @@
+code,phase,iteration,debug_corrected,Delta,accepted,rejected,rejected_reason,theta_k,phi_k,type
+S0,restoration,0,,1,,,,0,,no-step-converged
+S0,oil_maximization,0,,1,,,,4.12651771325454,-117.112857696731,init
+S0,oil_maximization,0,,1.2,True,,,4.12651771325454,-117.112857696731,f-type
+S0,oil_maximization,1,,1.44,True,,,0.657028644332789,-121.079319071551,theta-type
+S0,oil_maximization,2,,1.728,True,,,0.105598899087558,-121.083412441885,f-type
+S0,oil_maximization,3,True,1.728,,True,Filter rejection,0.233576513623483,-121.068465654537,
+S0,oil_maximization,4,True,0.3456,,True,Filter rejection,0.233576513513739,-121.068465654555,
+S0,oil_maximization,5,,0.082944,True,,,0.138160679486553,-121.085689360096,f-type
+S0,oil_maximization,6,,0.082944,True,,,0.0448585845841613,-121.094810253637,theta-type
+S0,oil_maximization,7,True,0.082944,,True,Filter rejection,0.0152991375452888,-121.094109068656,
+S0,oil_maximization,8,,0.01990656,True,,,0.0100557026889138,-121.094740777551,f-type
+S0,oil_maximization,9,,0.023887872,True,,,0.00273329724589737,-121.095597122557,theta-type
+S0,oil_maximization,10,,0.023887872,True,,,2.6170186264504E-05,-121.095620449153,convergence
+S0,restoration,0,,1,,,,0,,no-step-converged
+S0,refinement,0,,1,,,,4.75896354226873,60.1684402624275,init
+S0,refinement,0,,1.2,True,,,4.75896354226873,60.1684402624275,f-type
+S0,refinement,1,,1.44,True,,,0.119748431745834,52.4316891913289,theta-type
+S0,refinement,2,,1.728,True,,,0.00943895347961602,52.5822701855921,theta-type
+S0,refinement,3,,2.0736,True,,,0.000437145925562894,52.6143095343542,theta-type
+S0,refinement,4,,2.0736,True,,,2.04250456892121E-05,52.615647490191,convergence
+S1,restoration,0,,1,True,,,0.998330733795541,,Accepted restoration step
+S1,restoration,1,,1.05,,,,0,,no-step-converged
+S1,oil_maximization,0,,1,,,,3.36670385319153,-111.021517498227,init
+S1,oil_maximization,0,,1.2,True,,,3.36670385319153,-111.021517498227,f-type
+S1,oil_maximization,1,True,1.2,,True,Filter rejection,2.46972110176703,-118.625999098978,
+S1,oil_maximization,2,,0.288,True,,,1.32150096590679,-118.947794812767,f-type
+S1,oil_maximization,3,,0.3456,True,,,0.39030447618703,-118.979527742553,f-type
+S1,oil_maximization,4,True,0.3456,,True,Filter rejection,0.366464546260257,-118.964699628568,
+S1,oil_maximization,5,,0.082944,True,,,0.258000145780635,-118.989142674658,f-type
+S1,oil_maximization,6,,0.0995328,True,,,0.0445535633428553,-119.008383490112,theta-type
+S1,oil_maximization,7,True,0.0995328,,True,Filter rejection,0.00245342903894673,-119.008422764869,
+S1,oil_maximization,8,True,0.01990656,,True,Filter rejection,0.0024534286632885,-119.008422764902,
+S1,oil_maximization,9,,0.0047775744,True,,,0.00149841255937571,-119.008497149919,f-type
+S1,oil_maximization,10,,0.0047775744,True,,,0.000155220195431437,-119.008617038418,convergence
+S1,restoration,0,,1,,,,1.40866890068662E-08,,no-step-converged
+S1,refinement,0,,1,,,,4.76445649709141,65.5073491242886,init
+S1,refinement,0,,1.2,True,,,4.76445649709141,65.5073491242886,f-type
+S1,refinement,1,,1.44,True,,,0.278424386014726,42.4440881594359,f-type
+S1,refinement,2,,1.728,True,,,0.004454853040316,42.2964244797367,theta-type
+S1,refinement,3,,1.728,True,,,3.3920103348846E-05,42.3031615416504,convergence
+S2,restoration,0,,1,True,,,19.9880546613302,,Accepted restoration step
+S2,restoration,1,,1.05,,,,0,,no-step-converged
+S2,oil_maximization,0,,1,,,,3.12909651736301,-87.6781715242642,init
+S2,oil_maximization,0,,1.2,True,,,3.12909651736301,-87.6781715242642,f-type
+S2,oil_maximization,1,,1.44,True,,,2.52632505035134,-113.122272215065,f-type
+S2,oil_maximization,2,,1.728,True,,,0.201634780511354,-113.744100870359,theta-type
+S2,oil_maximization,3,,2.0736,True,,,0.00732200264905651,-113.742563743672,theta-type
+S2,oil_maximization,4,,2.48832,True,,,0.000371710758898392,-113.742070120721,theta-type
+S2,oil_maximization,5,,2.48832,True,,,4.1088492209212E-05,-113.742036874708,convergence
+S2,restoration,0,,1,,,,1.40789215276016E-08,,no-step-converged
+S2,refinement,0,,1,,,,4.74850500836408,52.1636446862348,init
+S2,refinement,0,,1.2,True,,,4.74850500836408,52.1636446862348,f-type
+S2,refinement,1,,1.44,True,,,0.70329520755112,32.4328838882165,theta-type
+S2,refinement,2,,1.728,True,,,0.0122582959371698,32.7215519485548,theta-type
+S2,refinement,3,,1.728,True,,,3.03135993951802E-05,32.7368762340214,convergence
+S3,restoration,0,,1,True,,,103.649335442154,,Accepted restoration step
+S3,restoration,1,,1.05,,,,0,,no-step-converged
+S3,oil_maximization,0,,1,,,,3.13649132539088,-86.6226840052702,init
+S3,oil_maximization,0,,1.2,True,,,3.13649132539088,-86.6226840052702,f-type
+S3,oil_maximization,1,,1.44,True,,,1.21109833744877,-104.524183940114,f-type
+S3,oil_maximization,2,,1.728,True,,,0.0089762442392744,-104.964951418257,f-type
+S3,oil_maximization,3,,1.728,True,,,0.000150741330726399,-104.965747936503,convergence
+S3,restoration,0,,1,,,,3.5626327744482E-05,,no-step-converged
+S3,refinement,0,,1,,,,3.01914950532468,50.0949983840172,init
+S3,refinement,0,,1.2,True,,,3.01914950532468,50.0949983840172,f-type
+S3,refinement,1,True,1.2,,True,Simulation failure,0.606129610942273,25.3880905758585,Simulation failure trial
+S3,refinement,2,,0.288,True,,,0.606129610942273,25.3880905758585,f-type
+S3,refinement,3,,0.3456,True,,,0.010185034903446,25.3067111693491,f-type
+S3,refinement,4,,0.41472,True,,,0.00108420018906481,25.3019870697004,f-type
+S3,refinement,5,,0.41472,True,,,0.000104283234767018,25.301551639911,convergence
+S4,restoration,0,,1,True,,,143.863292616181,,Accepted restoration step
+S4,restoration,1,,1.05,,,,0,,no-step-converged
+S4,oil_maximization,0,,1,,,,3.16595721806101,-85.5736337843913,init
+S4,oil_maximization,0,,1.2,True,,,3.16595721806101,-85.5736337843913,f-type
+S4,oil_maximization,1,True,1.2,,True,Failure TRSP and entering restoration,1.00349019289204,-104.491003183065,TRSP failure
+S4,restoration,0,,1.05,,,,0,,no-step-converged
+S4,oil_maximization,2,,0.288,True,,,1.00349019289204,-104.491003183065,f-type
+S4,oil_maximization,3,,0.3456,True,,,0.397964514430263,-104.95788536052,theta-type
+S4,oil_maximization,4,,0.41472,True,,,0.006396089899208,-104.874094176229,f-type
+S4,oil_maximization,5,,0.497664,True,,,0.00569543407669948,-104.876123738372,theta-type
+S4,oil_maximization,6,,0.497664,True,,,1.35898377165124E-05,-104.875097232179,convergence
+S4,restoration,0,,1,,,,2.24249003353716E-05,,no-step-converged
+S4,refinement,0,,1,,,,3.04273092531583,39.2819205719144,init
+S4,refinement,0,,1.2,True,,,3.04273092531583,39.2819205719144,f-type
+S4,refinement,1,,1.44,True,,,0.715900823146076,25.3357324605032,f-type
+S4,refinement,2,,1.728,True,,,0.0152700662942517,25.0891356303411,theta-type
+S4,refinement,3,,1.728,True,,,2.80014526248623E-05,25.0940792631626,convergence
+S5,restoration,0,,1,True,,,143.863292616181,,Accepted restoration step
+S5,restoration,1,,1.05,,,,0,,no-step-converged
+S5,oil_maximization,0,,1,,,,3.16595721807644,-85.5736337839668,init
+S5,oil_maximization,0,,1.2,True,,,3.16595721807644,-85.5736337839668,f-type
+S5,oil_maximization,1,,1.44,True,,,1.00349025196471,-104.49100297276,f-type
+S5,oil_maximization,2,,1.728,True,,,1.09903237071291,-105.156466323016,theta-type
+S5,oil_maximization,3,,2.0736,True,,,0.00346459269457633,-104.874499759876,f-type
+S5,oil_maximization,4,,2.0736,True,,,1.30600977810991E-05,-104.875094417689,convergence
+S5,restoration,0,,1,,,,2.17492831198831E-06,,no-step-converged
+S5,refinement,0,,1,,,,3.27721430052275,39.9536941198373,init
+S5,refinement,0,,1.2,True,,,3.27721430052275,39.9536941198373,f-type
+S5,refinement,1,,1.44,True,,,0.371541039378552,25.1696301131118,f-type
+S5,refinement,2,,1.728,True,,,0.0101806474091274,25.091660133638,theta-type
+S5,refinement,3,,1.728,True,,,6.29426817108508E-06,25.0940071225527,convergence
+S6,restoration,0,,1,True,,,146.441121893975,,Accepted restoration step
+S6,restoration,1,,1.05,,,,0,,no-step-converged
+S6,oil_maximization,0,,1,,,,3.18166424169457,-82.63416052085,init
+S6,oil_maximization,0,,1.2,True,,,3.18166424169457,-82.63416052085,f-type
+S6,oil_maximization,1,,1.44,True,,,1.68489430419882,-104.200741607797,f-type
+S6,oil_maximization,2,,1.728,True,,,0.174116420440916,-104.626297143361,theta-type
+S6,oil_maximization,3,,2.0736,True,,,0.000357134237369226,-104.590871456846,theta-type
+S6,oil_maximization,4,,2.0736,True,,,1.06160646966865E-05,-104.590826248386,convergence
+S6,restoration,0,,1,,,,1.26075937532349E-06,,no-step-converged
+S6,refinement,0,,1,,,,3.03559572243525,38.7088872593935,init
+S6,refinement,0,,1.2,True,,,3.03559572243525,38.7088872593935,f-type
+S6,refinement,1,,1.44,True,,,0.778774772808421,28.4132760457921,f-type
+S6,refinement,2,True,1.44,,True,Simulation failure,0.00622216829245229,28.3739346799627,Simulation failure trial
+S6,refinement,3,,0.3456,True,,,0.00622216829245229,28.3739346799627,f-type
+S6,refinement,4,,0.3456,True,,,1.50379572864594E-06,28.372205746426,convergence
+S7,restoration,0,,1,True,,,358.089516653934,,Accepted restoration step
+S7,restoration,1,,1.05,,,,0,,no-step-converged
+S7,oil_maximization,0,,1,,,,3.17368466592053,-66.6740594192853,init
+S7,oil_maximization,0,True,1,,True,Simulation failure,3.17368466592053,-66.6740594192853,Simulation failure trial
+S7,oil_maximization,1,,0.24,True,,,3.17368466592053,-66.6740594192853,f-type
+S7,oil_maximization,2,,0.288,True,,,0.675869899988889,-69.7554261841321,f-type
+S7,oil_maximization,3,,0.3456,True,,,0.112987898651205,-69.9241478321929,f-type
+S7,oil_maximization,4,True,0.3456,,True,Filter rejection,0.0966803520112465,-69.9327440308419,
+S7,oil_maximization,5,,0.06912,True,,,0.0318618602044642,-69.940581449504,theta-type
+S7,oil_maximization,6,,0.082944,True,,,0.015083654910019,-69.9374576323397,f-type
+S7,oil_maximization,7,,0.0995328,True,,,0.00581833578018648,-69.939445557505,f-type
+S7,oil_maximization,8,,0.11943936,True,,,0.000387373365947639,-69.9399873455011,f-type
+S7,oil_maximization,9,True,0.11943936,,True,Filter rejection,0.0307464682388018,-69.93551946179,
+S7,oil_maximization,10,,0.0286654464,True,,,0.000431998904611803,-69.9400009685219,theta-type
+S7,oil_maximization,11,,0.0286654464,True,,,5.61624855763083E-06,-69.9399573023108,convergence
+S7,restoration,0,,1,,,,1.93416115544011E-08,,no-step-converged
+S7,refinement,0,,1,,,,2.9280388399754,36.7759649539971,init
+S7,refinement,0,,1.2,True,,,2.9280388399754,36.7759649539971,f-type
+S7,refinement,1,True,1.2,,True,Simulation failure,1.31720875296062,12.7097047965061,Simulation failure trial
+S7,refinement,2,,0.288,True,,,1.31720875296062,12.7097047965061,f-type
+S7,refinement,3,,0.3456,True,,,0.127241502050723,12.5304704830452,theta-type
+S7,refinement,4,,0.3456,True,,,2.2161274567743E-05,12.5302553266376,convergence
+S8,restoration,0,,1,True,,,367.614730649086,,Accepted restoration step
+S8,restoration,1,,1.05,,,,0,,no-step-converged
+S8,oil_maximization,0,,1,,,,3.16892221918312,-67.2046528287991,init
+S8,oil_maximization,0,True,1,,True,Simulation failure,3.16892221918312,-67.2046528287991,Simulation failure trial
+S8,oil_maximization,1,,0.24,True,,,3.16892221918312,-67.2046528287991,f-type
+S8,oil_maximization,2,,0.288,True,,,0.736247240959034,-69.7194266060761,f-type
+S8,oil_maximization,3,,0.3456,True,,,0.0103790228560848,-69.9402729791399,theta-type
+S8,oil_maximization,4,,0.3456,True,,,4.58725380856219E-05,-69.9399590112135,convergence
+S8,restoration,0,,1,,,,9.0215370183842E-06,,no-step-converged
+S8,refinement,0,,1,,,,2.97121956801883,33.2023799152395,init
+S8,refinement,0,,1.2,True,,,2.97121956801883,33.2023799152395,f-type
+S8,refinement,1,True,1.2,,True,Simulation failure,1.35319385863351,12.6837684602124,Simulation failure trial
+S8,refinement,2,True,0.24,,True,Simulation failure,1.35319385863351,12.6837684602124,Simulation failure trial
+S8,refinement,3,,0.0576,True,,,1.35319385863351,12.6837684602124,f-type
+S8,refinement,4,True,0.0576,,True,Simulation failure,0.12716417416481,12.5307136385152,Simulation failure trial
+S8,refinement,5,True,0.01152,,True,Simulation failure,0.12716417416481,12.5307136385152,Simulation failure trial
+S8,refinement,6,,0.0027648,True,,,0.12716417416481,12.5307136385152,theta-type
+S8,refinement,7,,0.0027648,True,,,2.19202263369469E-05,12.5302644494164,convergence
+S9,restoration,0,,1,True,,,367.728957779803,,Accepted restoration step
+S9,restoration,1,,1.05,,,,0,,no-step-converged
+S9,oil_maximization,0,,1,,,,3.62172314573967,-68.0148807487249,init
+S9,oil_maximization,0,,1.2,True,,,3.62172314573967,-68.0148807487249,f-type
+S9,oil_maximization,1,,1.44,True,,,1.21153390320788,-69.7437013900297,f-type
+S9,oil_maximization,2,True,1.44,,True,Filter rejection,18.3989638903047,-66.8506235431294,
+S9,oil_maximization,3,True,0.288,,True,Filter rejection,6.11444169599811,-68.9161693846135,
+S9,oil_maximization,4,,0.0576,True,,,3.74279110704303,-70.6193105581515,theta-type
+S9,oil_maximization,5,,0.06912,True,,,1.12510465352815,-69.753593040602,f-type
+S9,oil_maximization,6,True,0.06912,,True,Filter rejection,1.64417322881717,-69.6687123832441,
+S9,oil_maximization,7,,0.0165888,True,,,0.453618935610705,-69.8663362936415,f-type
+S9,oil_maximization,8,,0.01990656,True,,,0.130395624287674,-69.9182241198141,f-type
+S9,oil_maximization,9,,0.023887872,True,,,0.102166859448307,-69.9231475613216,f-type
+S9,oil_maximization,10,,0.0286654464,True,,,0.0466216713479691,-69.9324364841797,f-type
+S9,oil_maximization,11,True,0.0286654464,,True,Filter rejection,0.108088660456323,-69.9224967084437,
+S9,oil_maximization,12,,0.006879707136,True,,,0.0366370668551808,-69.9341381102787,f-type
+S9,oil_maximization,13,,0.0082556485632,True,,,0.007387677794172,-69.9387533042494,f-type
+S9,oil_maximization,14,,0.00990677827584,True,,,0.00663664405112345,-69.9388864498538,f-type
+S9,oil_maximization,15,True,0.00990677827584,,True,Filter rejection,0.00445240645896413,-69.9392595969679,
+S9,oil_maximization,16,,0.0023776267862016,True,,,0.00437843498580298,-69.9392628019439,f-type
+S9,oil_maximization,17,,0.0023776267862016,True,,,6.26883194271187E-05,-69.9399483739228,convergence
+S9,restoration,0,,1,,,,4.89919221691088E-05,,no-step-converged
+S9,refinement,0,,1,,,,3.43213623553181,31.3868006464546,init
+S9,refinement,0,,1.2,True,,,3.43213623553181,31.3868006464546,f-type
+S9,refinement,1,,1.44,True,,,1.21873252456383,12.6845259857311,f-type
+S9,refinement,2,True,1.44,,True,Simulation failure,0.14539653938114,12.5308401748638,Simulation failure trial
+S9,refinement,3,True,0.288,,True,Simulation failure,0.14539653938114,12.5308401748638,Simulation failure trial
+S9,refinement,4,True,0.0576,,True,Simulation failure,0.14539653938114,12.5308401748638,Simulation failure trial
+S9,refinement,5,,0.013824,True,,,0.14539653938114,12.5308401748638,theta-type
+S9,refinement,6,,0.013824,True,,,2.93065727296422E-05,12.5302075025967,convergence

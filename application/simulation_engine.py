@@ -13,7 +13,7 @@ from solvers.steady_state_solver import solve_equilibrium_ipopt
 
 # NUMPY IS USED AS WELL
 import numpy as np
-
+from configuration.wells import get_wells
 
 ################### MAKE MODEL ###################
 
@@ -378,3 +378,82 @@ def evaluate_casadi_function_on_grid(F_u2z, u1_grid, u2_grid):
             Z_poly[i, j, :] = z_val
 
     return Z_poly
+
+def dm_to_float(x):
+    """Convert CasADi DM/MX/numpy scalar to Python float."""
+    return float(np.array(x, dtype=float).reshape(-1)[0])
+
+def validate_optimization_solution_on_plant(
+    u_list
+):
+    wells=get_wells()
+    per_well_validated = []
+    totals = {
+        "w_o_out": 0.0,
+        "w_w_out": 0.0,
+        "w_G_inj": 0.0,
+        "w_G_out": 0.0,
+        "w_L_out": 0.0,
+    }
+    plant_models = {}
+    model_type = "rigorous"
+    for well_name, well_data in wells.items():
+        plant_models[well_name] = make_model(
+            model_type,
+            BSW=well_data["BSW"],
+            GOR=well_data["GOR"],
+            PI=well_data["PI"],
+            K_gs=well_data["K_gs"],
+            K_inj=well_data["K_inj"],
+            K_pr=well_data["K_pr"]
+        )
+
+    well_names = ["P1", "P2", "P3", "P4", "P5", "P6"]
+    for well_name,u_opt in zip(well_names,u_list):
+        model = plant_models[well_name]
+        y_guess = wells[well_name]["y_guess_rig"]
+        z_guess = wells[well_name]["z_guess_rig"]
+        # Optimal u recommended by PINN or Polynomial optimizer
+        Z_NAMES = model["Z_NAMES"]
+
+        y_star, z_star, dx_star, g_star, out_star, eig, stable, stats = solve_equilibrium_ipopt(
+            model=model,
+            u_val=u_opt,
+            y_guess=y_guess,
+            z_guess=z_guess,
+        )
+        z_star = None
+        g_star = None
+
+        # Convert output vector to dictionary
+        out_dict = {
+            name: dm_to_float(out_star[i])
+            for i, name in enumerate(Z_NAMES)
+        }
+
+        # Add to field totals
+        totals["w_o_out"] += out_dict["w_o_out"]
+        totals["w_w_out"] += out_dict["w_w_out"]
+        totals["w_G_inj"] += out_dict["w_G_inj"]
+        totals["w_G_out"] += out_dict["w_G_out"]
+        totals["w_L_out"] += out_dict["w_L_out"]
+
+        per_well_validated.append({
+            "well_name": well_name,
+            "u": np.array(u_opt, dtype=float).reshape(-1),
+            "y": y_star,
+            "z": z_star,
+            "dx": dx_star,
+            "g": g_star,
+            "out": out_star,
+            "out_dict": out_dict,
+            "stable": stable,
+            "stats": stats,
+            "P_bh_bar": out_dict["P_bh_bar"],
+            "P_tb_b_bar": out_dict["P_tb_b_bar"],
+        })
+
+    return {
+        "totals": totals,
+        "per_well": per_well_validated,
+    }

@@ -13,19 +13,20 @@ from configuration.wells import get_wells
 
 wells=get_wells()
 
+from settings import *
 
 ######################################################################################
 ############### THIS HERE IS NEVE GOING TO CHANGE ####################################
 MODE = "surrogate"
-RES_TOL_DX = 1e-6 # This could be a global variable
-RES_TOL = 1e-6
-RES_TOL_G = 1e-6 # This could be a global variable
-TOL_EIG = 1e-8
-small_delta=1e-2
-U1_MIN=0.05 #if you ever change this, you need to change inside the black box optimizer
-U2_MIN=0.10 #if you ever change this, you need to change inside the black box optimizer
-U_SIM_SIZE=20
-degree_polynomial = 2
+# RES_TOL_DX = 1e-6 # This could be a global variable
+# RES_TOL = 1e-6
+# RES_TOL_G = 1e-6 # This could be a global variable
+# TOL_EIG = 1e-8
+# small_delta=1e-2
+# U1_MIN=0.05 #if you ever change this, you need to change inside the black box optimizer
+# U2_MIN=0.10 #if you ever change this, you need to change inside the black box optimizer
+# U_SIM_SIZE=20
+# degree_polynomial = 2
 ######################################################################################
 ######################################################################################
 
@@ -36,7 +37,7 @@ degree_polynomial = 2
 state_plots=False
 
 stability_map=True
-stability_plot=False
+stability_plot=True
 
 focused_figures=False
 heatmap_w_out=True
