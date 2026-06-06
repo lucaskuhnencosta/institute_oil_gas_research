@@ -381,7 +381,7 @@ def plot_surrogate_vs_rigorous_contours(
     mappable_surr = draw_panel(
         ax_surr,
         W_surr,
-        r"$\tilde{r}(\mathbf{u}) - PINN$",
+        r"$\tilde{r}(\mathbf{u})=n_{\theta}(\mathbf{u})$",
         arrow_direction="east"
     )
 

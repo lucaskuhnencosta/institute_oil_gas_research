@@ -109,9 +109,9 @@ class SteadyStatePINNTrainer(Trainer):
             self.well_models_dir = Path(well_models_dir)
 
         self.well_folder = self.well_models_dir / str(self.well_name)
-        # self.poly_dataset_path = self.well_folder / "poly_dataset.pkl"
+        self.poly_dataset_path = self.well_folder / "poly_dataset.pkl"
         self.validation_path = self.well_folder / "sweep_results_figures_training.pkl"
-        self.training_path = self.well_folder / "sweep_results_validation.pkl"
+        self.training_path = self.well_folder / "sweep_results.pkl"
 
         # ------------------------------------------------
         # 6. Base trainer initialization

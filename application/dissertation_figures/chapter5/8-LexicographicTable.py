@@ -89,7 +89,7 @@ for case_code, case in scenarios.items():
             L_max=L_max,
             G_available=G_available,
             G_max_export=G_max_export,
-            surrogate_type="zero")
+            surrogate_type="Poly")
 
     #########################################################################################################
     # STORING SOLVER HISTORY

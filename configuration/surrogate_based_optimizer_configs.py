@@ -10,10 +10,10 @@ def get_solver_configs():
         "warm_start":False,
         "oil_allowance":0.001,#0.001 = 0.10%
         "Delta_restoration":1.00,
-        "gamma_e_restoration":1.05 ,
-        "gamma_c_restoration":0.95 ,
+        "gamma_e_restoration":1.01 ,
+        "gamma_c_restoration":0.99 ,
         "Delta":1.00,
-        "gamma_c":0.9,
+        "gamma_c":0.90,
         "gamma_e":1.8,
         "gamma_f":0.01,
         "gamma_theta":0.01,

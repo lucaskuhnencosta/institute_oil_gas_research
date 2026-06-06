@@ -310,7 +310,7 @@ if __name__ == "__main__":
     import numpy as np
     from configuration.wells import get_wells
     from settings import *
-    N_data = 137
+    N_data = 20
     wells = get_wells()
     for well in wells:
 
@@ -461,104 +461,3 @@ def flatten_sweep_results_to_batch_full(
     }
 
 
-# def flatten_sweep_results_to_batch_full(results: dict,
-#                                         only_success: bool = True,
-#                                         y_names=None,
-#                                         z_names=None):
-#     """
-#     Like flatten_sweep_results_to_batch, but also returns z targets from OUT.
-#
-#     Assumes:
-#       - first 3 Z_NAMES are states y = [y1,y2,y3]
-#       - z targets are selected explicitly by name
-#     """
-#     import numpy as np
-#     import torch
-#
-#     if y_names is None:
-#         y_names = ["m_G_an", "m_G_t", "m_o_t"]
-#
-#     if z_names is None:
-#         z_names = ["P_bh_bar", "P_tb_b_bar", "w_G_inj", "w_res"]
-#
-#
-#     u1_grid = np.asarray(results["u1_grid"], dtype=float)
-#     u2_grid = np.asarray(results["u2_grid"], dtype=float)
-#
-#     # Z_NAMES = list(results["Z_NAMES"])
-#     OUT = results["OUT"]
-#
-#     # SUCCESS = np.asarray(results["SUCCESS"], dtype=bool)
-#     # RES_DX = np.asarray(results["RES_DX"], dtype=float)
-#
-#     Nu1 = len(u1_grid)
-#     Nu2 = len(u2_grid)
-#
-#     # u grid
-#     U1, U2 = np.meshgrid(u1_grid, u2_grid, indexing="ij")
-#
-#     u_flat = np.stack([U1.reshape(-1), U2.reshape(-1)], axis=1)
-#
-#     # Flatten state inputs y
-#     # ------------------------------------------------------------
-#     y_flat = np.stack(
-#         [
-#             np.asarray(OUT[name], dtype=float).reshape(-1)
-#             for name in y_names
-#         ],
-#         axis=1,
-#     )
-#
-#     # -------------------------------
-#
-#
-#     # y (first 3)
-#     y_cols = []
-#     for name in Z_NAMES[:3]:
-#         arr = np.asarray(OUT[name], dtype=float)
-#         y_cols.append(arr.reshape(-1))
-#     y_flat = np.stack(y_cols, axis=1)
-#
-#     # z targets
-#     z_names = ["P_bh_bar", "P_tb_b_bar","w_G_inj","w_res"]
-#     z_cols = []
-#     for name in z_names:
-#         arr = np.asarray(OUT[name], dtype=float)
-#         z_cols.append(arr.reshape(-1))
-#     z_flat = np.stack(z_cols, axis=1)
-#
-#     success_flat = SUCCESS.reshape(-1)
-#     res_dx_flat = RES_DX.reshape(-1)
-#
-#     finite_y = np.all(np.isfinite(y_flat), axis=1)
-#     finite_z = np.all(np.isfinite(z_flat), axis=1)
-#     finite_all = finite_y & finite_z
-#
-#     mask = (success_flat & finite_all) if only_success else finite_all
-#
-#     u_np = u_flat[mask]
-#     y_np = y_flat[mask]
-#     z_np = z_flat[mask]
-#     res_dx_np = res_dx_flat[mask]
-#
-#     # Torch tensors
-#     u_t = torch.tensor(u_np, dtype=torch.float32)
-#     y_t = torch.tensor(y_np, dtype=torch.float32)
-#     z_t = torch.tensor(z_np, dtype=torch.float32)
-#     res_dx_t = torch.tensor(res_dx_np, dtype=torch.float32)
-#
-#     return {
-#         "Z_NAMES": Z_NAMES,
-#         "z_names": z_names,
-#         "u_np": u_np,
-#         "y_np": y_np,
-#         "z_np": z_np,
-#         "res_dx_np": res_dx_np,
-#         "u_t": u_t,
-#         "y_t": y_t,
-#         "z_t": z_t,
-#         "res_dx_t": res_dx_t,
-#         "Nu1": Nu1,
-#         "Nu2": Nu2,
-#         "mask_np": mask,
-#     }

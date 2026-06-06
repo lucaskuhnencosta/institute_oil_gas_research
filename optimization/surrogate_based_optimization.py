@@ -591,7 +591,7 @@ class SurrogateBasedOptimization:
                         "history": self.history,
                     }
 
-                self.Delta *= self.gamma_e
+                self.Delta *= self.gamma_c_restoration
                 k += 1
                 continue
 
@@ -655,7 +655,7 @@ class SurrogateBasedOptimization:
                     "filter_list": self.filter_list,
                 })
 
-                self.Delta *= self.gamma_c
+                self.Delta *= self.gamma_c_restoration
                 k += 1
                 continue
 
