@@ -5,6 +5,28 @@ import matplotlib.pyplot as plt
 from configuration.wells import get_wells
 from application.simulation_engine import make_glc_well_surrogate
 
+# ============================================================
+# Helpers
+# ============================================================
+
+def get_project_root():
+    return Path.cwd().parents[2]
+
+
+def get_well_folder(well_name):
+    return get_project_root() / "well_models" / str(well_name)
+
+
+def load_pickle(path):
+    with open(path, "rb") as f:
+        return pickle.load(f)
+
+
+from pathlib import Path
+import pickle
+import numpy as np
+import matplotlib.pyplot as plt
+
 
 # ============================================================
 # User choices
@@ -12,10 +34,17 @@ from application.simulation_engine import make_glc_well_surrogate
 
 WELL_NAME = "P5"
 
-# For PINN state variables, use one of:
-# "m_G_an", "m_G_t", "m_o_t"
+N_RANDOM =1000
+SEED = 123
 
-VARIABLE_NAME = "P_bh_bar"
+U1_MIN = 0.05
+U1_MAX = 1.00
+
+U2_MIN = 0.10
+U2_MAX = 1.00
+
+SAVE_FIGURE = True
+FIGURE_NAME = "experiment_design_2d.pdf"
 
 
 # ============================================================
@@ -40,221 +69,208 @@ def load_pickle(path):
         return pickle.load(f)
 
 
-def extract_17_point_values(poly_dataset, variable_name):
-    """
-    Extract the 17 selected values for the requested variable.
-
-    The dataset contains:
-        Y_pinn for states:
-            ["m_G_an", "m_G_t", "m_o_t"]
-
-        Y_poly for algebraic polynomial outputs:
-            ["P_bh_bar", "P_tb_b_bar", "w_G_inj"]
-    """
-
-    if variable_name in poly_dataset["pinn_output_names"]:
-        names = poly_dataset["pinn_output_names"]
-        Y = np.asarray(poly_dataset["Y_pinn"], dtype=float)
-
-    elif variable_name in poly_dataset["poly_output_names"]:
-        names = poly_dataset["poly_output_names"]
-        Y = np.asarray(poly_dataset["Y_poly"], dtype=float)
-
-    else:
-        raise ValueError(
-            f"Variable {variable_name} not found. Available variables are:\n"
-            f"PINN: {poly_dataset['pinn_output_names']}\n"
-            f"POLY: {poly_dataset['poly_output_names']}"
-        )
-
-    k = names.index(variable_name)
-
-    U_17 = np.asarray(poly_dataset["U"], dtype=float)
-    Y_17 = Y[:, k]
-
-    return U_17, Y_17
-
-
 # ============================================================
-# Main diagnostic plot
+# Main plot
 # ============================================================
 
-def plot_sweep_surface_with_17_points_and_random_samples(
+def plot_experiment_design_2d(
     well_name,
-    variable_name,
-    elev=15,
-    azim=20,
-    n_random=20,
+    n_random=100,
     seed=123,
+    save_figure=True,
+    figure_name="experiment_design_2d.pdf",
 ):
     folder = get_well_folder(well_name)
-
-    sweep_path = folder / "sweep_results.pkl"
     dataset_path = folder / "poly_dataset.pkl"
 
-    print(f"Loading sweep from:   {sweep_path}")
     print(f"Loading dataset from: {dataset_path}")
 
-    sweep = load_pickle(sweep_path)
     poly_dataset = load_pickle(dataset_path)
 
-    U1 = np.asarray(sweep["U1"], dtype=float)
-    U2 = np.asarray(sweep["U2"], dtype=float)
+    # --------------------------------------------------------
+    # 17 simulated data points
+    # --------------------------------------------------------
+    U_17 = np.asarray(poly_dataset["U"], dtype=float)
 
-    u1_min, u1_max = np.nanmin(U1), np.nanmax(U1)
-    u2_min, u2_max = np.nanmin(U2), np.nanmax(U2)
+    # --------------------------------------------------------
+    # Random collocation points
+    # --------------------------------------------------------
+    # rng = np.random.default_rng(seed)
+    #
+    # U_random = np.column_stack([
+    #     rng.uniform(U1_MIN, U1_MAX, size=n_random),
+    #     rng.uniform(U2_MIN, U2_MAX, size=n_random),
+    # ])
+    U_random = latin_hypercube_sampling(
+        n_samples=n_random,
+        bounds=[
+            (U1_MIN, U1_MAX),
+            (U2_MIN, U2_MAX),
+        ],
+        seed=seed,
+    )
 
-    Y_sweep = np.asarray(sweep["OUT"][variable_name], dtype=float)
-
-    U_17, Y_17 = extract_17_point_values(poly_dataset, variable_name)
-
-    # =====================================================
-    # Random samples in [u1_min, 1.0] x [u2_min, 1.0]
-    # =====================================================
-    rng = np.random.default_rng(seed)
-
-    U_random = np.column_stack([
-        rng.uniform(u1_min, 1.0, size=n_random),
-        rng.uniform(u2_min, 1.0, size=n_random),
-    ])
-
-    # Put random samples on the bottom plane
-    z_floor = np.nanmin(Y_sweep) - 5.0
-    Z_random_floor = np.full(n_random, z_floor)
-
-    # =====================================================
+    # --------------------------------------------------------
     # Figure
-    # =====================================================
-    fig = plt.figure(figsize=(7.2, 4.0))
+    # --------------------------------------------------------
+    fig, axes = plt.subplots(
+        1,
+        2,
+        figsize=(7.2, 3.6),
+        sharex=True,
+        sharey=True,
+    )
 
-    ax_left = fig.add_subplot(1, 2, 1, projection="3d")
-    ax_right = fig.add_subplot(1, 2, 2, projection="3d")
+    ax_left, ax_right = axes
 
-    axes = [ax_left, ax_right]
-
-    # Common z limits so both panels are visually comparable
-    z_min = z_floor
-    z_max = np.nanmax(Y_sweep)
-
-    for ax in axes:
-        ax.plot_surface(
-            U1,
-            U2,
-            Y_sweep,
-            linewidth=0,
-            antialiased=True,
-            alpha=0.70,
-            cmap="viridis",
-        )
-
-        ax.set_xlabel("$u_1$")
-        ax.set_ylabel("$u_2$")
-        ax.set_zlabel(variable_name)
-
-        ax.set_xlim(u1_min, u1_max)
-        ax.set_ylim(u2_min, u2_max)
-        ax.set_zlim(z_min, z_max)
-
-        ax.set_box_aspect((1.0, 1.0, 1.0))
-        ax.view_init(elev=elev, azim=azim)
-
-    # =====================================================
-    # Left: original 17 selected points
-    # =====================================================
+    # ========================================================
+    # Left panel: polynomial interpolation
+    # ========================================================
     ax_left.scatter(
         U_17[:, 0],
         U_17[:, 1],
-        Y_17,
         marker="o",
-        s=50,
+        s=60,
         color="red",
         edgecolor="black",
-        depthshade=True,
+        linewidth=0.8,
+        label="Simulated data points",
+        zorder=3,
     )
-    red_scatter=ax_right.scatter(
+
+    ax_left.set_title("Polynomial interpolation", fontsize=13)
+
+    # ========================================================
+    # Right panel: PINN-AlgNN training
+    # ========================================================
+    red_scatter = ax_right.scatter(
         U_17[:, 0],
         U_17[:, 1],
-        Y_17,
         marker="o",
-        s=50,
+        s=60,
         color="red",
         edgecolor="black",
-        depthshade=True,
+        linewidth=0.8,
+        label="Simulated data points",
+        zorder=3,
     )
 
-
-
-    # =====================================================
-    # Right: 50 random points on bottom plane
-    # =====================================================
-    blue_scatter=ax_right.scatter(
+    blue_scatter = ax_right.scatter(
         U_random[:, 0],
         U_random[:, 1],
-        Z_random_floor,
         marker="x",
-        s=50,
+        s=55,
         color="blue",
         linewidths=1.8,
-        depthshade=False,
+        label="Collocation points",
+        zorder=2,
     )
 
+    ax_right.set_title("PINN-AlgNN training", fontsize=13)
 
-    ax_left.set_title(
-        f"Polynomial interpolation", fontsize=14,pad=-10
-    )
-    ax_right.set_title(
-        f"PINN-AlgNN Training", fontsize=14, pad=-10
-    )
+    # ========================================================
+    # Common formatting
+    # ========================================================
+    for ax in axes:
+        ax.set_xlim(U1_MIN-0.05, U1_MAX+0.05)
+        ax.set_ylim(U2_MIN-0.05, U2_MAX+0.05)
 
+        ax.set_xlabel("$u_1$", fontsize=13)
+        ax.set_aspect("equal", adjustable="box")
+
+        # ax.grid(
+        #     True,
+        #     linestyle="--",
+        #     linewidth=0.6,
+        #     alpha=0.5,
+        # )
+
+    ax_left.set_ylabel("$u_2$", fontsize=13)
+
+    # Shared legend
     fig.legend(
         handles=[red_scatter, blue_scatter],
         labels=["Simulated data points", "Collocation points"],
         loc="lower center",
         ncol=2,
         frameon=False,
-        bbox_to_anchor=(0.5, -0.005),
-        fontsize=12,
-
-        handletextpad=0.05,   # distance between marker and text
-        columnspacing=1.5,   # distance between the two legend entries
+        bbox_to_anchor=(0.5, -0.02),
+        fontsize=11,
+        handletextpad=0.3,
+        columnspacing=1.5,
     )
 
     fig.subplots_adjust(
-        left=0.06,
+        left=0.08,
         right=0.98,
-        bottom=0.11,
-        top=0.98,
+        bottom=0.20,
+        top=0.88,
         wspace=0.12,
-        hspace=0.10,
     )
 
-    fig.savefig(
-        "experiment_design.pdf",
-        format="pdf"
-    )
+    if save_figure:
+        fig.savefig(
+            figure_name,
+            format="pdf",
+            bbox_inches="tight",
+        )
 
     plt.show()
 
     return {
-        "U1": U1,
-        "U2": U2,
-        "Y_sweep": Y_sweep,
         "U_17": U_17,
-        "Y_17": Y_17,
         "U_random": U_random,
-        "z_floor": z_floor,
     }
 
-# if __name__ == "__main__":
-#     data = plot_sweep_surface_with_17_points(
-#         well_name=WELL_NAME,
-#         variable_name=VARIABLE_NAME,
-#     )
+def latin_hypercube_sampling(n_samples, bounds, seed=123):
+    """
+    Latin Hypercube Sampling in a rectangular domain.
+
+    Parameters
+    ----------
+    n_samples : int
+        Number of samples.
+    bounds : list of tuple
+        Variable bounds, e.g. [(u1_min, u1_max), (u2_min, u2_max)].
+    seed : int
+        Random seed.
+
+    Returns
+    -------
+    samples : ndarray, shape (n_samples, n_dimensions)
+        LHS samples scaled to the requested bounds.
+    """
+    rng = np.random.default_rng(seed)
+
+    n_dim = len(bounds)
+    samples_unit = np.zeros((n_samples, n_dim))
+
+    for j in range(n_dim):
+        # One sample inside each interval
+        cut = np.linspace(0.0, 1.0, n_samples + 1)
+        points = cut[:-1] + rng.random(n_samples) / n_samples
+
+        # Randomly permute intervals for this dimension
+        rng.shuffle(points)
+
+        samples_unit[:, j] = points
+
+    samples = np.zeros_like(samples_unit)
+
+    for j, (lower, upper) in enumerate(bounds):
+        samples[:, j] = lower + samples_unit[:, j] * (upper - lower)
+
+    return samples
+
+# ============================================================
+# Run
+# ============================================================
 
 if __name__ == "__main__":
-    data = plot_sweep_surface_with_17_points_and_random_samples(
+    data = plot_experiment_design_2d(
         well_name=WELL_NAME,
-        variable_name=VARIABLE_NAME,
-        n_random=40,
-        seed=123,
+        n_random=N_RANDOM,
+        seed=SEED,
+        save_figure=SAVE_FIGURE,
+        figure_name=FIGURE_NAME,
     )

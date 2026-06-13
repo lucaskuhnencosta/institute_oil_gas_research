@@ -12,6 +12,7 @@ from settings import *
 from pathlib import Path
 import pickle
 
+from simulators.surrogate_simulator.surrogate_model_torch import Z_DIAG_NAMES
 
 
 class SteadyStatePINNTrainer(Trainer):
@@ -88,8 +89,11 @@ class SteadyStatePINNTrainer(Trainer):
         # ------------------------------------------------
         # 4. Input domain
         # ------------------------------------------------
-        self.U1_MIN=0.10
-        self.U2_MIN=0.20
+        # self.U1_MIN=0.10
+        # self.U2_MIN=0.20
+        #
+        self.U1_MIN=U1_MIN
+        self.U2_MIN=U2_MIN
         self.u_min_train = np.array([self.U1_MIN,self.U2_MIN], dtype=float)
         self.u_max_train = np.array([U1_MAX,U2_MAX],dtype=float)
 
@@ -218,81 +222,156 @@ class SteadyStatePINNTrainer(Trainer):
 
     def prepare_data(self):
         self.l.info(f"Preparing PINN data for Gas-Lift Well {self.well_name}...")
-
-
-
         # ------------------------------------------------
         # 1. Output scaling tensors
         # ------------------------------------------------
-
         self.y_min_t = torch.tensor(self.y_min_train,
                                     dtype=torch.float32,
                                     device=self.device)
-
         self.y_max_t = torch.tensor(self.y_max_train,
                                     dtype=torch.float32,
                                     device=self.device)
-
         self.y_range_t = (self.y_max_t - self.y_min_t).clamp_min(1e-6)
 
         # ------------------------------------------------
         # 2. Load the supervised data training
         # ------------------------------------------------
-        self.l.info(f"Loading the supervised data training dataset:")
-        self.l.info(str(self.training_path))
 
-        if not self.training_path.exists():
+        self.l.info(f"Loading the 17-point PINN supervised dataset:")
+        self.l.info(str(self.poly_dataset_path))
+
+        if not self.poly_dataset_path.exists():
             raise FileNotFoundError(
-                f"Could not find sweep_results.pkl for well {self.well_name}: "
-                f"{self.training_path}"
+                f"Could not find poly_dataset.pkl for well {self.well_name}: "
+                f"{self.poly_dataset_path}"
             )
 
-        with open(self.training_path, "rb") as f:
-            sweep_results = pickle.load(f)
+        with open(self.poly_dataset_path, "rb") as f:
+            poly_data = pickle.load(f)
 
         output_names = ["m_G_an", "m_G_t", "m_o_t"]
 
-        u_full_np, y_full_np = self._flatten_sweep_to_u_y(
-            sweep_results,
-            output_names,
-        )
+        u_train_np = np.asarray(poly_data["U"], dtype=np.float32)
+        y_train_np = np.asarray(poly_data["Y_pinn"], dtype=np.float32)
 
         self.train_output_names = list(output_names)
 
         self.l.info(
-            f"Loaded full sweep dataset: "
-            f"u_full={u_full_np.shape}, y_full={y_full_np.shape}"
+            f"Loaded 17-point PINN dataset: "
+            f"u_train={u_train_np.shape}, y_train={y_train_np.shape}"
         )
 
+        if u_train_np.shape != (17, self.N_u):
+            raise ValueError(
+                f"Expected u_train_np shape (17, {self.N_u}), got {u_train_np.shape}."
+            )
+
+        if y_train_np.shape != (17, self.N_y):
+            raise ValueError(
+                f"Expected y_train_np shape (17, {self.N_y}), got {y_train_np.shape}."
+            )
+
         self.u_data_train = torch.tensor(
-            u_full_np,
+            u_train_np,
             dtype=torch.float32,
             device=self.device,
         )
 
         self.y_data_train = torch.tensor(
-            y_full_np,
+            y_train_np,
             dtype=torch.float32,
             device=self.device,
         )
 
+        # self.l.info(f"Loading the supervised data training dataset:")
+        # self.l.info(str(self.training_path))
+        #
+        # if not self.training_path.exists():
+        #     raise FileNotFoundError(
+        #         f"Could not find sweep_results.pkl for well {self.well_name}: "
+        #         f"{self.training_path}"
+        #     )
+        #
+        # with open(self.training_path, "rb") as f:
+        #     sweep_results = pickle.load(f)
+        #
+        # output_names = ["m_G_an", "m_G_t", "m_o_t"]
+        #
+        # u_full_np, y_full_np = self._flatten_sweep_to_u_y(
+        #     sweep_results,
+        #     output_names,
+        # )
+        #
+        # self.train_output_names = list(output_names)
+        #
+        # self.l.info(
+        #     f"Loaded full sweep dataset: "
+        #     f"u_full={u_full_np.shape}, y_full={y_full_np.shape}"
+        # )
+        #
+        # self.u_data_train = torch.tensor(
+        #     u_full_np,
+        #     dtype=torch.float32,
+        #     device=self.device,
+        # )
+        #
+        # self.y_data_train = torch.tensor(
+        #     y_full_np,
+        #     dtype=torch.float32,
+        #     device=self.device,
+        # )
+
         self.y_data_train_norm = (self.y_data_train - self.y_min_t)/self.y_range_t
+
+        self.l.info("========== 17-POINT DATASET DEBUG ==========")
+        self.l.info(f"u_data_train shape: {tuple(self.u_data_train.shape)}")
+        self.l.info(f"y_data_train shape: {tuple(self.y_data_train.shape)}")
+        self.l.info(f"u_data_train min: {torch.min(self.u_data_train, dim=0).values}")
+        self.l.info(f"u_data_train max: {torch.max(self.u_data_train, dim=0).values}")
+        self.l.info(f"y_data_train min: {torch.min(self.y_data_train, dim=0).values}")
+        self.l.info(f"y_data_train max: {torch.max(self.y_data_train, dim=0).values}")
+        self.l.info(f"First 5 u_data_train:\n{self.u_data_train[:5]}")
+        self.l.info(f"First 5 y_data_train:\n{self.y_data_train[:5]}")
+        self.l.info("============================================")
+
+        # # -----------------------------
+        # # 3) Physics collocation points
+        # # -----------------------------
+        #
+        # self.l.info(f"Generating {self.N_col} random physics collocation points.")
+        # np.random.seed(333333)
+        #
+        # u_col_extra_np = np.random.uniform(self.u_min_train,
+        #                              self.u_max_train,
+        #                              size=(self.N_col, self.N_u)
+        #                              ).astype(np.float32)
+        #
+        # self.u_col = torch.tensor(u_col_extra_np,
+        #                           dtype=torch.float32,
+        #                           device=self.device)
 
         # -----------------------------
         # 3) Physics collocation points
         # -----------------------------
 
-        self.l.info(f"Generating {self.N_col} random physics collocation points.")
-        np.random.seed(333333)
+        self.l.info(f"Generating {self.N_col} LHS physics collocation points.")
 
-        u_col_extra_np = np.random.uniform(self.u_min_train,
-                                     self.u_max_train,
-                                     size=(self.N_col, self.N_u)
-                                     ).astype(np.float32)
+        from scipy.stats import qmc
 
-        self.u_col = torch.tensor(u_col_extra_np,
-                                  dtype=torch.float32,
-                                  device=self.device)
+        sampler = qmc.LatinHypercube(d=self.N_u, seed=333333)
+        u_unit = sampler.random(n=self.N_col).astype(np.float32)
+
+        u_col_extra_np = qmc.scale(
+            u_unit,
+            self.u_min_train,
+            self.u_max_train
+        ).astype(np.float32)
+
+        self.u_col = torch.tensor(
+            u_col_extra_np,
+            dtype=torch.float32,
+            device=self.device
+        )
 
         # ------------------------------------------------
         # 4. Load validation sweep dataset
@@ -346,6 +425,7 @@ class SteadyStatePINNTrainer(Trainer):
             f"y_data_val={tuple(self.y_data_val.shape)}, "
         )
         self.print_shapes()
+        self.debug_physics_at_data_points()
 
     def print_shapes(self):
         self.l.info(f"Size of y_data_train: {tuple(self.y_data_train.shape)}")
@@ -399,13 +479,15 @@ class SteadyStatePINNTrainer(Trainer):
                           PI=self.PI,
                           K_gs=self.K_gs,
                           K_inj=self.K_inj,
-                          K_pr=self.K_pr)
+                          K_pr=self.K_pr,
+                          return_z=True  )
 
         if isinstance(physics_out, tuple):
             dx = physics_out[0]
+            z = physics_out[1]
         else:
             dx = physics_out
-
+            z = None
         # ------------------------------------------------
         # 3. Scale residual components
         # ------------------------------------------------
@@ -414,22 +496,38 @@ class SteadyStatePINNTrainer(Trainer):
         # dx_scaled = dx/y_range
         dx_scaled=dx/self.dx_scale_t
 
+
+
+
         # ------------------------------------------------
         # 4. Component-wise residual MSE
         # ------------------------------------------------
         mse_components = torch.mean(dx_scaled ** 2, dim=0)
+
 
         # ------------------------------------------------
         # 5. Weighted scalar physics loss
         # ------------------------------------------------
         loss_f = torch.mean(self.mse_f_scale * mse_components)
 
+
         return loss_f, mse_components, y_hat, dx
 
     def _data_loss(self):
         y_pred = self.net(self.u_data_train)
         y_pred_norm = (y_pred - self.y_min_t) / self.y_range_t
-        loss_data = torch.mean((y_pred_norm - self.y_data_train_norm) ** 2)
+
+        err = y_pred_norm - self.y_data_train_norm
+
+        weights = torch.tensor(
+            [1.0, 1.0, 10.0],
+            dtype=torch.float32,
+            device=self.device,
+        )
+
+
+        # loss_data = torch.mean((y_pred_norm - self.y_data_train_norm) ** 2)
+        loss_data = torch.mean(weights * err ** 2)
         return  loss_data, y_pred_norm, y_pred
 
     def _prediction_metrics(self,u,y_true):
@@ -698,4 +796,176 @@ class SteadyStatePINNTrainer(Trainer):
             f"{val_losses['rmse_y1']:.3e}, "
             f"{val_losses['rmse_y2']:.3e}] | "
         )
+
+    @torch.no_grad()
+    def debug_physics_at_data_points(self):
+        self.net.eval()
+
+        physics_out = self.physics_f(
+            self.y_data_train,
+            self.u_data_train,
+            BSW=self.BSW,
+            GOR=self.GOR,
+            PI=self.PI,
+            K_gs=self.K_gs,
+            K_inj=self.K_inj,
+            K_pr=self.K_pr,
+            return_z=True,
+        )
+
+        if isinstance(physics_out, tuple):
+            dx = physics_out[0]
+            z = physics_out[1]
+        else:
+            dx = physics_out
+            z = None
+
+        dx_scaled = dx / self.dx_scale_t
+        mse_components = torch.mean(dx_scaled ** 2, dim=0)
+        loss_f = torch.mean(self.mse_f_scale * mse_components)
+
+        self.l.info("========== PHYSICS AT TRUE DATA POINTS ==========")
+        self.l.info(f"u_data_train shape: {tuple(self.u_data_train.shape)}")
+        self.l.info(f"y_data_train shape: {tuple(self.y_data_train.shape)}")
+
+        self.l.info(f"dx min: {torch.min(dx, dim=0).values}")
+        self.l.info(f"dx max: {torch.max(dx, dim=0).values}")
+        self.l.info(f"dx mean: {torch.mean(dx, dim=0)}")
+        self.l.info(f"dx abs max: {torch.max(torch.abs(dx), dim=0).values}")
+
+        self.l.info(f"dx_scaled min: {torch.min(dx_scaled, dim=0).values}")
+        self.l.info(f"dx_scaled max: {torch.max(dx_scaled, dim=0).values}")
+        self.l.info(f"dx_scaled abs max: {torch.max(torch.abs(dx_scaled), dim=0).values}")
+
+        self.l.info(f"mse_components: {mse_components}")
+        self.l.info(f"loss_f: {loss_f}")
+
+        self.l.info(f"Any NaN in dx? {torch.isnan(dx).any().item()}")
+        self.l.info(f"Any Inf in dx? {torch.isinf(dx).any().item()}")
+        self.l.info("================================================")
+
+    @torch.no_grad()
+    def debug_nearest_validation_state(self, u_query, y_hat_query=None):
+        u_query = torch.tensor(
+            u_query,
+            dtype=torch.float32,
+            device=self.device,
+        )
+
+        dist = torch.sum((self.u_data_val - u_query) ** 2, dim=1)
+        idx = torch.argmin(dist)
+
+        self.l.info("========== NEAREST VALIDATION STATE ==========")
+        self.l.info(f"u_query: {u_query}")
+        self.l.info(f"nearest u_val: {self.u_data_val[idx]}")
+        self.l.info(f"nearest y_val: {self.y_data_val[idx]}")
+
+        if y_hat_query is not None:
+            y_hat_query = torch.tensor(
+                y_hat_query,
+                dtype=torch.float32,
+                device=self.device,
+            )
+            self.l.info(f"y_hat query: {y_hat_query}")
+            self.l.info(f"y_hat - y_val: {y_hat_query - self.y_data_val[idx]}")
+
+        self.l.info(f"distance: {torch.sqrt(dist[idx])}")
+        self.l.info("==============================================")
+
+    @torch.no_grad()
+    def debug_compare_predicted_vs_validation_algebraics(self, u_query, y_hat_query):
+        """
+        Compare algebraic quantities at the predicted worst point and at the
+        nearest validation point.
+        """
+
+        self.net.eval()
+
+        u_query = torch.tensor(
+            u_query,
+            dtype=torch.float32,
+            device=self.device,
+        )
+
+        y_hat_query = torch.tensor(
+            y_hat_query,
+            dtype=torch.float32,
+            device=self.device,
+        )
+
+        # Find nearest validation point
+        dist = torch.sum((self.u_data_val - u_query) ** 2, dim=1)
+        idx = torch.argmin(dist)
+
+        u_val = self.u_data_val[idx]
+        y_val = self.y_data_val[idx]
+
+        # Add batch dimension
+        u_hat_b = u_query.reshape(1, -1)
+        y_hat_b = y_hat_query.reshape(1, -1)
+
+        u_val_b = u_val.reshape(1, -1)
+        y_val_b = y_val.reshape(1, -1)
+
+        # Evaluate physics/algebraics at predicted point
+        dx_hat, z_hat = self.physics_f(
+            y_hat_b,
+            u_hat_b,
+            BSW=self.BSW,
+            GOR=self.GOR,
+            PI=self.PI,
+            K_gs=self.K_gs,
+            K_inj=self.K_inj,
+            K_pr=self.K_pr,
+            return_z=True,
+        )
+
+        # Evaluate physics/algebraics at nearest validation point
+        dx_val, z_val = self.physics_f(
+            y_val_b,
+            u_val_b,
+            BSW=self.BSW,
+            GOR=self.GOR,
+            PI=self.PI,
+            K_gs=self.K_gs,
+            K_inj=self.K_inj,
+            K_pr=self.K_pr,
+            return_z=True,
+        )
+
+        dx_hat = dx_hat[0]
+        dx_val = dx_val[0]
+        z_hat = z_hat[0]
+        z_val = z_val[0]
+
+        self.l.info("========== PREDICTED VS VALIDATION ALGEBRAICS ==========")
+        self.l.info(f"u_query:        {u_query}")
+        self.l.info(f"nearest u_val:  {u_val}")
+        self.l.info(f"distance:       {torch.sqrt(dist[idx])}")
+
+        self.l.info(f"y_hat:          {y_hat_query}")
+        self.l.info(f"y_val:          {y_val}")
+        self.l.info(f"y_hat - y_val:  {y_hat_query - y_val}")
+
+        self.l.info(f"dx_hat:         {dx_hat}")
+        self.l.info(f"dx_val:         {dx_val}")
+        self.l.info(f"dx_hat-dx_val:  {dx_hat - dx_val}")
+
+        self.l.info("--------------------------------------------------------")
+        self.l.info(f"{'name':25s} {'pred':>15s} {'val':>15s} {'diff':>15s}")
+        self.l.info("--------------------------------------------------------")
+
+        for name, pred_value, val_value in zip(Z_DIAG_NAMES, z_hat, z_val):
+            pred_float = float(pred_value.item())
+            val_float = float(val_value.item())
+            diff_float = pred_float - val_float
+
+            self.l.info(
+                f"{name:25s} "
+                f"{pred_float:15.6e} "
+                f"{val_float:15.6e} "
+                f"{diff_float:15.6e}"
+            )
+
+        self.l.info("========================================================")
 

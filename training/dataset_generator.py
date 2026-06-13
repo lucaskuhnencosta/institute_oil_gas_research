@@ -459,5 +459,3 @@ def flatten_sweep_results_to_batch_full(
         "Nu2": Nu2,
         "mask_np": mask,
     }
-
-

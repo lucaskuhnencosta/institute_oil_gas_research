@@ -226,7 +226,7 @@ def plot_static_models_figure(
 
 if __name__ == "__main__":
 
-    well_name = "P4"
+    well_name = "P2"
     model_NN = build_casadi_surrogate_u2z_for_well(well_name)
     model_poly = build_casadi_polynomial_u2z_for_well(well_name)
 

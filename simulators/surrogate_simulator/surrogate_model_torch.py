@@ -37,6 +37,7 @@ Z_DIAG_NAMES = [
     "w_L_out",
 
     # Phase/mixture variables suspected to cause blow-ups
+    "alpha_L_tb_t_raw",
     "alpha_avg_L_tb",
     "alpha_L_tb_b",
     "alpha_L_tb_t",
@@ -417,7 +418,9 @@ def glc_surrogate_dx_torch(
         w_L_res * rho_G_tb_b
     ) / denom_alpha_b_safe
 
-    alpha_L_tb_t = 2.0 * alpha_avg_L_tb - alpha_L_tb_b
+    alpha_L_tb_t_raw = 2.0 * alpha_avg_L_tb - alpha_L_tb_b
+    alpha_L_tb_t = torch.clamp(alpha_L_tb_t_raw, min=1e-6, max=1.0 - 1e-6)
+
 
     rho_mix_tb_t = (
         alpha_L_tb_t * rho_L
@@ -452,20 +455,41 @@ def glc_surrogate_dx_torch(
         )
     )
 
+    # denom_alpha_t = (
+    #     alpha_L_tb_t * rho_L
+    #     + (1.0 - alpha_L_tb_t) * rho_G_tb_t
+    # )
+    #
+    # denom_alpha_t_safe = torch.maximum(
+    #     denom_alpha_t,
+    #     as_torch_scalar(1e-12, ref),
+    # )
+    #
+    # alpha_G_tb_t = (
+    #     (1.0 - alpha_L_tb_t)
+    #     * rho_G_tb_t
+    # ) / denom_alpha_t_safe
+    #
+
+    #
+    # w_G_out = alpha_G_tb_t * w_out
+    # w_L_out = (1.0 - alpha_G_tb_t) * w_out]
+
+
+
     denom_alpha_t = (
-        alpha_L_tb_t * rho_L
-        + (1.0 - alpha_L_tb_t) * rho_G_tb_t
+            alpha_L_tb_t * rho_L
+            + (1.0 - alpha_L_tb_t) * rho_G_tb_t
     )
 
-    denom_alpha_t_safe = torch.maximum(
-        denom_alpha_t,
-        as_torch_scalar(1e-12, ref),
-    )
+    denom_alpha_t_safe = torch.clamp(denom_alpha_t, min=1e-9)
 
     alpha_G_tb_t = (
-        (1.0 - alpha_L_tb_t)
-        * rho_G_tb_t
-    ) / denom_alpha_t_safe
+                           (1.0 - alpha_L_tb_t)
+                           * rho_G_tb_t
+                   ) / denom_alpha_t_safe
+
+    alpha_G_tb_t = torch.clamp(alpha_G_tb_t, min=1e-6, max=1.0 - 1e-6)
 
     w_G_out = alpha_G_tb_t * w_out
     w_L_out = (1.0 - alpha_G_tb_t) * w_out
@@ -524,6 +548,7 @@ def glc_surrogate_dx_torch(
             bcast(w_L_out),
 
             # Phase/mixture variables
+            bcast(alpha_L_tb_t_raw),
             bcast(alpha_avg_L_tb),
             bcast(alpha_L_tb_b),
             bcast(alpha_L_tb_t),
@@ -565,19 +590,19 @@ def glc_surrogate_dx_torch(
 
     return dx
 
-    dx = torch.stack([dx1, dx2, dx3], dim=-1)
-
-    if return_z:
-        return dx, z
-
-    return dx
-
-    dx = torch.stack(
-        [dx1, dx2, dx3],
-        dim=-1,
-    )
-
-    return dx
+    # dx = torch.stack([dx1, dx2, dx3], dim=-1)
+    #
+    # if return_z:
+    #     return dx, z
+    #
+    # return dx
+    #
+    # dx = torch.stack(
+    #     [dx1, dx2, dx3],
+    #     dim=-1,
+    # )
+    #
+    # return dx
 
 # def smooth_relu(x: torch.Tensor, delta: float = 1e-3) -> torch.Tensor:
 #     """

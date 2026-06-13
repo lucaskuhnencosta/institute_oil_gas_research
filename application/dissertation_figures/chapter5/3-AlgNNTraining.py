@@ -178,44 +178,27 @@ def plot_algnn_grouped_rmse_single_plot(
     # ------------------------------------------------------------
     fig, ax = plt.subplots(figsize=(7.0, 3.6))
 
-    # Pressure bands
-    ax.fill_between(epoch, train_pressure_min, train_pressure_max,
-                    color="blue", alpha=0.10, linewidth=0, zorder=1)
 
     ax.fill_between(epoch, val_pressure_min, val_pressure_max,
-                    color="orange", alpha=0.12, linewidth=0, zorder=1)
+                    color="blue", alpha=0.12, linewidth=0, zorder=1)
 
-    # Flow bands
-    ax.fill_between(epoch, train_flow_min, train_flow_max,
-                    color="blue", alpha=0.06, linewidth=0, zorder=1)
+
 
     ax.fill_between(epoch, val_flow_min, val_flow_max,
-                    color="orange", alpha=0.08, linewidth=0, zorder=1)
+                    color="blue", alpha=0.08, linewidth=0, zorder=1)
 
-    # Pressure mean curves: solid
-    p_train, = ax.plot(
-        epoch, train_pressure_mean,
-        label="Training pressure RMSE (bar)",
-        color="blue", linestyle="-", linewidth=1.8, zorder=4
-    )
 
     p_val, = ax.plot(
         epoch, val_pressure_mean,
         label="Validation pressure RMSE (bar)",
-        color="orange", linestyle="-", linewidth=1.8, zorder=5
+        color="blue", linestyle="-", linewidth=1.8, zorder=5
     )
 
-    # Flow mean curves: dashed
-    w_train, = ax.plot(
-        epoch, train_flow_mean,
-        label="Training flow RMSE (kg/s)",
-        color="blue", linestyle="--", linewidth=1.8, zorder=6
-    )
 
     w_val, = ax.plot(
         epoch, val_flow_mean,
         label="Validation flow RMSE (kg/s)",
-        color="orange", linestyle="--", linewidth=1.8, zorder=7
+        color="blue", linestyle="--", linewidth=1.8, zorder=7
     )
 
 
@@ -293,7 +276,7 @@ def plot_algnn_grouped_rmse_single_plot(
     )
 
     # Combined legend
-    lines = [p_train, p_val, w_train, w_val]
+    lines = [p_val, w_val]
     labels = [line.get_label() for line in lines]
 
     ax.legend(

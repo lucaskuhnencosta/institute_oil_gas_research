@@ -13,11 +13,11 @@ from settings import *
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 wells= get_wells()
-well_name="P6"
+well_name="P2"
 well_list=wells[well_name]
 
 # 1) Build vanilla net: u -> y
-net = PINN(hidden_units=[64,64,64],
+net = PINN(hidden_units=[64,64,64], #[64,64,64]
            n_u=2,
            n_y=3,
            y_min=well_list["y_min"],
@@ -33,14 +33,14 @@ trainer = SteadyStatePINNTrainer(
     surrogate_function=glc_surrogate_dx_torch,
     well_list=well_list,
     well_name=well_name,
-    N_col=10000,
-    lambda_data=1000,
-    lambda_physics=1e-4,
-    adam_epochs_1=10000,
-    adam_epochs_2=10000,
-    lbfgs_epochs=2000,
+    N_col=40000,
+    lambda_data=1,
+    lambda_physics=0.20,#1e-2,
+    adam_epochs_1=3000,
+    adam_epochs_2=12000,
+    lbfgs_epochs=1000,
     lr=1e-3,
-    mse_f_scale_factors=[1.0, 1.0, 1.0],
+    mse_f_scale_factors=[5.0, 1.0, 1.0],
     wandb_project=well_name,
     random_seed=333333)
 

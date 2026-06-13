@@ -110,7 +110,7 @@ def plot_mean_std_rmse(
         epoch,
         train_min,
         train_max,
-        color="blue",
+        color="orange",
         alpha=0.12,
         linewidth=0,
         zorder=1,
@@ -120,7 +120,7 @@ def plot_mean_std_rmse(
         epoch,
         val_min,
         val_max,
-        color="orange",
+        color="blue",
         alpha=0.16,
         linewidth=0,
         zorder=1,
@@ -129,8 +129,8 @@ def plot_mean_std_rmse(
     ax.plot(
         epoch,
         train_mean,
-        label="Training RMSE",
-        color="blue",
+        label="Training RMSE (17 simulator data points)",
+        color="orange",
         linewidth=1.8,
         zorder=3,
     )
@@ -138,8 +138,8 @@ def plot_mean_std_rmse(
     ax.plot(
         epoch,
         val_mean,
-        label="Validation RMSE",
-        color="orange",
+        label="Validation RMSE (10000 grid points)",
+        color="blue",
         linewidth=1.8,
         zorder=4,
     )
@@ -174,13 +174,13 @@ def plot_mean_std_rmse(
     ax.grid(False, axis="x")
     ax.legend(loc="lower left",frameon=False)
     ax.set_ylim(1e-0,1e3)
-    ax.set_xlim(-50,23000)
+    ax.set_xlim(-50,16050)
 
     # ------------------------------------------------------------
     # Stage arrows
     # ------------------------------------------------------------
     y_arrow = 5e2  # adjust depending on your y-limits
-    y_arrow2=1e2
+    y_arrow2=2e2
 
     ax.annotate(
         "",
@@ -207,7 +207,7 @@ def plot_mean_std_rmse(
     )
 
     ax.text(
-        (K1+K2+3000) / 2,
+        (K1+K2)/2,
         y_arrow2 * 1.10,
         "Adam",
         ha="center",
@@ -218,7 +218,7 @@ def plot_mean_std_rmse(
 
     ax.annotate(
         "",
-        xy=(K1+K2+3000, y_arrow2),
+        xy=(K1+K2+1000, y_arrow2),
         xytext=(K1+K2, y_arrow2),
         arrowprops=dict(
             arrowstyle="<->",
@@ -229,9 +229,9 @@ def plot_mean_std_rmse(
     )
 
     ax.text(
-        (K1+K2+1500),
+        (K1+K2+300),
         y_arrow2 * 1.10,
-        "LGBFS",
+        "L-BFGS",
         ha="center",
         va="bottom",
         fontsize=11,
@@ -297,7 +297,7 @@ if __name__ == "__main__":
 
     plot_mean_std_rmse(
         histories,
-        K1=10000,
-        K2=10000,
+        K1=3000,
+        K2=12000,
         save_path=save_path,
     )

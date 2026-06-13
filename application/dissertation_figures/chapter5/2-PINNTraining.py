@@ -11,7 +11,7 @@ def load_history(history_path):
     return history
 
 
-def plot_train_val_rmse(history, K1=10000, K2=10000, save_path=None):
+def plot_train_val_rmse(history, K1=3000, K2=12000, save_path=None):
     epoch = np.asarray(history["epoch"], dtype=float)
 
     train_rmse = np.asarray(history["train_rmse_total"], dtype=float)
@@ -19,8 +19,8 @@ def plot_train_val_rmse(history, K1=10000, K2=10000, save_path=None):
 
     fig, ax = plt.subplots(figsize=(6.4, 4.2))
 
-    ax.plot(epoch, train_rmse, label="Training RMSE",color="blue")
-    ax.plot(epoch, val_rmse, label="Validation RMSE",color="orange")
+    ax.plot(epoch, train_rmse, label="Training RMSE (17 simulator data points)",color="orange")
+    ax.plot(epoch, val_rmse, label="Validation RMSE (10000 grid points)",color="blue")
 
     # Log-scale y-axis
     ax.set_yscale("log")
@@ -60,7 +60,7 @@ def plot_train_val_rmse(history, K1=10000, K2=10000, save_path=None):
 
 
 if __name__ == "__main__":
-    well="P6"
+    well="P1"
     history_path = Path(
         f"/home/lucas-kuhnen-costa/PycharmProjects/IOGR_StoAmaro/well_models/{well}/pinn_training_history.pkl"
     )
